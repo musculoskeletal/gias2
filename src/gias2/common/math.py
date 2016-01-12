@@ -1,0 +1,36 @@
+"""
+FILE: math.py
+LAST MODIFIED: 24-12-2015
+DESCRIPTION: Commonly used math functions
+
+===============================================================================
+This file is part of GIAS2. (https://bitbucket.org/jangle/gias2)
+
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
+===============================================================================
+"""
+
+import numpy as np
+import scipy.stats as stats
+
+def norm( v ):
+	# return np.divide(v, np.sqrt((np.array(v)**2.0).sum()))
+	return np.divide(v, mag(v))
+
+def mag( v ):
+	return np.sqrt((np.array(v)**2.0).sum(-1))
+
+def angle(v1, v2):
+	return np.arccos((v1*v2).sum(-1)/(mag(v1)*mag(v2)))
+
+def rms(x):
+	return np.sqrt((x*x).mean(-1))
+
+def meanConfidenceInterval(data, confidence=0.95):
+    a = 1.0*np.array(data)
+    n = a.shape[0]
+    m, se = np.mean(a), stats.sem(a)
+    h = se * stats.t.ppf((1+confidence)/2., n-1)
+    return m, m-h, m+h

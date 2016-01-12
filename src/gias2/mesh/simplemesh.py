@@ -1,0 +1,502 @@
+"""
+FILE: simplemesh.py
+LAST MODIFIED: 24-12-2015 
+DESCRIPTION: Classes and tools for working with triagulated meshes
+
+===============================================================================
+This file is part of GIAS2. (https://bitbucket.org/jangle/gias2)
+
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
+===============================================================================
+"""
+
+import shelve
+import vtk
+import scipy
+from scipy.linalg import svd, eigh
+import sys
+from gias2.registration import alignment_analytic as alignment
+from gias2.mesh import inp
+
+try:
+	from mayavi import mlab
+except ImportError:
+	raise ImportWarning('Mayavi not installed, simpleMesh.disp will not work') 
+
+def _loadSimpleMesh( filename ):
+	try:
+		s = shelve.open( filename, 'r' )
+	except:
+		raise IOError, 'unable to open '+filename
+	
+	attrList = ['vertices','faces','mean_curvature','gaussian_curvature','k1','k2','E', 'data']
+	
+	out = []
+	for a in attrList:
+		out.append( s.get(a, None) )
+	
+	s.close()
+	
+	return out
+
+def vrml2SimpleMesh( VRMLFilename ):
+	
+	vrml2VTK = vtk.vtkVRMLImporter()
+	vrml2VTK.SetFileName( VRMLFilename )
+	vrml2VTK.Read()
+	vrml2VTK.Update()
+	
+	actors = vrml2VTK.GetRenderer().GetActors()
+	actors.InitTraversal()
+	numberOfActors = actors.GetNumberOfItems()
+	
+	simpleMeshes = []
+	
+	for i in xrange(numberOfActors):
+		polydata = actors.GetNextActor().GetMapper().GetInput()
+		numberOfPoints = polydata.GetNumberOfPoints()
+		numberOfCells = polydata.GetNumberOfCells()
+		
+		points = scipy.array([polydata.GetPoint(pi) for pi in xrange(numberOfPoints)])
+		
+		polys = polydata.GetPolys().GetData()
+		polysSize = polys.GetSize()
+		#~ polysData = scipy.array([polys.GetValue(i) for i in xrange(polysSize)])
+		polysData = scipy.array([polys.GetValue(i) for i in xrange(numberOfCells*4)])
+		tri = polysData.reshape((-1,4))[:,1:4]
+		
+		simpleMeshes.append( SimpleMesh( points, tri ) )
+		
+	return simpleMeshes
+
+def stl2SimpleMesh( STLFilename ):
+	
+	STLReader = vtk.vtkSTLReader()
+	STLReader.SetFileName( STLFilename )
+	STLReader.MergingOn()
+	STLReader.Update()
+	polydata = STLReader.GetOutput()
+	numberOfPoints = polydata.GetNumberOfPoints()
+	numberOfCells = polydata.GetNumberOfCells()
+	
+	points = scipy.array([polydata.GetPoint(pi) for pi in xrange(numberOfPoints)])
+	
+	polys = polydata.GetPolys().GetData()
+	polysSize = polys.GetSize()
+	#~ polysData = scipy.array([polys.GetValue(i) for i in xrange(polysSize)])
+	polysData = scipy.array([polys.GetValue(i) for i in xrange(numberOfCells*4)])
+	tri = polysData.reshape((-1,4))[:,1:4]
+	
+	sm = SimpleMesh( points, tri )
+		
+	return sm
+
+class SimpleMesh( object ):
+	def __init__( self, v=None, f=None, H=None, K=None, k1=None, k2=None, E=None, data=None ):
+		self.v = scipy.array(v)
+		self.f = scipy.array(f)
+		self.H = scipy.array(H)
+		self.K = scipy.array(K)
+		self.k1 = scipy.array( k1 )
+		self.k2 = scipy.array( k2 )
+		self.E = scipy.array(E)
+		self.data = data
+		self.faceNormals = None
+		self.faceAreas = None
+		self.faceBarycenters = None
+		self.boundingBox = None
+		self.normCoM = None
+		self.principalMoments = None
+		self.principalAxes = None
+		
+		self.has1Ring = False
+		self.hasNeighbourhoods = False
+		self.neighbourhoodSize = None
+		self.neighbourFaces = None
+		self.neighbourVertices = None
+		self.faces1Ring = None
+		self.vertices1Ring = None
+		self.boundaryVertexInd = None
+		self.hasVertexNormals = False
+		
+	def load( self, filename ):
+		s = _loadSimpleMesh( filename )
+		self.__init__( *s )
+
+	def save( self, filename ):
+		s = shelve.open(filename, protocol=2)
+		s['vertices']=self.v
+		s['faces']=self.f
+		s['mean_curvature']=self.H
+		s['gaussian_curvature']=self.K
+		s['k1'] = self.k1
+		s['k2'] = self.k2
+		s['E'] = self.E
+		try:
+			s['data'] = self.data
+		except AttributeError:
+			pass
+			
+		s.close()
+		return
+
+	def exportINP(self, filename, name=None, preamble=None):
+		elemType = 'R3D3'
+		inpWriter = inp.InpWriter(filename, autoFormat=True, nodeOffset=1)
+
+		if preamble==None:
+			preamble = 'Exported from GIAS'
+
+		inpWriter.addPreamble(preamble)
+
+		if name==None:
+			name = 'mesh'
+
+		inpWriter.addMesh(name, elemType, self.v, self.f)
+		inpWriter.write()
+        
+	def disp( self, curvature=None, figure=None, scalar=None, lim=[-0.2,0.2] ):
+		if figure==None:
+			fig = mlab.figure()
+		else:
+			fig = figure
+		
+		if scalar != None:
+			return mlab.triangular_mesh( self.v[:,0], self.v[:,1], self.v[:,2], self.f, scalars=scalar, figure=fig, vmax=lim[1], vmin=lim[0] )
+		elif curvature=='H':
+			return mlab.triangular_mesh( self.v[:,0], self.v[:,1], self.v[:,2], self.f, scalars=self.H, figure=fig, vmax=lim[1], vmin=lim[0] )
+		elif curvature=='K':
+			return mlab.triangular_mesh( self.v[:,0], self.v[:,1], self.v[:,2], self.f, scalars=self.K, figure=fig, vmax=lim[1], vmin=lim[0] )
+		else:
+			return mlab.triangular_mesh( self.v[:,0], self.v[:,1], self.v[:,2], self.f, figure=fig )
+			
+	def dispLabel( self, labels, figure=None ):
+		if figure==None:
+			figure = mlab.figure()
+
+		return mlab.triangular_mesh( self.v[:,0], self.v[:,1], self.v[:,2], self.f, scalars=labels, figure=figure, vmax=labels.max(), vmin=labels.min() )
+	
+	def setVerticesNeighbourhoods( self, r ):
+		""" gets the neighbourhood vertices and faces up to radius r for
+		each vertex V. r is the number of vertices away from V.
+		"""
+		
+		print 'find neighbourhoods for r =', r
+		self.neighbourhoodSize = r
+		self.neighbourFaces = []
+		self.neighbourVertices = []
+		
+		self.set1Ring()
+		getNeighbour = self.makeNeighbourhoodGetter( r )
+		
+		for vi, V in enumerate(self.v):
+			sys.stdout.write('\r'+str(vi))
+			sys.stdout.flush()
+			neighbourVertices, neighbourFaces = getNeighbour( vi )
+			self.neighbourFaces = append( list( neighbourFaces ) )
+			self.neighbourVertices.append( list(neighbourVertices) )
+		
+		sys.stdout.write('\n')	
+		self.hasNeighbourhoods = 1
+		return	
+	
+	def set1Ring( self ):
+		"""
+		for each vertex, get the set of its neighbouring vertices
+		and faces.
+		"""
+		print 'setting 1-ring for vertices'
+		self.faces1Ring = {}
+		self.vertices1Ring = {}
+		for fi, f in enumerate(self.f):
+			for v in f:
+				try:
+					self.faces1Ring[v].add( fi )
+				except KeyError:
+					self.faces1Ring[v] = set([fi,])
+					
+				try:
+					self.vertices1Ring[v] = self.vertices1Ring[v].union( f )
+				except KeyError:
+					self.vertices1Ring[v] = set(f)
+					
+		for vi, f in self.vertices1Ring.items():
+			f.remove(vi)
+			
+		self.has1Ring = True
+			
+	def _getAdjacent( self, vi, depth, vertexList, faceList ):
+		""" recursive gets the adjacent faces and vertices to vertex V.
+		uses sets instead of lists
+		"""
+		
+		newVertices = set()
+		# add adjacent faces of current vertex to faceList
+		for fid in self.faces1Ring[vi]:
+			faceList.add(fid)
+			# add adjacent vertices to vertexList
+			for vid in self.f[fid]:
+				if vid not in vertexList:
+					newVertices.add( vid )
+		
+		vertexList = vertexList.union( newVertices )
+		
+		# recurse for new vertices
+		if depth > 1:
+			#~ print 'recurse, depth =', depth-1
+			for vid in newVertices:
+				vertexList, faceList = self._getAdjacent( vid, depth-1, vertexList, faceList ) 
+				
+		return vertexList, faceList 
+		
+	def makeNeighbourhoodGetter( self, nRing ):
+		
+		if not self.has1Ring:
+			self.set1Ring()
+		
+		def getNeighbour( vI ):
+			vertexList = set([vI,])
+			faceList = set()
+			neighbourVertices, neighbourFaces = self._getAdjacent( vI, nRing, vertexList, faceList )
+			# first element of vertexList is the current vertex - remove
+			neighbourVertices.remove( vI )
+			return neighbourVertices, neighbourFaces
+			
+		return getNeighbour
+	
+	def calcFaceProperties( self ):
+		
+		faceVertices = scipy.array( [self.v[F] for F in self.f] )
+		
+		v1 = faceVertices[:,1,:] - faceVertices[:,0,:]
+		v2 = faceVertices[:,2,:] - faceVertices[:,0,:]
+		v1v2 = scipy.cross( v1, v2 )
+		self.faceNormals = normalise2( v1v2 )
+		self.faceAreas = 0.5*mag2( v1v2 )
+		self.faceBarycenters = (faceVertices[:,0,:] + (faceVertices[:,1,:] + faceVertices[:,2,:]) )/3.0
+	
+	def calcVertexNormals(self, sigma):
+		""" calculate the normal at each vertex using normal voting.
+		"""
+		# self.saliencyCoeff = saliencyCoeff
+		print 'calculating normals...'
+
+		self.calcFaceProperties()
+		if not self.has1Ring:
+			self.set1Ring()
+		
+		fBary = self.faceBarycenters
+		fNormal = self.faceNormals
+		fArea = self.faceAreas
+		AMax = self.faceAreas.max()
+		
+		V = scipy.zeros((3,3), dtype=float)
+		self.vertexNormals = scipy.zeros((self.v.shape[0], 3), dtype=float)
+		
+		# for each vertex get neighbourhood faces 
+		for vi, v in enumerate(self.v):
+			# for each face i calculate normal vote Ni and weighting
+			neighFaces = self.faces1Ring[vi]
+			nFaces = len(neighFaces)
+			if not nFaces:
+				raise RuntimeWarning, 'no faces: vertex', v.ID
+			
+			fBaryV = scipy.array([fBary[f] for f in neighFaces])
+			fNormalV = scipy.array([fNormal[i] for i in neighFaces])
+			fAreaV = scipy.array([fArea[i] for i in neighFaces])
+			
+			# calc votes
+			vc = normalise2(fBaryV - v)
+			cosTheta = fNormalV[:,0]*vc[:,0] + fNormalV[:,1]*vc[:,1] + fNormalV[:,2]*vc[:,2]
+			#~ pdb.set_trace()
+			NI = fNormalV - 2.0*vc*cosTheta[:,scipy.newaxis]
+			NI = scipy.where(scipy.isfinite(NI), NI, 0.0)
+			
+			# calc vote weights
+			gV = mag2(fBaryV - v)
+			WI = (fAreaV / AMax) * scipy.exp(-gV/sigma)
+			
+			# form covariance matrix V, and do eigendecomp 
+			V[:,:] = 0.0
+			WI = WI / WI.sum()	# normalise weights to sum to 1
+			for i, n in enumerate( NI ):
+				V += WI[i] * scipy.kron( n, n[:,scipy.newaxis] )
+			
+			try:
+				l, e = eigh( V )
+			except ValueError:
+				print 'WARNING: singular V for vertex', v.ID
+				l = scipy.zeros(3)
+				e = scipy.eye(3)
+			else:
+				l, e = _sortEigDesc( l, e )
+
+			# print vi
+			# print e
+			# print self.vertexNormals.shape
+			self.vertexNormals[vi,:] = e[:,0]
+			
+			# # classify geometry at v
+			# if self.saliencyCoeff == 0.0:
+			# 	v.surfaceType = 'surface'
+			# 	v.normal = vector( e[:,0] )
+			# 	self.surfaceVertices.append( v.id )
+			# else:
+			# 	classifyVertex( v, l, e, self.saliencyCoeff )
+			
+			# 	if v.surfaceType == 'surface':
+			# 		self.surfaceVertices.append( v.id )
+			# 	elif v.surfaceType == 'edge':
+			# 		self.edgeVertices.append( v.id )
+			# 	else:
+			# 		self.NPVertices.append( v.id )
+
+		self.filterVertexNormals()
+		self.hasVertexNormals = 1
+		return
+
+	def filterVertexNormals(self):
+		"""
+		Orient vertex normals to be consistent
+		"""
+		
+		print 'filtering normals...'
+		aligned = scipy.zeros(len(self.v), dtype=bool)
+		front = set([0])
+		aligned[0] = True
+		
+		while front:
+			sys.stdout.write( '\rfront size: '+str(len(front))+' aligned size: '+str(aligned.sum()) )
+			sys.stdout.flush()
+
+			v = front.pop()
+			# get vertices immediately ahead of the front
+			nvs = scipy.array([vid for vid in self.vertices1Ring[v] if not aligned[vid]], dtype=int)
+			# dot product normals to find inverted neighbours
+			d = self.vertexNormals[nvs].dot(self.vertexNormals[v])
+			self.vertexNormals[nvs[d<0.0]] *= -1.0
+			aligned[nvs] = True
+			front = front.union(nvs)
+		
+		return
+
+	def calcBoundingBox( self ):
+		self.boundingBox = scipy.array( [ self.v.min(0), self.v.max(0) ] ).T
+		return self.boundingBox
+	
+	def calcCoM( self ):
+
+		a = self.faceAreas
+		x = self.faceBarycenters
+		self.CoM = ( x * a[:,scipy.newaxis] ).sum(0)/sum(a)
+		return self.CoM
+		
+	def calcNormCoM( self ):
+
+		box = self.boundingBox
+		CoM = self.CoM
+		x = self.faceBarycenters
+		self.normCoM = scipy.array( [( CoM[0] - box[0,0] )/(box[0,1] - box[0,0]),\
+					   ( CoM[1] - box[1,0] )/(box[1,1] - box[1,0]),\
+					   ( CoM[2] - box[2,0] )/(box[2,1] - box[2,0]),\
+						] )	
+		
+		return self.normCoM 
+	
+	def calcPMoments( self ):
+		areas = self.faceAreas
+		v = self.faceBarycenters - self.CoM
+		
+		I11 = ( ( v[:,1]*v[:,1] + v[:,2]*v[:,2] )*areas ).sum()
+		I22 = ( ( v[:,0]*v[:,0] + v[:,2]*v[:,2] )*areas ).sum()
+		I33 = ( ( v[:,1]*v[:,1] + v[:,0]*v[:,0] )*areas ).sum()
+		I12 = -( v[:,0]*v[:,1]*areas ).sum()
+		I13 = -( v[:,0]*v[:,2]*areas ).sum()
+		I23 = -( v[:,1]*v[:,2]*areas ).sum()
+		
+		I = scipy.array( [[I11, I12, I13],[I12, I22, I23],[I13,I23,I33]] )
+		self.I = I
+
+		u,s,vh = svd( I )
+		self.principalMoments = s.real[::-1]
+		self.principalAxes = scipy.fliplr(u.real)
+		
+		#~ print ' %(one)8.6f\n %(two)8.6f\n %(three)8.6f\n'\
+		#~ %{'one':self.principalAxes[2,0], 'two':self.principalAxes[0,1], 'three':self.principalAxes[1,2]}
+		
+		
+		if self.principalAxes[2,0] < 0.0:
+			self.principalAxes[:,0] *= -1.0
+		if self.principalAxes[0,1] < 0.0:
+			self.principalAxes[:,1] *= -1.0
+		if self.principalAxes[1,2] < 0.0:
+			self.principalAxes[:,2] *= -1.0
+
+		return self.principalMoments, self.principalAxes
+		
+	def alignPAxes( self ):
+		""" rotate mesh to align pAxes with cartesian axes
+		"""
+		pAxes = self.principalAxes
+		CoM = self.CoM
+		targetCoM = scipy.zeros(3)
+		targetPAxes = scipy.array([[0,1,0],[0,0,1],[1,0,0]], dtype=float)
+		T = alignment.calcAffine( (CoM, pAxes), ( targetCoM, targetPAxes ) )
+		self.transformAffine( scipy.vstack((T,scipy.ones(4))) )
+		return T
+		
+	def transformAffine( self, t ):
+		""" transform mesh vertices by an affine
+		transformation matrix T (shape = (3,4))
+		"""
+		newV = scipy.dot( t, scipy.vstack( (self.v.T, scipy.ones(self.v.shape[0])) ) )[:3,:].T 
+		self.v = newV
+
+	def getBoundaryVertices( self ):
+		""" 
+		Returns the indices and coordinates of vertices on the
+		boundary or boundaries of the mesh. Boundary vertices have 
+		and unequal number of 1-ring vertices to 1-ring faces.
+		"""
+		
+		if self.boundaryVertexInd!=None:
+			return self.boundaryVertexInd, self.v[self.boundaryVertexInd]
+		else:
+			self.set1Ring()
+			
+			print 'finding boundary vertices'
+			boundaryVertexInd = []
+			for vi in xrange(len(self.v)):
+				try:
+					if len(self.vertices1Ring[vi]) != len(self.faces1Ring[vi]):
+						boundaryVertexInd.append( vi )
+				except KeyError:
+					print "WARNING: no neighbours for vertex", vi
+					pass
+			
+			self.boundaryVertexInd = boundaryVertexInd					
+			return self.boundaryVertexInd, self.v[self.boundaryVertexInd]
+
+def mag( x ):
+	return scipy.sqrt((x*x).sum())
+def normalise( x ):
+	return x/scipy.sqrt((x*x).sum())
+
+def mag2( x ):
+	return scipy.sqrt((x*x).sum(1))
+def normalise2( x ):
+	return x/scipy.sqrt((x*x).sum(1))[:,scipy.newaxis]
+
+def _sortEigDesc( l, e ):
+	""" Sorts evalues and vectors in descending order.
+	l is an array of eigenvalues correponding to the eigenvectors in
+	the columns of e
+	"""
+	lSortI = abs(l).argsort()[::-1]
+	lSort = scipy.array( [l[i] for i in lSortI] )
+	eSort = scipy.array( [e[:,i] for i in lSortI] ).T
+	
+	return lSort, eSort
+

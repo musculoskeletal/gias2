@@ -1,0 +1,1 @@
+Library of tools for MAP Client plugins that depend on GIAS2.
