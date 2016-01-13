@@ -20,7 +20,7 @@ from scipy.spatial.distance import pdist, squareform
 try:
 	from mayavi import mlab
 except ImportError:
-	raise Warning('Mayavi not imported, no 3-D visualisation')
+	print('WARNING: Mayavi not imported, no 3-D visualisation')
 
 class mesh_triangulator( object ):
 	
