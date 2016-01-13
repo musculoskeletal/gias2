@@ -15,7 +15,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 import scipy
 from scipy.linalg import inv
 from numpy.linalg import svd, det
-from gias.common import math
+from gias2.common import math
 
 def calcAffineMatrix( scale=None, trans=None, shear=None, rot=None ):
 
