@@ -5,6 +5,8 @@
 *.c
 *~
 notrack/*
+build/*
+dist/*
 src/build/*
 src/dist/*
 src/gias2.egg-info/*
