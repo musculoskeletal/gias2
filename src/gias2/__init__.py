@@ -14,7 +14,7 @@ from gias2.fieldwork.field.tools import fitting_tools, mesh_fitter
 from gias2.image_analysis import fw_segmentation_tools, image_tools
 from gias2.io import cmissio
 from gias2.learning import PCA, PCA_fitting, kernelregression, ols
-from gias2.mesh import vtktools, simplemesh, inp, tetgenoutput, csgtools
+from gias2.mesh import vtktools, simplemesh, inp, tetgenoutput
 from gias2.musculoskeletal import fw_model_landmarks, model_alignment,\
     model_alignment_multi, pelvis_hjc_estimation, fw_femur_measurements,\
     fw_pelvis_measurements
