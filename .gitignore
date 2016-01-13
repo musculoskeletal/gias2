@@ -5,5 +5,8 @@
 *.c
 *~
 notrack/*
+src/build/*
+src/dist/*
+src/gias2.egg-info/*
 src/gias2/examples/outputs/*
 src/gias2/examples/fieldwork/fit_whole_pelvis_data/output/*
