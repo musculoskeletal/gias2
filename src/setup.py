@@ -9,12 +9,14 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 """
 
 #!/usr/bin/env python
-from setuptools import setup
+from setuptools import setup, find_packages
 
 def readme():
      with open('readme.md', 'r') as f:
           return f.read()
 
+#=============================================================================#
+name = 'gias2'
 version = '0.1'
 install_requires = [
      'numpy',
@@ -22,21 +24,30 @@ install_requires = [
      'scikit-learn',
      'matplotlib'
 ]
+description = 'A library of musculoskeletal modelling tools.'
+author = 'MAP Client Developers'
+url = 'https://bitbucket.org/jangle/gias2'
+keywords = 'musculoskeletal map mapclient'
+license = 'mozilla'
+classifiers = [
+     'Development Status :: 3 - Alpha',
+     'License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)',
+     'Programming Language :: Python :: 2.7',
+     'Topic :: Scientific/Engineering :: Medical Science Apps.'
+]
 
+#=============================================================================#
 setup(
-     name='gias2',
+     name=name,
      version=version,
-     description='A library of musculoskeletal modelling tools.',
+     description=description,
      long_description=readme(),
-     author='MAP Client Developers',
-     url='https://bitbucket.org/jangle/gias2',
+     packages=find_packages(where="src"),
+     package_dir={"": "src"},
+     classifiers=classifiers,
+     author=author,
+     url=url,
      install_requires=install_requires,
-     keywords='musculoskeletal map mapclient',
-     license='mozilla',
-     classifiers=[
-          'Development Status :: 3 - Alpha',
-          'License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)',
-          'Programming Language :: Python :: 2.7',
-          'Topic :: Scientific/Engineering :: Medical Science Apps.'
-     ],
+     keywords=keywords,
+     license=license,  
 )
