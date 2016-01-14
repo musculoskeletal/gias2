@@ -19,9 +19,9 @@ def readme():
 name = 'gias2'
 version = '0.1'
 install_requires = [
-     'numpy',
-     'scipy',
-     'scikit-learn',
+     'numpy >= 1.6.1',
+     'scipy >= 0.9',
+     'scikit-learn == 0.17',
      'matplotlib'
 ]
 description = 'A library of musculoskeletal modelling tools.'
