@@ -37,17 +37,18 @@ classifiers = [
 ]
 
 #=============================================================================#
-setup(
-     name=name,
-     version=version,
-     description=description,
-     long_description=readme(),
-     packages=find_packages(where="src"),
-     package_dir={"": "src"},
-     classifiers=classifiers,
-     author=author,
-     url=url,
-     install_requires=install_requires,
-     keywords=keywords,
-     license=license,  
-)
+if __name__ == '__main__':
+     setup(
+          name=name,
+          version=version,
+          description=description,
+          long_description=readme(),
+          packages=find_packages(where="src"),
+          package_dir={"": "src"},
+          classifiers=classifiers,
+          author=author,
+          url=url,
+          install_requires=install_requires,
+          keywords=keywords,
+          license=license,  
+     )
