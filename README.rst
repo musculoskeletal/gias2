@@ -13,6 +13,7 @@ Dependencies:
 
 Optional dependencies:
 ----------------------
+* VTK and VTK Python bindings (for mesh processing)
 * Mayavi (for 3-D visualisation, requires Numpy, VTK, wxPython, configobj)
 * PyCSG (for generating constructive solids)
 * pydicom (for reading DICOM images)
