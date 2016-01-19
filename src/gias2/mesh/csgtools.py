@@ -19,6 +19,43 @@ from gias2.mesh import vtktools
 from gias2.common import math
 vtk = vtktools.vtk
 
+class CSG_Pos(object):
+    """ A very simple implementation of PyCSG's Pos class
+    """
+    def __init__(self, x, y, z):
+        self.x = x
+        self.y = y
+        self.z = z
+
+def make_csg_vertex( x, y, z):
+    pos = CSG_Pos(x, y, z)
+    return geom.Vertex(pos)
+
+def poly_2_csgeom(vertices, faces):
+    """
+    Create a CSG geometry from a list of vertices and faces.
+
+    Inputs:
+    vertices: an nx3 array of vertices coordinates
+    faces: an mxp array of faces
+
+    Returns:
+    geom: a csg geometry instance
+    """
+
+    # instantiate csg vertices for all vertices
+    csg_vertices = [make_csg_vertex(v[0],v[1],v[2]) for v in vertices]
+    
+    # instantiate csg polygons for all faces
+    csg_polygons = []
+    for f in faces:
+        face_vertices = [csg_vertices[i] for i in f]
+        p = geom.Polygon(face_vertices)
+        csg_polygons.append(p)
+
+    # create csg geom
+    return CSG.fromPolygons(csg_polygons)
+
 def get_csg_polys(csgeom):
     """
     return the vertex coordinates and polygon vertex indices
