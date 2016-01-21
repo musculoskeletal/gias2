@@ -12,24 +12,25 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
 
+import math
 import numpy as np
 from csg.core import CSG
 from csg import geom
 from gias2.mesh import vtktools
-from gias2.common import math
+from gias2.common import math as gmath
 vtk = vtktools.vtk
 
-class CSG_Pos(object):
-    """ A very simple implementation of PyCSG's Pos class
-    """
-    def __init__(self, x, y, z):
-        self.x = x
-        self.y = y
-        self.z = z
+# class CSG_Pos(object):
+#     """ A very simple implementation of PyCSG's Pos class
+#     """
+#     def __init__(self, x, y, z):
+#         self.x = x
+#         self.y = y
+#         self.z = z
 
-def make_csg_vertex( x, y, z):
-    pos = CSG_Pos(x, y, z)
-    return geom.Vertex(pos)
+# def make_csg_vertex( x, y, z):
+#     pos = CSG_Pos(x, y, z)
+#     return geom.Vertex(pos)
 
 def poly_2_csgeom(vertices, faces):
     """
@@ -44,7 +45,7 @@ def poly_2_csgeom(vertices, faces):
     """
 
     # instantiate csg vertices for all vertices
-    csg_vertices = [make_csg_vertex(v[0],v[1],v[2]) for v in vertices]
+    csg_vertices = [geom.Vertex(v) for v in vertices]
     
     # instantiate csg polygons for all faces
     csg_polygons = []
@@ -93,11 +94,13 @@ def get_csg_triangles(csgeom, clean=False, normals=False):
     face normalse if normals=True, else last return variable is None.
     """
     vertices, faces = get_csg_polys(csgeom)
+    if len(vertices)==0:
+        raise ValueError('no polygons in geometry')
     return vtktools.polygons2Tri(vertices, faces, clean, normals)
 
 def cup(centre, normal, ri, ro):
     centre = np.array(centre)
-    normal = math.norm(np.array(normal))
+    normal = gmath.norm(np.array(normal))
 
     # create outer sphere
     sphere_out = CSG.sphere(center=list(centre), radius=ro)
@@ -120,3 +123,63 @@ def cup(centre, normal, ri, ro):
     return cup
     
 
+def cylinder_var_radius(**kwargs):
+    """ Returns a cylinder with linearly changing radius between the two ends.
+        
+        Kwargs:
+            start (list): Start of cylinder, default [0, -1, 0].
+            
+            end (list): End of cylinder, default [0, 1, 0].
+            
+            startr (float): Radius of cylinder at the start, default 1.0.
+            
+            enr (float): Radius of cylinder at the end, default 1.0.
+            
+            slices (int): Number of slices, default 16.
+    """
+    s = kwargs.get('start', geom.Vector(0.0, -1.0, 0.0))
+    e = kwargs.get('end', geom.Vector(0.0, 1.0, 0.0))
+    if isinstance(s, list):
+        s = geom.Vector(*s)
+    if isinstance(e, list):
+        e = geom.Vector(*e)
+    sr = kwargs.get('startr', 1.0)
+    er = kwargs.get('endr', 1.0)
+    slices = kwargs.get('slices', 16)
+    ray = e.minus(s)
+    
+    axisZ = ray.unit()
+    isY = (math.fabs(axisZ.y) > 0.5)
+    axisX = geom.Vector(float(isY), float(not isY), 0).cross(axisZ).unit()
+    axisY = axisX.cross(axisZ).unit()
+    start = geom.Vertex(s, axisZ.negated())
+    end = geom.Vertex(e, axisZ.unit())
+    polygons = []
+    
+    def point(stack, slice, normalBlend):
+        angle = slice * math.pi * 2.0
+        out = axisX.times(math.cos(angle)).plus(
+            axisY.times(math.sin(angle)))
+        if stack==0:
+            r = sr
+        else:
+            r = er
+        pos = s.plus(ray.times(stack)).plus(out.times(r))
+        normal = out.times(1.0 - math.fabs(normalBlend)).plus(
+            axisZ.times(normalBlend))
+        return geom.Vertex(pos, normal)
+        
+    for i in range(0, slices):
+        t0 = i / float(slices)
+        t1 = (i + 1) / float(slices)
+        # start side triangle
+        polygons.append(geom.Polygon([start, point(0., t0, -1.), 
+                                      point(0., t1, -1.)]))
+        # round side quad
+        polygons.append(geom.Polygon([point(0., t1, 0.), point(0., t0, 0.),
+                                      point(1., t0, 0.), point(1., t1, 0.)]))
+        # end side triangle
+        polygons.append(geom.Polygon([end, point(1., t1, 1.), 
+                                      point(1., t0, 1.)]))
+    
+    return CSG.fromPolygons(polygons)
