@@ -282,7 +282,7 @@ def transformRotateAboutAxisOld(x, theta, p0, p1, p2=None, p3=None):
 
 	return x2
 
-def transformRotateAboutAxis(x, theta, p0, p1):
+def transformRotateAboutAxis(x, theta, p0, p1, retmat=False):
 	"""
 	Rotate point x by angle theta about an axis defined by 2 points p0, p1.
 	http://paulbourke.net/geometry/rotate/
@@ -314,7 +314,23 @@ def transformRotateAboutAxis(x, theta, p0, p1):
 				 	 d21*p[0] + d22*p[1] + d23*p[2],
 				 	 d31*p[0] + d32*p[1] + d33*p[2]])
 
-	return q.T + p0
+	if retmat:
+		M1 = scipy.array([
+				[1,0,0,-p0[0]],
+				[0,1,0,-p0[1]],
+				[0,0,1,-p0[2]],
+				[0,0,0,1],
+			])
+		M2 = scipy.array([
+				[d11,d12,d13,p0[0]],
+				[d21,d22,d23,p0[1]],
+				[d31,d32,d33,p0[2]],
+				[0,0,0,1],
+			])
+		M = M2.dot(M1)
+		return q.T + p0, M
+	else:
+		return q.T + p0
 
 
 def transformRotateAboutCartCS(x, r, o, v1, v2, v3):

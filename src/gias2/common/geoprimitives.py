@@ -428,6 +428,15 @@ class Plane( object ):
 		"""
 		return angle(self.N, p.N)
 
+	def angleToVector(self, v):
+		""" calcualte the angle between this plane and a vector v
+		"""
+		# project vector onto plane
+		v_proj = self.project2Plane3D(v)
+
+		# calc angle between v and v_proj
+		return angle(v_proj, v)
+
 	def transformAffine(self, t):
 		self.O = scipy.dot(
 					t,
