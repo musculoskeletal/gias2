@@ -1898,21 +1898,14 @@ class geometric_field:
 		self.flatten_ensemble_field_function()
 		
 		if exactSearch:
-			print 'WARNING: exactSearch does NOT work properly'
-			PXi, PX, closestDist = self.find_closest_material_points( points )
-			#~ pdb.set_trace()
-			NX = [ self.evaluate_normal_in_mesh( None, elemXi={Xi[0]:Xi[1]} ).squeeze() for Xi in PXi ]
+			GFXi, GFX, closestDist = self.find_closest_material_points( points, initGD=[80,80] )
+			NX = [ self.evaluate_normal_in_mesh( None, elemXi={Xi[0]:Xi[1]} ).squeeze() for Xi in GFXi ]
 			NX = scipy.array(NX)
+			PX = points - GFX
 		else:
 			# evaluate points on surface
 			GFXi, GFX = self.discretiseAllElementsRegularGeoD( GD, geoCoords=True, unpack=False )
-			
 			GFX = scipy.vstack( GFX )
-			#~ if self.ensemble_field_function.is_flat():
-				#~ GFX = scipy.vstack( GFX )
-			#~ else:
-				#~ GFX = scipy.vstack( [scipy.vstack(c) for c in GFX] )	
-	
 			GFElemXi = dict( zip( scipy.sort(self.ensemble_field_function.mesh.elements.keys()), GFXi ) )
 			
 			# evaluate normals of these points
