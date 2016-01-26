@@ -46,7 +46,8 @@ LHLandmarkNodes = {'LASIS': 464,
 					'LPAN': 289,
 					}
 
-LHAcetabulumElements = [38,39,40,41,42]
+# LHAcetabulumElements = [38,39,40,41,42]
+LHAcetabulumElements = [36,37,38,39,40,41,42]
 hemiPelvisAcetabulumElements = [36,35,38,39,40,41,42]
 hemiPelvisAcetabulumSurroundElements = [64,66,44,43,27,28,29,26,24,25,23,20,21,16,31,30,33,47,34,72,65,14,13,15]
 femurHeadElements = [0,]
