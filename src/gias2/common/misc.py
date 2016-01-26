@@ -12,6 +12,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
 
+import sys
 import numpy as np
 
 def cartesian(arrays, out=None):
@@ -63,3 +64,26 @@ def cartesian(arrays, out=None):
         for j in xrange(1, arrays[0].size):
             out[j*m:(j+1)*m,1:] = out[0:m,1:]
     return out
+
+class ProgressOutput:
+    
+    def __init__(self, task, total):
+        self.task = task
+        self.total = total
+        self.value = 0
+        
+    def progress(self, value, comment=''):
+        self.value = value        
+        percent = int(100.*value/self.total)
+        outcomment = ''
+        if len(comment)>0:
+            outcomment = ": {}".format(comment)
+        sys.stdout.write("Progress: {} : {:2d}\% {}  \r".format(self.task, percent, outcomment))
+        sys.stdout.flush()
+        
+    def output(self, comment=''):
+        outcomment = ''
+        if len(comment)>0:
+            outcomment = ": {}".format(comment)
+        sys.stdout.write("\nOutput: {} {}\n".format(self.task, outcomment))
+        sys.stdout.flush()
