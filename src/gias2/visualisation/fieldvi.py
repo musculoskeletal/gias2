@@ -274,7 +274,7 @@ class Fieldvi(HasTraits):
 		self.onCloseCallback = callback
 
 	def closed(self, info, is_ok):
-		if self.onCloseCallback!=None:
+		if self.onCloseCallback is not None:
 			self.onCloseCallback()
 
 	def addTri( self, name, tri, renderArgs=None ):
@@ -289,7 +289,7 @@ class Fieldvi(HasTraits):
 		self.addTriScalarData( name, 'none', None )
 		self.triList0 = name
 		
-		if renderArgs==None:
+		if renderArgs is None:
 			self.triRenderArgs[name] = {}
 		else:
 			self.triRenderArgs[name] = renderArgs
@@ -308,14 +308,14 @@ class Fieldvi(HasTraits):
 		self.geometricFields[name] = G
 		self.GFEvaluators[name] = evaluator
 		self.GFScalarData[name] = []
-		if GD==None:
+		if GD is None:
 			self.GFDSpecific[name] = self.GFD
 		else:
 			self.GFDSpecific[name] = GD
 		self.addGeometricFieldScalarData( name, 'none', None )
 		self.GFList0 = name
 		
-		if renderArgs==None:
+		if renderArgs is None:
 			self.GFRenderArgs[name] = {}
 		else:
 			self.GFRenderArgs[name] = renderArgs
@@ -340,10 +340,10 @@ class Fieldvi(HasTraits):
 		self.GFScalar = 'custom'
 		
 	def addImageVolume( self, I, name=None, renderArgs=None ):
-		if name==None:
+		if name is None:
 			name = str(self.imageCounter)
 		
-		if renderArgs==None:
+		if renderArgs is None:
 			self.imageRenderArgs[name] = {}
 		else:
 			self.imageRenderArgs[name] = renderArgs
@@ -362,7 +362,7 @@ class Fieldvi(HasTraits):
 			self.PCGeomList.append(name+'::data')
 			
 		self.data[name] = d
-		if renderArgs==None:
+		if renderArgs is None:
 			self.dataRenderArgs[name] = {}
 		else:
 			self.dataRenderArgs[name] = renderArgs
@@ -489,7 +489,7 @@ class Fieldvi(HasTraits):
 			)
 	
 	def imagePlaneSliceIndex( self, sliceIndex=None, plane=0 ):
-		if sliceIndex == None:
+		if sliceIndex is None:
 			return self.sceneObjectImages[self.imageList0].widgets[plane].slice_index
 		else:
 			self.sceneObjectImages[self.imageList0].widgets[plane].slice_index=sliceIndex
@@ -556,7 +556,7 @@ class Fieldvi(HasTraits):
 		d = self.data[name]
 		s = self.dataScalar.get(name)
 		renderArgs = self.dataRenderArgs[name]
-		if s!=None:
+		if s is not None:
 			#~ self.sceneObjectData[name] = self.scene.mlab.points3d( d[:,0], d[:,1], d[:,2], s,
 															   #~ mode='point', scale_factor=0.5,
 															   #~ scale_mode='none',
@@ -663,7 +663,7 @@ class Fieldvi(HasTraits):
 		scalar = self.triScalarData.get(name).get(self.triScalarList0)
 		print 'scalar:', scalar
 		try:
-			if scalar==None:
+			if scalar is None:
 				if 'color' not in renderArgs:
 					color = self.defaultColor
 				else:
@@ -687,10 +687,10 @@ class Fieldvi(HasTraits):
 		
 	def updateGeometricField( self, name, params=None ):
 		
-		if self.sceneObjectGF.get(name) == None:
+		if self.sceneObjectGF.get(name) is None:
 			self._drawGeometricField( name )
 		else:
-			if params == None:
+			if params is None:
 				params = self.geometricFields[name].get_field_parameters().ravel()
 	
 			V = self.GFEvaluators[name]( params )
@@ -702,7 +702,7 @@ class Fieldvi(HasTraits):
 			scalar = self._getGFScalarData(self.GFScalarList0, name)
 			renderArgs = self.GFRenderArgs[name]
 			
-			if scalar==None:
+			if scalar is None:
 				if 'color' not in renderArgs:
 					color = self.defaultColor
 				else:
@@ -740,11 +740,11 @@ class Fieldvi(HasTraits):
 		
 		# render args
 		renderArgs = self.triRenderArgs.get( name )
-		if renderArgs == None:
+		if renderArgs is None:
 			renderArgs = {}
 			
 		# draw
-		if S==None:
+		if S is None:
 			if 'color' not in renderArgs:
 				renderArgs['color'] = self.defaultColor
 			self.sceneObjectTri[name] = self.scene.mlab.triangular_mesh( P[0], P[1], P[2], T, name=name, **renderArgs )
@@ -791,13 +791,13 @@ class Fieldvi(HasTraits):
 	def hideElementBoundaries( self, name ):
 		for b in self.bCurves[name]:
 			SOb = self.sceneObjectGF.get(b)
-			if SOb!=None:
+			if SOb is not None:
 				SOb.visible=False
 		
 	def showElementBoundaries( self, name ):
 		for b in self.bCurves[name]:
 			SOb = self.sceneObjectGF.get(b)
-			if SOb!=None:
+			if SOb is not None:
 				SOb.visible=True
 		
 	
@@ -837,11 +837,11 @@ class Fieldvi(HasTraits):
 				P, T, self.uniqueVertexIndices, vertMap = g.triangulator._mergePoints2( P.T )
 				P = P.T
 				
-				if S!=None:
+				if S is not None:
 					if S.shape[0]!=P.shape[1]:
 						S = S[self.uniqueVertexIndices]
 			
-			if (S==None) or (S=='none'):
+			if (S is None) or (S=='none'):
 				print 'S = None'
 				self.sceneObjectGF[name] = self.scene.mlab.triangular_mesh( P[0], P[1], P[2], T, name=name, **renderArgs )
 			else:
@@ -978,11 +978,11 @@ class Fieldvi(HasTraits):
 		
 		# if extra parameters not provided, use the current
 		azimuth, e, d, f = self.scene.mlab.view()
-		if elevation==None:
+		if elevation is None:
 			elevation = e
-		if distance==None:
+		if distance is None:
 			distance = d
-		if focalPoint==None:
+		if focalPoint is None:
 			focalPoint = f
 		
 		azimuths = azimuth + scipy.linspace(0.0,360.0,nAngles)
@@ -1071,7 +1071,7 @@ class Fieldvi(HasTraits):
 		self.restoreView()
 
 	def setViewFocalPoint( self, f ):
-		if self.view==None:
+		if self.view is None:
 			self.storeView()
 			
 		viewNew = list( self.view )

@@ -48,7 +48,7 @@ def load_geometric_field( filename, ensFilename=None, meshFilename=None, path=No
 	mesh_filename: [str] mesh filename (.mesh).
 	"""
 	
-	if path!=None:
+	if path is not None:
 		filename = os.path.join(path, filename)
 	
 	try:
@@ -321,7 +321,7 @@ class geometric_field:
 	#==================================================================#
 	def get_field_parameters( self ):
 		
-		if self.field_parameters != None:
+		if self.field_parameters is not None:
 			return self.field_parameters.copy()
 		else:
 			print "no field parameters set"
@@ -954,7 +954,7 @@ class geometric_field:
 		calculated
 		"""
 		
-		if elemXi==None:
+		if elemXi is None:
 			d10 = []
 			d01 = []
 			for p in self.field_parameters:
@@ -1174,7 +1174,7 @@ class geometric_field:
 		if verbose:
 			print 'searching for closest material point for %i points'%(len(dataPoints))
 		
-		if initGD == None:
+		if initGD is None:
 			initGD = scipy.ones(self.ensemble_field_function.dimensions, dtype=int)*40
 		
 		# initial scattering of EPs
@@ -1269,7 +1269,7 @@ class geometric_field:
 		mesh at a factor of d
 		"""
 		
-		if element!=None:
+		if element is not None:
 			ep = scipy.array( [self.ensemble_field_function.evaluate_field_in_element(element, d, p) for p in self.field_parameters] ).T
 			elem = self.ensemble_field_function.mesh.elements[element]
 			if elem.is_element:
@@ -1372,7 +1372,7 @@ class geometric_field:
 			self._draw_spline( s, spline_density )
 		
 		# draw data cloud (if provided )
-		if data != None:
+		if data is not None:
 			if data.shape[0]==3:
 				mlab.points3d( data[0], data[1], data[2], mode='point', color=(0,1,0), figure=f )
 			elif data.shape[0]==4:
@@ -1395,7 +1395,7 @@ class geometric_field:
 		# points = E.T
 		
 		points = scipy.transpose(points)
-		if scene==None:
+		if scene is None:
 			line = mlab.plot3d( points[0], points[1], points[2], **kwargs )
 		else:
 			line = scene.mlab.plot3d( points[0], points[1], points[2], **kwargs )
@@ -1406,7 +1406,7 @@ class geometric_field:
 	def _draw_surface( self, density, scalar=None, figure=None, name=None, lim=[None, None] ):
 		""" using triangulate to draw the interpolated surface
 		"""
-		if self.field_parameters == None:
+		if self.field_parameters is None:
 			print 'no field parameters'
 			return
 		else:
@@ -1416,7 +1416,7 @@ class geometric_field:
 	#==================================================================#
 	def _draw_surface_curvature( self, field_eval_density, curvature, name, figure=None ):
 		
-		if self.field_parameters == None:
+		if self.field_parameters is None:
 			print 'no field parameters'
 			return
 		else:
@@ -1429,7 +1429,7 @@ class geometric_field:
 	#==================================================================#
 	def _draw_surface_curvature_binned( self, field_eval_density, curvature, name, bins, cMin, cMax, fig=None ):
 		
-		if self.field_parameters == None:
+		if self.field_parameters is None:
 			print 'no field parameters'
 			return
 		else:
@@ -1444,7 +1444,7 @@ class geometric_field:
 				return self._draw_surface( field_eval_density, scalar=binInd, name=name, figure=fig, lim=(1.0,len(bins)-1) )
 				
 	#==================================================================#
-	def _plot_points( self, glyph = 'sphere', label = None, scale=0.5, figure=None ):
+	def _plot_points( self, glyph='sphere', label=None, scale=0.5, figure=None ):
 		""" uses mayavi points3d to show the positions of all points 
 		(with labels if label is true)
 		
@@ -1640,7 +1640,7 @@ class geometric_field:
 		
 		# evaluate whole mesh
 		self.ensemble_field_function.set_parameters( self.field_parameters[0] )
-		if subMeshes==None:
+		if subMeshes is None:
 			subMeshes = self.ensemble_field_function.mesh.elements.keys()
 			subMeshes.sort()
 		
@@ -1728,7 +1728,7 @@ class geometric_field:
 		except KeyError:
 			raise ValueError, 'subfield '+str(elemI)+' not found'
 		else:
-			if name==None:
+			if name is None:
 				name = self.name+'_subfield_'+str(elemI)
 			newGF = geometric_field( name, self.dimensions, ensemble_field_function=subfield )
 			newParamsI = []
@@ -1926,7 +1926,7 @@ class geometric_field:
 		mask = (dot_ < 0.0)
 		
 		# outside points within tolerance
-		if maxOutDist!=None:
+		if maxOutDist is not None:
 			if maxOutDist > 0.0:
 				# find all points within maxOutDist of closest GFX
 				mask = mask | (closestDist < maxOutDist)
@@ -1945,7 +1945,7 @@ class geometric_field:
 		
 		# sample surface to get bounding box
 		s = self.evaluate_geometric_field( [15,15] ).T
-		if maxOutDist==None:
+		if maxOutDist is None:
 			bboxMin = s.min(0)
 			bboxMax = s.max(0)
 		else:
@@ -1979,7 +1979,7 @@ class geometric_point( object ):
         self.ensemble_point_number = None
 
         self.dimensions = dimensions
-        if field_parameters != None:
+        if field_parameters is not None:
             if len(field_parameters) != dimensions:
                 raise ValueError( 'ERROR: geometric_point.__init__: dimension and number of coordinates mismatch' )
             else:
@@ -2114,7 +2114,7 @@ def makeGeometricFieldEvaluator( G, evalD ):
 		# get element
 		element = f.mesh.elements[ elementNumber ]
 		# calculate basis values
-		if basisValues.get( element.type ) == None:
+		if basisValues.get( element.type ) is None:
 			if isinstance( evalD, float):
 				evalGrid = G.discretiseElementRegularGeoD( elementNumber, evalD )[0]
 			else:
@@ -2161,10 +2161,10 @@ def makeGeometricFieldEvaluatorSparse( G, evalD, epIndex=None, epXi=None, matPoi
 	if not f.is_flat():
 		f = f.flatten()[0]
 	
-	if matPoints!=None:
+	if matPoints is not None:
 		epMode = 3
 		nEPs= len(matPoints)
-	elif evalD==None:
+	elif evalD is None:
 		ep = epXi
 		nEPs = scipy.sum( [e.shape[0] for e in ep] )
 		#~ nEPs = scipy.sum( [e.shape[0] for e in ep.values()] )
@@ -2188,7 +2188,7 @@ def makeGeometricFieldEvaluatorSparse( G, evalD, epIndex=None, epXi=None, matPoi
 			element = f.mesh.elements[elem]
 			b = f.basis[element.type].eval( xi )
 			ensNodes = elemEnsNodes.get(elem)
-			if ensNodes==None:
+			if ensNodes is None:
 				emap = f.mapper._element_to_ensemble_map[elem]
 				ensNodes = [emap[k][0][0] for k in emap.keys()]
 				elemEnsNodes[elem] = ensNodes
@@ -2212,13 +2212,13 @@ def makeGeometricFieldEvaluatorSparse( G, evalD, epIndex=None, epXi=None, matPoi
 				
 				# dictionary epXi
 				#~ evalGrid = ep.get(ei)
-				#~ if evalGrid == None:
+				#~ if evalGrid is None:
 					#~ continue
 				#~ else:
 					#~ b = f.basis[element.type].eval( evalGrid.T ).T # basis values
 			elif epMode==2:
 				# regular xi discretisation
-				if basisValues.get( element.type ) == None:
+				if basisValues.get( element.type ) is None:
 					evalGrid = element.generate_eval_grid( evalD ).squeeze()
 					basisValues[element.type] = f.basis[element.type].eval( evalGrid.T ).T 
 				
@@ -2236,7 +2236,7 @@ def makeGeometricFieldEvaluatorSparse( G, evalD, epIndex=None, epXi=None, matPoi
 		
 		# if epIndex is defined, remove rows not defined in epIndex
 		#~ pdb.set_trace()
-		if epIndex != None:
+		if epIndex is not None:
 			A = A[epIndex,:]
 	
 	# sparsify A
@@ -2310,7 +2310,7 @@ def makeGeometricFieldDerivativesEvaluatorSparse( G, evalD, dim=3, epIndex=None,
 	f = f0.flatten()[0]
 	G.ensemble_field_function = f
 	
-	if evalD==None:
+	if evalD is None:
 		ep = epXi
 		nEPs = scipy.sum( [e.shape[0] for e in ep] )
 		epMode = 1
@@ -2340,7 +2340,7 @@ def makeGeometricFieldDerivativesEvaluatorSparse( G, evalD, dim=3, epIndex=None,
 			evalGrid = ep[ei]
 			b = f.basis[element.type].eval_derivatives( evalGrid.T, None )
 		elif epMode==2:
-			if basisValues.get( element.type ) == None:
+			if basisValues.get( element.type ) is None:
 				evalGrid = element.generate_eval_grid( evalD )
 				basisValues[element.type] = f.basis[element.type].eval_derivatives( evalGrid.T, None )
 			
@@ -2357,7 +2357,7 @@ def makeGeometricFieldDerivativesEvaluatorSparse( G, evalD, dim=3, epIndex=None,
 				
 		row += b.shape[2]
 	
-	if epIndex != None:
+	if epIndex is not None:
 		AStacked = []
 		for a in A:
 			AStacked.append( a[:,epIndex] )

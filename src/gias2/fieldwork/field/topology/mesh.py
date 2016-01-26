@@ -20,7 +20,7 @@ from gias2.fieldwork.field.topology import element_types
 
 def load_mesh( filename, path=None ):
 	
-	if path!=None:
+	if path is not None:
 		filename = os.path.join(path, filename)
 	
 	if filename[-5:] != '.mesh':

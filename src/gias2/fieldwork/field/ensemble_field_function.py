@@ -28,7 +28,7 @@ from gias2.fieldwork.field import mapper
 
 def load_ensemble( filename, meshFilename=None, path=None ):
 	
-	if path!=None:
+	if path is not None:
 		filename = os.path.join(path, filename)
 
 	try:
@@ -338,12 +338,12 @@ class ensemble_field_function:
 		
 		if element.is_element:
 			n = self.mesh.add_element( element ) 
-			if n == None:
+			if n is None:
 				print 'ERROR: ensemble_field_function.add_element: unable to add element to mesh'
 				return
 		else:
 			n = self._add_subfield( element )
-			if n == None:
+			if n is None:
 				print 'ERROR: ensemble_field_function.add_element: unable to add subfield to mesh'
 				return
 					
@@ -362,7 +362,7 @@ class ensemble_field_function:
 		
 			if element:
 				n = self.mesh.add_element( element )
-				if n == None:
+				if n is None:
 					print 'ERROR: ensemble_field_function.create_element: unable to add element to mesh'
 					return
 				n_all.append(n)
@@ -678,7 +678,7 @@ class ensemble_field_function:
 			
 		f_new.mapper.set_custom_ensemble_ordering( custom_map )
 		
-		if self.parameters != None:
+		if self.parameters is not None:
 			# new_params = scipy.zeros((f_new.mapper.get_number_of_ensemble_points(), self.parameters.shape[1]), dtype=float)
 			new_params = scipy.zeros_like(self.parameters, dtype=float)
 			for i_new, i_old in custom_map.items():
@@ -710,7 +710,7 @@ class ensemble_field_function:
 		
 		element_parameters = self.mapper.get_element_parameters( element, self.parameters )
 		
-		if element_parameters == None:
+		if element_parameters is None:
 			print 'ERROR: ensemble_field_function.evaluate_field_at_element_point: unable to get element parameters from mapper'
 			return None
 		else:
@@ -744,11 +744,11 @@ class ensemble_field_function:
 		ensemble point. If parameters is not passed, will look to see if
 		parameters have been set. If not, raises error.
 		"""
-		if parameters != None:
+		if parameters is not None:
 			self.set_parameters( parameters )
 		
 		# check that there are parameters
-		if self.parameters == None:
+		if self.parameters is None:
 			raise RuntimeError, 'no parameters passed or set'
 		
 		# check for right number of density values
@@ -833,11 +833,11 @@ class ensemble_field_function:
 		ensemble point. If parameters is not passed, will look to see if
 		parameters have been set. If not, raises error.
 		"""
-		if parameters != None:
+		if parameters is not None:
 			self.set_parameters( parameters )
 		
 		# check that there are parameters
-		if self.parameters == None:
+		if self.parameters is None:
 			raise RuntimeError, 'no parameters passed or set'
 		
 		# check for right number of density values
@@ -895,11 +895,11 @@ class ensemble_field_function:
 	def evaluate_field_in_element( self, element_number, density, parameters=None, derivs=None, unpack=True ):
 		""" evaluates the field in an element defined by element_number
 		"""
-		if parameters != None:
+		if parameters is not None:
 			self.set_parameters( parameters )
 		
 		# check that there are parameters
-		if self.parameters == None:
+		if self.parameters is None:
 			raise RuntimeError, 'no parameters passed or set'
 		
 		# check for right number of density values
@@ -946,11 +946,11 @@ class ensemble_field_function:
 		if derivs = -1, evaluates all derivatives
 		derivative tuples: ( order, direction ), direction=3 for cross
 		"""
-		if parameters != None:
+		if parameters is not None:
 			self.set_parameters( parameters )
 		
 		# check that there are parameters
-		if self.parameters == None:
+		if self.parameters is None:
 			raise RuntimeError, 'no parameters passed or set'
 			
 		try:
@@ -966,7 +966,7 @@ class ensemble_field_function:
 				# if element is local, evaluate using evaluate_field_in_element
 				#~ element_field_values = self._evaluate_element( element.type, element_parameters, xi )
 				element_field_values = self.evaluators[element.type]( self.basis[element.type].eval( xi.T ), element_parameters )
-				if derivs!=None:
+				if derivs is not None:
 					if derivs==-1:
 						element_deriv_basis_values = self.basis[element.type].eval_derivatives( xi.T, None )
 						element_deriv_values = scipy.array( [ self.evaluators[element.type]( b, element_parameters ) for b in element_deriv_basis_values ] )
@@ -1181,7 +1181,7 @@ class element_point_evaluator:
 		
 		# evaluate basis function
 		basis_coeff = self.basis.eval( element_coordinates )
-		if basis_coeff != None:
+		if basis_coeff is not None:
 			try:
 				field_value = scipy.dot( basis_coeff, self.parameters )
 				return field_value
