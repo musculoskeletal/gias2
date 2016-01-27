@@ -66,6 +66,16 @@ def cartesian(arrays, out=None):
     return out
 
 class ProgressOutput:
+    """
+    Class for displaying percentage completion of a task.
+
+    Parameters
+    ----------
+    task : string
+        name of the task being performed
+    total : int
+        total number of steps in the task or the maximum value of the task
+    """
     
     def __init__(self, task, total):
         self.task = task
@@ -73,15 +83,34 @@ class ProgressOutput:
         self.value = 0
         
     def progress(self, value, comment=''):
+        """
+        Update the progress one the task.
+
+        Parameters
+        ----------
+        value : int or float
+            current step or value of the task
+        comment : string, optional
+            a message for the current step
+        """
+
         self.value = value        
         percent = int(100.*value/self.total)
         outcomment = ''
         if len(comment)>0:
             outcomment = ": {}".format(comment)
-        sys.stdout.write("Progress: {} : {:2d}\% {}  \r".format(self.task, percent, outcomment))
+        sys.stdout.write("Progress: {} : {:2d}% {}  \r".format(self.task, percent, outcomment))
         sys.stdout.flush()
         
     def output(self, comment=''):
+        """
+        Update the completion of the task.
+
+        Parameters
+        ----------
+        comment : string, optional
+            message to display
+        """
         outcomment = ''
         if len(comment)>0:
             outcomment = ": {}".format(comment)
