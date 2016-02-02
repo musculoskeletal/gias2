@@ -21,8 +21,7 @@ version = '0.1'
 install_requires = [
      'numpy >= 1.6.1',
      'scipy >= 0.9',
-     'scikit-learn == 0.17',
-     'matplotlib'
+     'scikit-learn >= 0.15',
 ]
 description = 'A library of musculoskeletal modelling tools.'
 author = 'MAP Client Developers'

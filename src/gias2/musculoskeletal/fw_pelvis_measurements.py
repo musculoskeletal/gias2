@@ -16,7 +16,6 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 import scipy
 import copy
 import cPickle
-from matplotlib import pyplot as plot
 
 from gias2.common import geoprimitives as FT
 from gias2.registration import alignment_analytic as alignment

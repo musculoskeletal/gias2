@@ -7,6 +7,7 @@
 notrack/*
 build/*
 dist/*
+27-dist/*
 src/build/*
 src/dist/*
 src/gias2.egg-info/*
