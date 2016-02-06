@@ -14,6 +14,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import copy
 import scipy
+from scipy.optimize import fmin
 from gias2.common import geoprimitives
 from gias2.registration import alignment_fitting
 from gias2.registration import alignment_analytic
@@ -109,6 +110,184 @@ def alignMeshParametersProcrustes( gFields, targetGF=None, retTransforms=False )
 		return alignedParams, scipy.array(sizes), Ts
 	else:	
 		return alignedParams, scipy.array(sizes)
+
+def alignModelLandmarksLinScale(gf, landmarks, modelName, weights=1.0, GFParamsCallback=None):
+	"""
+	Rigid transformation plus scaling to register a fieldwork model to its
+	landmarks. Registration is performed in two stages: rigid-body, then
+	rigid-body plus isotropic scaling.
+
+	Inputs
+	------
+	gf : geometric_field instance
+		The model to be registered
+	landmarks : list of 2-tuples
+		A list of tuples [(landmark name, landmark coords),...]
+	modelName : string
+		The name of the fieldwork model, e.g. pelvis
+	weights : float or list of floats [optional]
+		The weighting for each landmark. If a float, then all landmarks will
+		have the same weighting.
+	GFParamsCallback : function [optional]
+		If defined, function is called after each registration stage with
+
+	Returns
+	-------
+	sourceGF : geometric_field instance
+		The registered model
+	SSE : tuple
+		The sum of squared errors from each stage of the registration
+	xOpt2 : 1-d array
+		The optimal transform vector
+	"""
+
+	##############
+	sourceGF = copy.deepcopy(gf)
+	CoM0 = sourceGF.calc_CoM()
+	p0 = sourceGF.get_field_parameters()[:,:,0].T 
+	targetLandmarks = []
+	ldObjs = []
+	for ldName, ldTarg in landmarks:
+		targetLandmarks.append(ldTarg)
+		evaluator = fw_model_landmarks.makeLandmarkEvaluator(
+						modelName+'-'+ldName, sourceGF
+						)
+		ldObjs.append(_makeLandmarkObj(ldTarg, evaluator))
+
+	# rigid reg obj
+	def obj1(x):
+		pT = transform3D.transformRigid3DAboutP(
+				p0, x, CoM0
+				).T
+		se = scipy.array([f(pT) for f in ldObjs])
+		sse = (se*weights).sum()
+		return sse
+
+	# rigid + iso scale reg obj
+	def obj2(x):
+		pT = transform3D.transformRigidScale3DAboutP(
+				p0, x, CoM0
+				).T
+		se = scipy.array([f(pT) for f in ldObjs])
+		sse = (se*weights).sum()
+		return sse
+
+	P0 = gf.get_field_parameters()
+	n0 = ldObjs[0](P0)
+	x01 = scipy.hstack([targetLandmarks[0] - n0, 0, 0, 0])
+	
+	# rigid reg
+	xOpt1  = fmin(obj1, x01,ftol=1e-6)
+	sse1 = obj1(xOpt1)
+	pT = transform3D.transformRigid3DAboutP(
+				p0, xOpt1, CoM0
+				).T[:,:,scipy.newaxis]
+	GFParamsCallback(pT)
+	# rigid + isotropic scale
+	x02 = scipy.hstack([xOpt1, 1.0])
+	xOpt2  = fmin(obj2, x02, ftol=1e-6)
+	sse2= obj2(xOpt2)
+	pT = transform3D.transformRigidScale3DAboutP(
+				p0, xOpt2, CoM0
+				).T[:,:,scipy.newaxis]
+	GFParamsCallback(pT)
+	# rigid + orthogonal scale
+	# not implemented
+
+	sourceGF.transformRigidScaleRotateAboutP(xOpt2, CoM0)
+
+	return sourceGF, (sse1, sse2), xOpt2 
+
+def alignModelLandmarksPC(gf, landmarks, modelName, pc, pcs, weights=1.0,
+	GFParamsCallback=None, mw0=1.0, mwn=1.0
+	):
+	"""
+	Principal components-based non-linear scaling to register a fieldwork
+	model to its landmarks. Registration is performed in three stages:
+	rigid-body, then rigid-body plus first pc, then rigid-body with all
+	defined pcs.
+
+	Inputs
+	------
+	gf : geometric_field instance
+		The model to be registered
+	pc : PrincipalComponent instance
+		The principal components to deform the model along
+	landmarks : list of 2-tuples
+		A list of tuples [(landmark name, landmark coords),...]
+	modelName : string
+		The name of the fieldwork model, e.g. pelvis
+	pcs : int
+		The number of principal components numbers to use in the registration.
+	weights : float or list of floats [optional]
+		The weighting for each landmark. If a float, then all landmarks will
+		have the same weighting.
+	GFParamsCallback : function [optional]
+		If defined, function is called after each registration stage with
+		the optimal model parameters.
+	mw0 : float [optional]
+		Mahalanobis distance penalty weight for the rigid + 1st pc stage
+	mwn : float [optional]
+		Mahalanobis distance penalty weight for the rigid + all pcs stage
+
+	Returns
+	-------
+	sourceGF : geometric_field instance
+		The registered model
+	SSE : tuple
+		The sum of squared errors from each stage of the registration
+	rigidModeNT : 1-d array
+		The optimal transform vector
+	"""
+
+	##############
+	sourceGF = copy.deepcopy(gf)
+	targetLandmarks = []
+	ldObjs = []
+	for ldName, ldTarg in landmarks:
+		targetLandmarks.append(ldTarg)
+		evaluator = fw_model_landmarks.makeLandmarkEvaluator(modelName+'-'+ldName, sourceGF)
+		ldObjs.append(_makeLandmarkObj(ldTarg, evaluator))
+
+	def obj(P):
+		P3 = P.reshape((3,-1))
+		se = scipy.array([f(P3) for f in ldObjs])
+		# print se
+		sse = (se*weights).sum()
+		return sse
+
+	pcFitter = PCA_fitting.PCFit(pc=pc)
+	pcFitter.useFMin = True
+	pcFitter.ftol = 1e-6
+
+	P0 = pc.getMean().reshape((3,-1))
+	n0 = ldObjs[0](P0)
+	x0 = scipy.hstack([targetLandmarks[0] - n0, 0, 0, 0])
+
+	# targetCoM = (targetHC + ((targetMEC+targetLEC)/2.0))/2.0
+	# x0 = scipy.hstack([targetCoM - sourceGF.calc_CoM(), 0, 0, 0])
+	
+	rigidT, rigidP = pcFitter.rigidFit(obj, x0=x0)
+	sourceGF.set_field_parameters(rigidP.reshape((3,-1,1)))
+	rigidSSE = obj(rigidP)
+	if GFParamsCallback is not None:
+		GFParamsCallback(rigidP)
+
+	rigidMode0T, rigidMode0P = pcFitter.rigidMode0Fit(obj, mWeight=mw0)
+	sourceGF.set_field_parameters(rigidMode0P.reshape((3,-1,1)))
+	rigidMode0SSE = obj(rigidMode0P)
+	if GFParamsCallback is not None:
+		GFParamsCallback(rigidMode0P)
+	
+	rigidModeNT, rigidModeNP = pcFitter.rigidModeNFit(
+								obj, modes=range(1,pcs), mWeight=mwn
+								)
+	sourceGF.set_field_parameters(rigidModeNP.reshape((3,-1,1)))
+	rigidModeNSSE = obj(rigidModeNP)
+	if GFParamsCallback is not None:
+		GFParamsCallback(rigidModeNP)
+
+	return sourceGF, (rigidSSE, rigidMode0SSE, rigidModeNSSE), rigidModeNT 
 
 #=======================================================#
 # femur alignment                                       #
@@ -570,7 +749,7 @@ def alignWholePelvisMeshParametersAnatomicAPP( Gs ):
 def alignPelvisLandmarksPC(gf, pc, landmarks, weights=1.0, GFParamsCallback=None, mw0=1.0, mwn=1.0):
 	"""
 	landmarks: a list of tuples [(landmark name, landmark coords),...]
-	valid landmark names: LASIS, RASIS, LPSIS, RPSIS, Sacral
+	valid landmark names: LASIS, RASIS, LPSIS, RPSIS, Sacral, LHJC, RHJC
 	"""
 
 	##############
@@ -591,7 +770,7 @@ def alignPelvisLandmarksPC(gf, pc, landmarks, weights=1.0, GFParamsCallback=None
 
 	pcFitter = PCA_fitting.PCFit(pc=pc)
 	pcFitter.useFMin = True
-	pcFitter.ftol = 1e-3
+	pcFitter.ftol = 1e-6
 
 	P0 = pc.getMean().reshape((3,-1))
 	n0 = ldObjs[0](P0)
