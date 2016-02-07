@@ -111,7 +111,7 @@ def alignMeshParametersProcrustes( gFields, targetGF=None, retTransforms=False )
 	else:	
 		return alignedParams, scipy.array(sizes)
 
-def alignModelLandmarksLinScale(gf, landmarks, modelName, weights=1.0, GFParamsCallback=None):
+def alignModelLandmarksLinScale(gf, landmarks, weights=1.0, GFParamsCallback=None):
 	"""
 	Rigid transformation plus scaling to register a fieldwork model to its
 	landmarks. Registration is performed in two stages: rigid-body, then
@@ -123,8 +123,6 @@ def alignModelLandmarksLinScale(gf, landmarks, modelName, weights=1.0, GFParamsC
 		The model to be registered
 	landmarks : list of 2-tuples
 		A list of tuples [(landmark name, landmark coords),...]
-	modelName : string
-		The name of the fieldwork model, e.g. pelvis
 	weights : float or list of floats [optional]
 		The weighting for each landmark. If a float, then all landmarks will
 		have the same weighting.
@@ -150,7 +148,7 @@ def alignModelLandmarksLinScale(gf, landmarks, modelName, weights=1.0, GFParamsC
 	for ldName, ldTarg in landmarks:
 		targetLandmarks.append(ldTarg)
 		evaluator = fw_model_landmarks.makeLandmarkEvaluator(
-						modelName+'-'+ldName, sourceGF
+						ldName, sourceGF
 						)
 		ldObjs.append(_makeLandmarkObj(ldTarg, evaluator))
 
@@ -198,7 +196,7 @@ def alignModelLandmarksLinScale(gf, landmarks, modelName, weights=1.0, GFParamsC
 
 	return sourceGF, (sse1, sse2), xOpt2 
 
-def alignModelLandmarksPC(gf, landmarks, modelName, pc, pcs, weights=1.0,
+def alignModelLandmarksPC(gf, landmarks, pc, pcs, weights=1.0,
 	GFParamsCallback=None, mw0=1.0, mwn=1.0
 	):
 	"""
@@ -215,8 +213,6 @@ def alignModelLandmarksPC(gf, landmarks, modelName, pc, pcs, weights=1.0,
 		The principal components to deform the model along
 	landmarks : list of 2-tuples
 		A list of tuples [(landmark name, landmark coords),...]
-	modelName : string
-		The name of the fieldwork model, e.g. pelvis
 	pcs : int
 		The number of principal components numbers to use in the registration.
 	weights : float or list of floats [optional]
@@ -246,7 +242,7 @@ def alignModelLandmarksPC(gf, landmarks, modelName, pc, pcs, weights=1.0,
 	ldObjs = []
 	for ldName, ldTarg in landmarks:
 		targetLandmarks.append(ldTarg)
-		evaluator = fw_model_landmarks.makeLandmarkEvaluator(modelName+'-'+ldName, sourceGF)
+		evaluator = fw_model_landmarks.makeLandmarkEvaluator(ldName, sourceGF)
 		ldObjs.append(_makeLandmarkObj(ldTarg, evaluator))
 
 	def obj(P):
