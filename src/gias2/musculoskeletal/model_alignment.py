@@ -111,7 +111,8 @@ def alignMeshParametersProcrustes( gFields, targetGF=None, retTransforms=False )
 	else:	
 		return alignedParams, scipy.array(sizes)
 
-def alignModelLandmarksLinScale(gf, landmarks, weights=1.0, GFParamsCallback=None):
+def alignModelLandmarksLinScale(gf, landmarks, weights=1.0,
+	GFParamsCallback=None, fminargs=None):
 	"""
 	Rigid transformation plus scaling to register a fieldwork model to its
 	landmarks. Registration is performed in two stages: rigid-body, then
@@ -128,6 +129,8 @@ def alignModelLandmarksLinScale(gf, landmarks, weights=1.0, GFParamsCallback=Non
 		have the same weighting.
 	GFParamsCallback : function [optional]
 		If defined, function is called after each registration stage with
+	fminargs : dict [optional]
+	    A dictionary of keyword arguments for scipy.optimize.fmin.
 
 	Returns
 	-------
@@ -140,6 +143,9 @@ def alignModelLandmarksLinScale(gf, landmarks, weights=1.0, GFParamsCallback=Non
 	"""
 
 	##############
+	if fminargs is None:
+		fminargs = {'maxfun':100000}
+
 	sourceGF = copy.deepcopy(gf)
 	CoM0 = sourceGF.calc_CoM()
 	p0 = sourceGF.get_field_parameters()[:,:,0].T 
@@ -175,20 +181,22 @@ def alignModelLandmarksLinScale(gf, landmarks, weights=1.0, GFParamsCallback=Non
 	x01 = scipy.hstack([targetLandmarks[0] - n0, 0, 0, 0])
 	
 	# rigid reg
-	xOpt1  = fmin(obj1, x01,ftol=1e-6)
+	xOpt1  = fmin(obj1, x01, **fminargs)
 	sse1 = obj1(xOpt1)
 	pT = transform3D.transformRigid3DAboutP(
 				p0, xOpt1, CoM0
 				).T[:,:,scipy.newaxis]
-	GFParamsCallback(pT)
+	if GFParamsCallback is not None:
+		GFParamsCallback(pT)
 	# rigid + isotropic scale
 	x02 = scipy.hstack([xOpt1, 1.0])
-	xOpt2  = fmin(obj2, x02, ftol=1e-6)
+	xOpt2  = fmin(obj2, x02, **fminargs)
 	sse2= obj2(xOpt2)
 	pT = transform3D.transformRigidScale3DAboutP(
 				p0, xOpt2, CoM0
 				).T[:,:,scipy.newaxis]
-	GFParamsCallback(pT)
+	if GFParamsCallback is not None:
+		GFParamsCallback(pT)
 	# rigid + orthogonal scale
 	# not implemented
 
@@ -197,7 +205,7 @@ def alignModelLandmarksLinScale(gf, landmarks, weights=1.0, GFParamsCallback=Non
 	return sourceGF, (sse1, sse2), xOpt2 
 
 def alignModelLandmarksPC(gf, landmarks, pc, pcs, weights=1.0,
-	GFParamsCallback=None, mw0=1.0, mwn=1.0
+	GFParamsCallback=None, mw0=1.0, mwn=1.0, fminargs=None,
 	):
 	"""
 	Principal components-based non-linear scaling to register a fieldwork
@@ -225,6 +233,8 @@ def alignModelLandmarksPC(gf, landmarks, pc, pcs, weights=1.0,
 		Mahalanobis distance penalty weight for the rigid + 1st pc stage
 	mwn : float [optional]
 		Mahalanobis distance penalty weight for the rigid + all pcs stage
+	fminargs : dict [optional]
+	    A dictionary of keyword arguments for scipy.optimize.fmin.
 
 	Returns
 	-------
@@ -254,7 +264,17 @@ def alignModelLandmarksPC(gf, landmarks, pc, pcs, weights=1.0,
 
 	pcFitter = PCA_fitting.PCFit(pc=pc)
 	pcFitter.useFMin = True
-	pcFitter.ftol = 1e-6
+	if fminargs is not None:
+		if 'xtol' in fminargs:
+			pcFitter.xtol = fminargs['xtol']
+		if 'ftol' in fminargs:
+			pcFitter.ftol = fminargs['ftol']
+		if 'maxiter' in fminargs:
+			pcFitter.maxiter = fminargs['maxiter']
+		if 'maxfev' in fminargs:
+			pcFitter.maxfev = fminargs['maxfev']
+	else:
+		pcFitter.maxfev = 100000
 
 	P0 = pc.getMean().reshape((3,-1))
 	n0 = ldObjs[0](P0)
