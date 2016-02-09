@@ -184,6 +184,27 @@ class LowerLimbLeftAtlas(modelcore.MultiBoneAtlas):
         # zero model again, this time with angles
         self.update_all_models(*self._neutral_params)
 
+    def set_bone_gfield(self, name, gf):
+        """
+        Set the geometric field of a bone
+
+        Input
+        -----
+        name : string
+            Name of the bone. Must be one of "pelvis", "femur", "patella",
+            "tibiafibula".
+        gf : geometric_field instance
+            geometric_field of the bone
+        """
+
+        if name not in self.bone_classes:
+            raise ValueError('Invalid bone name. Must be one of {}'.format(str(self.bone_classes.keys())))
+
+        if not self.models.get(name):
+            self.models[name] = self.bone_classes[name](name, gf)
+        else:
+            self.models[name].update_gf(gf.field_parameters.copy())
+
     def _set_kneegap_function(self, f):
         self._reset_tibia_kneegap = f
 

@@ -340,11 +340,13 @@ class MultiBoneAtlas(object):
     def load_models(self, model_names, model_classes, model_filenames,
                     combined_gf_name=None, combined_ens_name=None,
                     combined_mesh_name=None):
-        """ Load in the individual models of the lower limb
+        """
+        Load in the individual models of the lower limb
         and create the combined model and a map of model name to
         combined model element number.
 
-        Inputs:
+        Inputs
+        ------
         model_names [list of strings]: a list of the names of each model
         model_filenames [dictionary]: a dict of (modelname: [filenames]) 
         """
