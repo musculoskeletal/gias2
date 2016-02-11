@@ -182,21 +182,41 @@ class Joint(Object):
     def parentName(self, name):
         self._osimJoint.setParentName(name)
     
+class Model(object):
 
-def getJoint(model, jointname):
-    joints = model.getJointSet()
-    for ji in xrange(joints.getSize()):
-        j = joints.get(ji)
-        if jointname==j.getName():
-            return Joint(j)
+    def __init__(self, filename=None):
+        if filename is not None:
+            self.load(filename)
 
-    raise ValueError('No joints named {}'.format(jointname))
+    def load(self, filename):
+        self._model = opensim.Model(filename)
 
-def getMuscle(model, musclename):
-    muscles = model.getMuscles()
-    for mi in xrange(muscles.getSize()):
-        m = muscles.get(ji)
-        if musclename==m.getName():
-            return Muscle(m)
+    def save(self, filename):
+        self._model.printToXML(filename)
 
-    raise ValueError('No muscle named {}'.format(musclename))
+    def getBody(self, bodyname):
+        bodies = self._model.getBodySet()
+        for bi in xrange(bodies.getSize()):
+            b = bodies.get(bi)
+            if bodyname==b.getName():
+                return Body(b)
+
+        raise ValueError('No bodies named {}'.format(bodyname))
+
+    def getJoint(self, jointname):
+        joints = self._model.getJointSet()
+        for ji in xrange(joints.getSize()):
+            j = joints.get(ji)
+            if jointname==j.getName():
+                return Joint(j)
+
+        raise ValueError('No joints named {}'.format(jointname))
+
+    def getMuscle(self, musclename):
+        muscles = model.getMuscles()
+        for mi in xrange(muscles.getSize()):
+            m = muscles.get(ji)
+            if musclename==m.getName():
+                return Muscle(m)
+
+        raise ValueError('No muscle named {}'.format(musclename))
