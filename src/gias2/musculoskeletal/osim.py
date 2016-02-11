@@ -16,8 +16,9 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 import opensim
 from opensim.opensim import ProbeSet
 import numpy as np
+import pdb
 
-class Body(Object):
+class Body(object):
 
     def __init__(self, b):
         self._osimBody = b
@@ -69,7 +70,7 @@ class Body(Object):
         if oldfilename is None:
             visibles.setGeometryFileName(0, filename)
         else:
-            for i in xrange(visibles.getSize()):
+            for i in xrange(visibles.getNumGeometryFiles()):
                 if oldfilename==visibles.getGeometryFileName(i):
                     visibles.setGeometryFileName(i, filename)
 
@@ -125,7 +126,7 @@ class Muscle(object):
 
         return pps
 
-class Joint(Object):
+class Joint(object):
 
     def __init__(self, j):
         self._osimJoint = j
