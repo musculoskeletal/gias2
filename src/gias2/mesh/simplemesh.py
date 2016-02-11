@@ -23,7 +23,7 @@ from gias2.mesh import inp
 try:
 	from mayavi import mlab
 except ImportError:
-	raise ImportWarning('Mayavi not installed, simpleMesh.disp will not work') 
+	print('WARNING: Mayavi not installed, simpleMesh.disp will not work') 
 
 def _loadSimpleMesh( filename ):
 	try:
