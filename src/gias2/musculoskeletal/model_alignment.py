@@ -333,6 +333,23 @@ def createFemurACSISB(head, mc, lc, side='left'):
 	x = normaliseVector(scipy.cross(y, z))
 	return o, x, y, z
 
+def createFemurACSOpenSim(head, mc, lc, side='left'):
+	"""Axes: x-anterior, y-superior, z-right
+	origin: midpoint of epicondyles
+	"""
+	#  origin - midpoint of epicondyles
+	o_ = (mc + lc)/2.0
+	# y - origin to head
+	y = normaliseVector(head - o_)
+	# z - right in plane of head, mc, lc
+	n1 = normaliseVector(scipy.cross(mc-head, lc-head))
+	z = normaliseVector(scipy.cross(n1, y))
+	if side=='right':
+		z *= -1.0
+	# x - anteriorly 
+	x = normaliseVector(scipy.cross(y, z))
+	return head, x, y, z
+
 def alignAnatomicFemur( X, head, mc, lc, returnT=False ):
 	""" aligns points X, with head CoM, mc CoM, lc CoM, to the origin
 	and global axes (femur only). Grood and Suntay 1983 system.
@@ -851,6 +868,26 @@ def createTibiaFibulaACSISB(MM, LM, MC, LC, side='left'):
 		x *= -1.0
 
 	return IM, x, y, z
+
+def createTibiaFibulaACSOpenSim(MM, LM, MC, LC, side='left'):
+	"""Axes: x-anterior, y-superior, z-right. Calcaneus CS
+	"""
+	IC = (MC + LC)/2.0 # origin
+	IM = (MM + LM)/2.0
+	
+	# superiorly, IM to IC
+	y = normaliseVector(IC-IM)
+
+	# anteriorly, normal to plane of IM, LC and MC
+	x = normaliseVector(scipy.cross(LC-IM, MC-IM))
+
+	# right
+	z = normaliseVector(scipy.cross(x,y))
+	if side=='right':
+		z *= -1.0
+		x *= -1.0
+
+	return IC, x, y, z
 
 def alignAnatomicTibiaFibulaGroodSuntay(X, MM, LM, MC, LC, returnT=False):
 

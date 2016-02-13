@@ -65,14 +65,39 @@ class Body(object):
         inertia = opensim.Inertia(I[0], I[1], I[2])
         self._osimBody.setInertia(inertia)
 
-    def setDisplayGeometryFileName(self, filename, oldfilename=None):
-        visibles = self._osimBody.getDisplayer()
-        if oldfilename is None:
-            visibles.setGeometryFileName(0, filename)
-        else:
-            for i in xrange(visibles.getNumGeometryFiles()):
-                if oldfilename==visibles.getGeometryFileName(i):
-                    visibles.setGeometryFileName(i, filename)
+    def setDisplayGeometryFileName(self, filenames):
+        geoset = self._osimBody.getDisplayer().getGeometrySet()
+        nGeoms = geoset.getSize()
+
+        # # remove existing geoms
+        # for gi in xrange(nGeoms):
+        #     geoset.remove(0)
+
+        # # add new geoms
+        # for fi, fn in enumerate(filenames):
+        #     dgnew = opensim.DisplayGeometry()
+        #     dgnew.setGeometryFile(fn)
+        #     geoset.insert(fi, dgnew)
+
+        # remove existing geoms
+        if len(filenames)!=nGeoms:
+            raise ValueError(
+                'Expected {} filenames, got {}'.format(
+                    nGeoms, len(filenames)
+                    )
+                )
+
+        # add new geoms
+        for fi, fn in enumerate(filenames):
+            disp_geo = geoset.get(fi)
+            disp_geo.setGeometryFile(fn)
+
+        # if oldfilename is None:
+        #     visibles.setGeometryFileName(0, filename)
+        # else:
+        #     for i in xrange(visibles.getNumGeometryFiles()):
+        #         if oldfilename==visibles.getGeometryFileName(i):
+        #             visibles.setGeometryFileName(i, filename)
 
 class PathPoint(object):
 
