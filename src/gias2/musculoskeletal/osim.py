@@ -43,7 +43,7 @@ class Body(object):
     def massCenter(self):
         v = opensim.Vec3()
         self._osimBody.getMassCenter(v)
-        return [v.get(i) for i in xrange(3)]
+        return np.array([v.get(i) for i in xrange(3)])
 
     @massCenter.setter
     def massCenter(self, x):
@@ -114,7 +114,7 @@ class PathPoint(object):
 
     @property
     def location(self):
-        return [self._osimPathPoint.getLocationCoord(i) for i in xrange(3)]
+        return np.array([self._osimPathPoint.getLocationCoord(i) for i in xrange(3)])
 
     @location.setter
     def location(self, x):
@@ -160,7 +160,7 @@ class Joint(object):
     def locationInParent(self):
         v = opensim.Vec3()
         self._osimJoint.getLocationInParent(v)
-        return [v.get(i) for i in xrange(3)]
+        return np.array([v.get(i) for i in xrange(3)])
     
     @locationInParent.setter
     def locationInParent(self, x):
@@ -171,7 +171,7 @@ class Joint(object):
     def location(self):
         v = opensim.Vec3()
         self._osimJoint.getLocation(v)
-        return [v.get(i) for i in xrange(3)]
+        return np.array([v.get(i) for i in xrange(3)])
     
     @location.setter
     def location(self, x):
@@ -182,7 +182,7 @@ class Joint(object):
     def orientationInParent(self):
         v = opensim.Vec3()
         self._osimJoint.getOrientationInParent(v)
-        return [v.get(i) for i in xrange(3)]
+        return np.array([v.get(i) for i in xrange(3)])
     
     @orientationInParent.setter
     def orientationInParent(self, x):
@@ -193,7 +193,7 @@ class Joint(object):
     def orientation(self):
         v = opensim.Vec3()
         self._osimJoint.getOrientation(v)
-        return [v.get(i) for i in xrange(3)]
+        return np.array([v.get(i) for i in xrange(3)])
     
     @orientation.setter
     def orientation(self, x):
@@ -213,6 +213,12 @@ class Model(object):
     def __init__(self, filename=None):
         if filename is not None:
             self.load(filename)
+        self.joints = {}
+        self.bodies = {}
+        self.muscles = {}
+        self._init_joints()
+        self._init_bodies()
+        self._init_muscles()
 
     def load(self, filename):
         self._model = opensim.Model(filename)
@@ -220,29 +226,29 @@ class Model(object):
     def save(self, filename):
         self._model.printToXML(filename)
 
-    def getBody(self, bodyname):
-        bodies = self._model.getBodySet()
-        for bi in xrange(bodies.getSize()):
-            b = bodies.get(bi)
-            if bodyname==b.getName():
-                return Body(b)
-
-        raise ValueError('No bodies named {}'.format(bodyname))
-
-    def getJoint(self, jointname):
+    def _init_joints(self):
+        """
+        Make a dict of all joints in model
+        """
         joints = self._model.getJointSet()
         for ji in xrange(joints.getSize()):
             j = joints.get(ji)
-            if jointname==j.getName():
-                return Joint(j)
+            self.joints[j.getName()] = Joint(j)
 
-        raise ValueError('No joints named {}'.format(jointname))
+    def _init_bodies(self):
+        """
+        Make a dict of all bodies in model
+        """
+        bodies = self._model.getBodySet()
+        for bi in xrange(bodies.getSize()):
+            b = bodies.get(bi)
+            self.bodies[b.getName()] = Body(b)
 
-    def getMuscle(self, musclename):
-        muscles = model.getMuscles()
+    def _init_muscles(self):
+        """
+        Make a dict of all muscles in body
+        """
+        muscles = self._model.getMuscles()
         for mi in xrange(muscles.getSize()):
-            m = muscles.get(ji)
-            if musclename==m.getName():
-                return Muscle(m)
-
-        raise ValueError('No muscle named {}'.format(musclename))
+            m = muscles.get(mi)
+            self.muscles[m.getName()] = Muscle(m)
