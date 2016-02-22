@@ -151,10 +151,29 @@ class Muscle(object):
 
         return pps
 
+class CoordinateSet(object):
+
+    def __init__(self, cs):
+        self._cs = cs
+        self._defaultValue = None
+
+    @property
+    def defaultValue(self):
+        return self._cs.getDefaultValue()
+
+    @defaultValue.setter
+    def defaultValue(self, x):
+        self._cs.setDefaultValue(x)
+    
 class Joint(object):
 
     def __init__(self, j):
         self._osimJoint = j
+        self.coordSets = {}
+        cs = self._osimJoint.getCoordinateSet()
+        for csi in xrange(cs.getSize()):
+            _cs = cs.get(csi)
+            self.coordSets[_cs.getName()] = CoordinateSet(_cs)
 
     @property
     def locationInParent(self):

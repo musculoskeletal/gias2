@@ -373,7 +373,7 @@ class LowerLimbLeftAtlas(modelcore.MultiBoneAtlas):
 
     def _get_knee_cs(self):
         """Returns knee joint coordinate system:
-        [origin, abduction axis, rotation axis, flexion axis]
+        [origin, flexion axis, rotation axis, abduction axis]
         """
         o = self.models['femur'].acs.o  # origin
         abd = self._get_knee_floating_x()  # abduction
@@ -383,7 +383,7 @@ class LowerLimbLeftAtlas(modelcore.MultiBoneAtlas):
 
     def _get_hip_cs(self):
         """Returns hip joint coordinate system:
-        [origin, abduction axis, rotation axis, flexion axis]
+        [origin, flexion axis, rotation axis, abduction axis]
         """
         o = self.models['pelvis'].landmarks[self.HJC] # origin
         abd = self._get_hip_floating_x()  # abduction
