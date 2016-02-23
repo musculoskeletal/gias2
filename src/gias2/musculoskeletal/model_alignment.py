@@ -335,9 +335,9 @@ def createFemurACSISB(head, mc, lc, side='left'):
 
 def createFemurACSOpenSim(head, mc, lc, side='left'):
 	"""Axes: x-anterior, y-superior, z-right
-	origin: midpoint of epicondyles
+	origin: femoral head centre
 	"""
-	#  origin - midpoint of epicondyles
+	#  temp origin - midpoint of epicondyles
 	o_ = (mc + lc)/2.0
 	# y - origin to head
 	y = normaliseVector(head - o_)
