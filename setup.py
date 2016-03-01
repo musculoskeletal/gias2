@@ -12,12 +12,12 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 from setuptools import setup, find_packages
 
 def readme():
-     with open('README.rst', 'r') as f:
+     with open('README.md', 'r') as f:
           return f.read()
 
 #=============================================================================#
 name = 'gias2'
-version = '0.2'
+version = '0.3'
 install_requires = [
      'numpy >= 1.6.1',
      'scipy >= 0.9',
