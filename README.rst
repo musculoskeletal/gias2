@@ -26,7 +26,7 @@ Installation on Linux
 1. If you would like to use in-built visualisation modules, first install Mayavi for you distribution, else you can skip this step.
     1. Install VTK and VTK python bindings (e.g. through your package manager). VTK 5.10 is the most stable in my experience with Mayavi.
     2. Install mayavi through your package manager (e.g. sudo apt-get install mayavi2) or pip (e.g. pip install --user mayavi)
-2. Download the wheel and
+2. Download the [wheel](https://bitbucket.org/jangle/gias2/downloads/gias2-0.2-py2-none-any.whl) and
     
     pip install --user [path/to/wheel]
 
