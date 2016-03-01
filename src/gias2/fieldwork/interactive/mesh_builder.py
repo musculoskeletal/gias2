@@ -367,7 +367,7 @@ class Viewer(HasTraits):
 		self._refreshButton_fired()
 		return
 		
-class meshBuilder( object ):
+class MeshBuilder( object ):
 	
 	triMesh = None
 	simplemesh = None
@@ -385,7 +385,7 @@ class meshBuilder( object ):
 		"""
 		self.data = data
 		self.dataScalar = scalar
-		self.crawler = splinet_tools.pointCrawlerData( self.data )
+		self.crawler = spline_tools.pointCrawlerData( self.data )
 	
 	def setSurfaceSimplemesh(self, mesh, scalar=None):
 		self.simplemesh = mesh
