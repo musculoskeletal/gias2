@@ -6,8 +6,6 @@ and 3-D visualisation using Mayavi.
 ## Dependencies
 * scipy
 * scikit-learn
-* matplotlib
-
 
 ## Optional dependencies
 * VTK and VTK Python bindings (for mesh processing)
@@ -15,7 +13,7 @@ and 3-D visualisation using Mayavi.
 * PyCSG (for generating constructive solids)
 * pydicom (for reading DICOM images)
 * Cython (speeds up active shape model and random forest segmentation)
-
+* matplotlib for some inbuilt plotting functions
 
 ## Installation
 ### Linux
@@ -25,7 +23,6 @@ and 3-D visualisation using Mayavi.
 2. Download the [wheel](https://bitbucket.org/jangle/gias2/downloads/gias2-latest-py2-none-any.whl) and
     
         pip install --user [path/to/wheel]
-
 
 ### Windows
 1. The most painless way to install the python dependencies required by GIAS2 is to install the umbrella package [Anaconda](https://www.continuum.io/downloads).
