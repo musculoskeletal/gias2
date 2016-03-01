@@ -28,7 +28,7 @@ Installation on Linux
     2. Install mayavi through your package manager (e.g. sudo apt-get install mayavi2) or pip (e.g. pip install --user mayavi)
 2. Download the [wheel](https://bitbucket.org/jangle/gias2/downloads/gias2-0.2-py2-none-any.whl) and
     
-    pip install --user [path/to/wheel]
+pip install --user [path/to/wheel]
 
 
 Installation on Windows
@@ -41,6 +41,7 @@ Installation on Windows
 3. Download the wheel and from the Anaconda commandline
     
     pip install --user [path/to/wheel]
+
 
 Examples
 --------
