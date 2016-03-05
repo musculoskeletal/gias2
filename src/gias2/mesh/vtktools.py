@@ -33,6 +33,8 @@ class Writer(object):
 		f: list of faces composed of lists of vertex indices
 		rw: vtkRenderWindow instance
 		colour: 3-tuple of colour (only works for ply)
+		vcolour: 3-tuple of colour for each vertex
+		fcolour: 3-tuple of colour for each face
 		ascii: boolean, write in ascii (True) or binary (False)
 		"""
 		self.filename = kwargs.get('filename')
@@ -43,6 +45,8 @@ class Writer(object):
 		self._faces = kwargs.get('f')
 		self._render_window = kwargs.get('rw')
 		self._colour = kwargs.get('colour')
+		self._vertex_colour = kwargs.get('vcolour')
+		self._face_colour = kwargs.get('fcolour')
 		# self._field_data = kwargs.get('field')
 		self._write_ascii = kwargs.get('ascii')
 
@@ -55,7 +59,12 @@ class Writer(object):
 		self.file_ext = self.file_ext.lower()
 
 	def _make_polydata(self):
-		self._polydata = polygons2Polydata(self._vertices, self._faces)
+		self._polydata = polygons2Polydata(
+							self._vertices,
+							self._faces,
+							vcolours=self._vertex_colour,
+							fcolours=self._face_colour,
+							)
 
 	def _make_render_window(self):
 		if self._polydata is None:
@@ -122,6 +131,10 @@ class Writer(object):
 		w.SetDataByteOrderToLittleEndian()
 		# w.SetColorModeToUniformCellColor()
 		# w.SetColor(255, 0, 0)
+
+		if self._vertex_colour is not None:
+			w.SetArrayName('colours')
+
 		w.Write()
 
 	def writeSTL(self, filename=None, ascenc=True):
@@ -683,7 +696,7 @@ def polyData2Tri(p):
 
 	return V, T, N
 
-def polygons2Polydata(vertices, faces):
+def polygons2Polydata(vertices, faces, vcolours=None, fcolours=None, normals=None):
 	"""
 	Uses create a vtkPolyData instance from a set of vertices and
 	faces.
@@ -691,8 +704,10 @@ def polygons2Polydata(vertices, faces):
 	Inputs:
 	vertices: (nx3) array of vertex coordinates
 	faces: list of lists of vertex indices for each face
-	clean: run vtkCleanPolyData
-	normals: run vtkPolyDataNormals
+	vcolour : list of 3-tuple, vertex colours. Assigned to a vtkPointData
+		array named "colours".
+	fcolour : list of 3-tuple, face colours [Not implemented]
+	normals: vertex normals [Not Implemented]
 
 	Returns:
 	P: vtkPolyData instance
@@ -715,6 +730,17 @@ def polygons2Polydata(vertices, faces):
 	P = vtk.vtkPolyData()
 	P.SetPoints(points)
 	P.SetPolys(polygons)
+
+	# assign vertex colours
+	if vcolours is not None:
+		colors = vtk.vtkUnsignedCharArray()
+  		colors.SetNumberOfComponents(3)
+  		colors.SetName("colours")
+  		for c in vcolours:
+ 		 	colors.InsertNextTupleValue(c)
+
+ 		P.GetPointData().SetScalars(colors)
+
 
 	return P
 
