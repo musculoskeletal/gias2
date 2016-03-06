@@ -1,5 +1,6 @@
-include *.md *.rst *.txt LICENSE
+include *.md *.rst *.txt LICENSE setup.py
 recursive-include tests *.py
 recursive-include docs *.rst
 recursive-include docs *.py
+recursive-include src/gias2/examples/data *.*
 prune build

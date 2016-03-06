@@ -17,12 +17,19 @@ def readme():
 
 #=============================================================================#
 name = 'gias2'
-version = '0.3.1'
+version = '0.3.2'
 install_requires = [
      'numpy >= 1.6.1',
      'scipy >= 0.9',
      'scikit-learn >= 0.15',
 ]
+package_data = {
+     'gias2': [
+          'src/gias2/examples/data/*', 
+          'src/gias2/examples/data/tetgen_mesh/*',
+     ],
+}
+include_package_data = True
 description = 'A library of musculoskeletal modelling tools.'
 author = 'MAP Client Developers'
 url = 'https://bitbucket.org/jangle/gias2'
@@ -43,6 +50,8 @@ if __name__ == '__main__':
           description=description,
           long_description=readme(),
           packages=find_packages(where="src"),
+          package_data=package_data,
+          include_package_data=include_package_data,
           package_dir={"": "src"},
           classifiers=classifiers,
           author=author,
