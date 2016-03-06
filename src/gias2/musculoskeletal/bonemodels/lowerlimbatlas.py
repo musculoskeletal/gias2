@@ -17,6 +17,7 @@ from scipy.spatial import cKDTree
 from gias2.fieldwork.field import geometric_field
 from gias2.musculoskeletal import fw_model_landmarks as model_landmarks
 from gias2.musculoskeletal import model_alignment
+from gias2.musculoskeletal.bonemodels.bonemodels import LowerLimbLeftAtlas, LowerLimbRightAtlas
 from gias2.common import transform3D, math, geoprimitives
 from gias2.musculoskeletal.bonemodels import modelcore
 
@@ -32,6 +33,7 @@ class LowerLimbAtlas(object):
     """
     Both sides
     """
+    SHAPEMODESMAX = 100
 
     def __init__(self, name):
         self.name = name
@@ -52,7 +54,7 @@ class LowerLimbAtlas(object):
         self._knee_rot_r = np.array([0.0, 0.0, 0.0])
         self.n_shape_modes = 1
         self.shape_modes = [0,]
-        self._shape_mode_weights = np.zeros(self.SHAPEMODESMAX, dtype=float)
+        self._shape_model_weights = np.zeros(self.SHAPEMODESMAX, dtype=float)
         self.uniform_scaling = 1.0
         self.pelvis_scaling = 1.0
         self.femur_scaling_l = 1.0
@@ -133,6 +135,7 @@ class LowerLimbAtlas(object):
             self._knee_rot_l[0] = _trim_angle(value[0])
 
         self.ll_l.update_tibiafibula(self._knee_rot_l[[0,2]])
+        self.ll_l.update_patella()
 
     @knee_rot_r.setter
     def knee_rot_r(self, value):
@@ -143,14 +146,16 @@ class LowerLimbAtlas(object):
             self._knee_rot_r[0] = _trim_angle(value[0])
 
         self.ll_r.update_tibiafibula(self._knee_rot_r[[0,2]])
+        self.ll_r.update_patella()
     
     @property
-    def shape_mode_weights(self):
-        return self._shape_mode_weights[:self.n_shape_modes]
+    def shape_model_weights(self):
+        return self._shape_model_weights[:self.n_shape_modes]
 
-    @shape_mode_weights.setter
-    def shape_mode_weights(self, value):
+    @shape_model_weights.setter
+    def shape_model_weights(self, value):
         self._shape_model_weights[:len(value)] = value
+        self.n_shape_modes = len(value)
         self.update_models_by_pcweights_sd(value, self.shape_modes)
 
     # gets a flat array, sets using a list of arrays.
@@ -244,55 +249,63 @@ class LowerLimbAtlas(object):
 
     def _update_model_dict(self):
         for model_name, model in self.ll_l.models.items():
-            self.models[model_name+'_left'] = model
+            self.models[model_name+'-left'] = model
 
         for model_name, model in self.ll_r.models.items():
-            self.models[model_name+'_right'] = model
+            self.models[model_name+'-right'] = model
 
-    def load_models_left(self, *args, **kwargs):
-        self.ll_l.load_models(*args, **kwargs)
+        # use the left pelvis as the reference
+        self.models['pelvis'] = self.ll_l.models['pelvis']
+
+    # def load_models_left(self, *args, **kwargs):
+    #     self.ll_l.load_models(*args, **kwargs)
+    #     self._update_model_dict()
+
+    # def load_models_right(self, *args, **kwargs):
+    #     self.ll_r.load_models(*args, **kwargs)
+    #     self._update_model_dict()
+
+    def load_bones(self):
+        self.ll_l.load_bones()
+        self.ll_r.load_bones()
         self._update_model_dict()
 
-    def load_models_right(self, *args, **kwargs):
-        self.ll_r.load_models(*args, **kwargs)
-        self._update_model_dict()
+    # def load_combined_pcs_left(self, filename):
+    #     """ 
+    #     Load the combined left lower limb pca model
+    #     """
+    #     self.ll_l.load_combined_pcs(filename)
 
-    def load_combined_pcs_left(self, filename):
-        """ 
-        Load the combined left lower limb pca model
-        """
-        self.ll_l.load_combined_pcs(filename)
+    # def load_combined_pcs_right(self, filename):
+    #     """ 
+    #     Load the combined right lower limb pca model
+    #     """
+    #     self.ll_r.load_combined_pcs(filename)
 
-    def load_combined_pcs_right(self, filename):
-        """ 
-        Load the combined right lower limb pca model
-        """
-        self.ll_r.load_combined_pcs(filename)
-
-    def update_models_by_pcweights_sd(self, pc_weights, pc_modes):
+    def _update_models_by_pcweights_sd(self, pc_weights, pc_modes):
         self.ll_l.update_models_by_pcweights_sd(pc_weights, pc_modes)
         self.ll_r.update_models_by_pcweights_sd(pc_weights, pc_modes)
 
-    def update_models_by_combined_params_left(self, p):
-        self.ll_l.update_models_by_combined_params(p)
+    # def update_models_by_combined_params_left(self, p):
+    #     self.ll_l.update_models_by_combined_params(p)
 
-    def update_models_by_combined_params_right(self, p):
-        self.ll_r.update_models_by_combined_params(p)
+    # def update_models_by_combined_params_right(self, p):
+    #     self.ll_r.update_models_by_combined_params(p)
 
-    def update_models_by_uniform_rigid_scale(self, *args):
-        """ Rotation and scaling is about model CoM
-        """
-        self.ll_l.update_models_by_uniform_rigid_scale(*args)
-        self.ll_r.update_models_by_uniform_rigid_scale(*args)
+    # def update_models_by_uniform_rigid_scale(self, *args):
+    #     """ Rotation and scaling is about model CoM
+    #     """
+    #     self.ll_l.update_models_by_uniform_rigid_scale(*args)
+    #     self.ll_r.update_models_by_uniform_rigid_scale(*args)
 
-    def update_model_by_rigid_scale(self, modelname, tx, ty, tz, rx, ry, rz, s):
-        """ Rotation and scaling is about model CoM
-        """
-        _modelname, side = modelname.split('-')
-        if side=='left':
-            self.ll_l.update_model_by_rigid_scale(_modelname, tx, ty, tz, rx, ry, rz, s)
-        elif side==right
-            self.ll_r.update_model_by_rigid_scale(_modelname, tx, ty, tz, rx, ry, rz, s)
+    # def update_model_by_rigid_scale(self, modelname, tx, ty, tz, rx, ry, rz, s):
+    #     """ Rotation and scaling is about model CoM
+    #     """
+    #     _modelname, side = modelname.split('-')
+    #     if side=='left':
+    #         self.ll_l.update_model_by_rigid_scale(_modelname, tx, ty, tz, rx, ry, rz, s)
+    #     elif side=='right':
+    #         self.ll_r.update_model_by_rigid_scale(_modelname, tx, ty, tz, rx, ry, rz, s)
 
     def update_pelvis(self, pelvis_rigid):
         """Update position and orientation of the pelvis.
@@ -306,7 +319,7 @@ class LowerLimbAtlas(object):
         self.ll_l.update_pelvis(pelvis_rigid)
         self.ll_r.update_pelvis(pelvis_rigid)
 
-     def update_all_models(
+    def update_all_models(
         self, pc_weights, pc_modes, pelvis_rigid, hip_rot_l, hip_rot_r,
         knee_rot_l, knee_rot_r
         ):
@@ -325,19 +338,17 @@ class LowerLimbAtlas(object):
         """
         
         # evaluate shape model
-        self.update_models_by_pcweights_sd(pc_weights, pc_modes)
+        _pc_weights = np.zeros(np.max(pc_modes)+1, dtype=float)
+        _pc_weights[pc_modes] = pc_weights
+        self.shape_mode_weights = _pc_weights
 
         # rigid transform pelvis
-        self.update_pelvis(pelvis_rigid)
+        self.pelvis_rigid = pelvis_rigid
 
         # place femur by hip rotation
-        self.ll_l.update_femur(hip_rot_l)
-        self.ll_r.update_femur(hip_rot_r)
+        self.hip_rot_l = hip_rot_l
+        self.hip_rot_r = hip_rot_r
 
         # place tibia and fibula by knee_rot and default_knee_offset
-        self.ll_l.update_tibiafibula(knee_rot_l)
-        self.ll_r.update_tibiafibula(knee_rot_r)
-
-        # place patella relative to tibia
-        self.ll_l.update_patella()
-        self.ll_r.update_patella()
+        self.knee_rot_l = knee_rot_l
+        self.knee_rot_r = knee_rot_r
