@@ -397,6 +397,8 @@ _landmarkEvaluators = {
 				  'patella-lat': makeEvaluatorPatellaLat,
 				 }
 
+validLandmarks = sorted(_landmarkEvaluators.keys())
+
 def landmarkNames():
 	return _landmarkEvaluators.keys()
 
