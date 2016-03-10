@@ -1,5 +1,8 @@
-include *.rst *.txt LICENSE
+include *.md *.rst *.txt LICENSE setup.py
 recursive-include tests *.py
 recursive-include docs *.rst
 recursive-include docs *.py
+recursive-include src/gias2/examples/data *.*
+recursive-include src/gias2/examples/fieldwork/data *.*
+recursive-include src/gias2/examples/fieldwork/fit_whole_pelvis_data *.*
 prune build
