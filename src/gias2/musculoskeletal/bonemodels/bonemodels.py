@@ -198,7 +198,7 @@ class LowerLimbLeftAtlas(modelcore.MultiBoneAtlas):
         """
 
         if name not in self.bone_classes:
-            raise ValueError('Invalid bone name. Must be one of {}'.format(str(self.bone_classes.keys())))
+            raise ValueError('Invalid bone name. Must be one of {}'.format(str(list(self.bone_classes.keys()))))
 
         if not self.models.get(name):
             self.models[name] = self.bone_classes[name](name, gf)

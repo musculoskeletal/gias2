@@ -43,7 +43,7 @@ class Body(object):
     def massCenter(self):
         v = opensim.Vec3()
         self._osimBody.getMassCenter(v)
-        return np.array([v.get(i) for i in xrange(3)])
+        return np.array([v.get(i) for i in range(3)])
 
     @massCenter.setter
     def massCenter(self, x):
@@ -55,8 +55,8 @@ class Body(object):
         m = opensim.Mat33()
         ma = np.zeros((3,3))
         self._osimBody.getInertia(m)
-        for i in xrange(3):
-            for j in xrange(3):
+        for i in range(3):
+            for j in range(3):
                 ma[i,j] = m.get(i,j)
         return ma
 
@@ -114,7 +114,7 @@ class PathPoint(object):
 
     @property
     def location(self):
-        return np.array([self._osimPathPoint.getLocationCoord(i) for i in xrange(3)])
+        return np.array([self._osimPathPoint.getLocationCoord(i) for i in range(3)])
 
     @location.setter
     def location(self, x):
@@ -145,7 +145,7 @@ class Muscle(object):
         pps = []
         gp = self._osimMuscle.getGeometryPath()
         pathPoints = gp.getPathPointSet()
-        for i in xrange(pathPoints.getSize()):
+        for i in range(pathPoints.getSize()):
             pp = pathPoints.get(i)
             pps.append(PathPoint(pp))
 
@@ -171,7 +171,7 @@ class Joint(object):
         self._osimJoint = j
         self.coordSets = {}
         cs = self._osimJoint.getCoordinateSet()
-        for csi in xrange(cs.getSize()):
+        for csi in range(cs.getSize()):
             _cs = cs.get(csi)
             self.coordSets[_cs.getName()] = CoordinateSet(_cs)
 
@@ -179,7 +179,7 @@ class Joint(object):
     def locationInParent(self):
         v = opensim.Vec3()
         self._osimJoint.getLocationInParent(v)
-        return np.array([v.get(i) for i in xrange(3)])
+        return np.array([v.get(i) for i in range(3)])
     
     @locationInParent.setter
     def locationInParent(self, x):
@@ -190,7 +190,7 @@ class Joint(object):
     def location(self):
         v = opensim.Vec3()
         self._osimJoint.getLocation(v)
-        return np.array([v.get(i) for i in xrange(3)])
+        return np.array([v.get(i) for i in range(3)])
     
     @location.setter
     def location(self, x):
@@ -201,7 +201,7 @@ class Joint(object):
     def orientationInParent(self):
         v = opensim.Vec3()
         self._osimJoint.getOrientationInParent(v)
-        return np.array([v.get(i) for i in xrange(3)])
+        return np.array([v.get(i) for i in range(3)])
     
     @orientationInParent.setter
     def orientationInParent(self, x):
@@ -212,7 +212,7 @@ class Joint(object):
     def orientation(self):
         v = opensim.Vec3()
         self._osimJoint.getOrientation(v)
-        return np.array([v.get(i) for i in xrange(3)])
+        return np.array([v.get(i) for i in range(3)])
     
     @orientation.setter
     def orientation(self, x):
@@ -250,7 +250,7 @@ class Model(object):
         Make a dict of all joints in model
         """
         joints = self._model.getJointSet()
-        for ji in xrange(joints.getSize()):
+        for ji in range(joints.getSize()):
             j = joints.get(ji)
             self.joints[j.getName()] = Joint(j)
 
@@ -259,7 +259,7 @@ class Model(object):
         Make a dict of all bodies in model
         """
         bodies = self._model.getBodySet()
-        for bi in xrange(bodies.getSize()):
+        for bi in range(bodies.getSize()):
             b = bodies.get(bi)
             self.bodies[b.getName()] = Body(b)
 
@@ -268,6 +268,6 @@ class Model(object):
         Make a dict of all muscles in body
         """
         muscles = self._model.getMuscles()
-        for mi in xrange(muscles.getSize()):
+        for mi in range(muscles.getSize()):
             m = muscles.get(mi)
             self.muscles[m.getName()] = Muscle(m)

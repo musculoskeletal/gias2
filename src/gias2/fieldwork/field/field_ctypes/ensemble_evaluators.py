@@ -22,12 +22,12 @@ fpter = C.POINTER(C.c_float)
 
 def eval( B, P ):
 
-	l,w = B.shape
-	E = zeros(w, dtype=float)
+    l,w = B.shape
+    E = zeros(w, dtype=float)
 
-	c_B = (fpter*B.shape[0])(*[row.ctypes.data_as(fpter) for row in B])
-	c_P = P.ctypes.data_as(C.POINTER(C.c_double))
-	c_E = E.ctypes.data_as(C.POINTER(C.c_double))
-	
-	cEval.eval( c_B, c_P, c_E, l, w )
-	return E
+    c_B = (fpter*B.shape[0])(*[row.ctypes.data_as(fpter) for row in B])
+    c_P = P.ctypes.data_as(C.POINTER(C.c_double))
+    c_E = E.ctypes.data_as(C.POINTER(C.c_double))
+    
+    cEval.eval( c_B, c_P, c_E, l, w )
+    return E

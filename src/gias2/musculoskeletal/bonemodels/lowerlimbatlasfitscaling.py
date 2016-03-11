@@ -97,7 +97,7 @@ def _lower_limb_atlas_landmark_fit_multi_scaling(ll_model, target_landmark_coord
         # calc sum of squared distance between target and source landmarks
         ssdist = ((target_landmark_coords - source_x)**2.0).sum()
 
-        print('SSDist: {:12.6f}'.format(ssdist))
+        print(('SSDist: {:12.6f}'.format(ssdist)))
 
         return ssdist
 
@@ -179,7 +179,7 @@ def _lower_limb_atlas_landmark_fit_uniform_scaling(ll_model, target_landmark_coo
         # calc sum of squared distance between target and source landmarks
         ssdist = ((target_landmark_coords - source_x)**2.0).sum()
 
-        print('SSDist: {:12.6f}'.format(ssdist))
+        print(('SSDist: {:12.6f}'.format(ssdist)))
 
         return ssdist
 
@@ -310,7 +310,7 @@ def fit(ll_model, target_landmark_coords, landmark_names,
     else:
         # run multi-stage fit
         if verbose:
-            print('Running {}-stage lower limb fit'.format(n_iterations))
+            print(('Running {}-stage lower limb fit'.format(n_iterations)))
 
         x_history = []
         opt_landmark_dist = []
@@ -319,7 +319,7 @@ def fit(ll_model, target_landmark_coords, landmark_names,
         if x0 is not None:
             x_history.append(x0)
 
-        for it in xrange(n_iterations):
+        for it in range(n_iterations):
             if bones_to_scale[it]=='uniform':
                 uniform_scale = True
             else:
@@ -359,10 +359,10 @@ def fit(ll_model, target_landmark_coords, landmark_names,
                     raise ValueError('Uniform fit cannot follow multiscale fit')
 
             if verbose:
-                print('it: {}'.format(it+1))
-                print('scaling: {}'.format(bones_to_scale[it]))
-                print('minargs: {}'.format(minimise_args[it]))
-                print('x0: {}'.format(x0))
+                print(('it: {}'.format(it+1)))
+                print(('scaling: {}'.format(bones_to_scale[it])))
+                print(('minargs: {}'.format(minimise_args[it])))
+                print(('x0: {}'.format(x0)))
 
             if uniform_scale:
                 previous_uniform_scale = True
@@ -384,6 +384,6 @@ def fit(ll_model, target_landmark_coords, landmark_names,
             output_info.append(info_it)
 
             if verbose:
-                print('it: {}, landmark rmse: {}'.format(it+1, opt_rmse_it))
+                print(('it: {}, landmark rmse: {}'.format(it+1, opt_rmse_it)))
 
     return x_history, opt_landmark_dist, opt_landmark_rmse, output_info

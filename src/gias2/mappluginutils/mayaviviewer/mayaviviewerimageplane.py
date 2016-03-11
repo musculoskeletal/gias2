@@ -55,11 +55,11 @@ class MayaviViewerImagePlane(MayaviViewerObject):
             self.renderArgs = {'vmin':self._vmin, 'vmax':self._vmax}
         else:
             self.renderArgs = renderArgs
-            if 'vmax' not in self.renderArgs.keys():
+            if 'vmax' not in list(self.renderArgs.keys()):
                 self.renderArgs['vmax'] = self._vmax
-            if 'vmin' not in self.renderArgs.keys():
+            if 'vmin' not in list(self.renderArgs.keys()):
                 self.renderArgs['vmin'] = self._vmin
-            if 'colormap' not in self.renderArgs.keys():
+            if 'colormap' not in list(self.renderArgs.keys()):
                 self.renderArgs['colormap'] = self._colourMap
 
     def setScalarSelection(self, fieldName):

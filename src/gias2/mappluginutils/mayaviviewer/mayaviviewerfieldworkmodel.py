@@ -80,7 +80,7 @@ class MayaviViewerFieldworkModel(MayaviViewerObject):
         self.mergeGFVertices = mergeGFVertices
         self.displayGFNodes = displayGFNodes
         self.defaultColour = colours['bone']
-        if 'color' not in self.renderArgs.keys():
+        if 'color' not in list(self.renderArgs.keys()):
             self.renderArgs['color'] = self.defaultColour
 
     def setScalarSelection(self, fieldName):
@@ -116,23 +116,23 @@ class MayaviViewerFieldworkModel(MayaviViewerObject):
             T = self.model.triangulator._triangulate( self.discret )
             
             if self.mergeGFVertices:
-                print np.unique(T).shape
-                print np.where(P==0.0)[0].shape
+                print(np.unique(T).shape)
+                print(np.where(P==0.0)[0].shape)
                 
                 P, T, self._uniqueVertexIndices, vertMap = self.model.triangulator._mergePoints2( P.T )
                 P = P.T
                 
-                print np.unique(T).shape
-                print np.where(P==0.0)[0].shape
+                print(np.unique(T).shape)
+                print(np.where(P==0.0)[0].shape)
                 
                 if S!=None:
                     S = S[self.uniqueVertexIndices]
             
             if (S==None) or (S=='none'):
-                print 'S = None'
+                print('S = None')
                 mayaviMesh = scene.mlab.triangular_mesh( P[0], P[1], P[2], T, name=self.name, **self.renderArgs )
             else:
-                print S
+                print(S)
                 mayaviMesh = scene.mlab.triangular_mesh( P[0], P[1], P[2], T, scalars=S, name=self.name, **self.renderArgs )
 
         elif self.model.ensemble_field_function.dimensions==1:
@@ -163,18 +163,18 @@ class MayaviViewerFieldworkModel(MayaviViewerObject):
                  
             # label all ensemble points with their index number
             if label=='all':
-                labels = range(len(p))
+                labels = list(range(len(p)))
                 for i in range(len(labels)):
                     l = scene.mlab.text(p[i,0], p[i,1], str(labels[i]), z=p[i,2], line_width=0.01, width=0.005*len(str(labels[i]))**1.1)
             
             elif label=='landmarks':
                 m = self.model.named_points_map
-                labels = m.keys()
+                labels = list(m.keys())
                 for label in labels:
                     l = scene.mlab.text(p[m[label]][0], p[m[label]][1], label, z=p[m[label]][2], line_width=0.01, width=0.005*len(label)**1.1)
             return points_plot
         else:
-            raise ValueError, 'model has no nodes'
+            raise ValueError('model has no nodes')
 
     def updateGeometry( self, params, scene ):
 

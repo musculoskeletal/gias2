@@ -243,7 +243,7 @@ def fit(ll_model, target_landmark_coords, landmark_names,
     else:
         # run multi-stage fit
         if verbose:
-            print('Running {}-stage lower limb fit'.format(n_iterations))
+            print(('Running {}-stage lower limb fit'.format(n_iterations)))
 
         x_history = []
         opt_landmark_dist = []
@@ -252,7 +252,7 @@ def fit(ll_model, target_landmark_coords, landmark_names,
         if x0 is not None:
             x_history.append(x0)
 
-        for it in xrange(n_iterations):
+        for it in range(n_iterations):
             if it>0:
                 initial_pc_weights = None
                 # check if new x0 is of right length
@@ -274,11 +274,11 @@ def fit(ll_model, target_landmark_coords, landmark_names,
                             ])
 
             if verbose:
-                print('it: {}'.format(it+1))
-                print('modes: {}'.format(pc_modes[it]))
-                print('mweight: {}'.format(mweight[it]))
-                print('minargs: {}'.format(minimise_args[it]))
-                print('x0: {}'.format(x0))
+                print(('it: {}'.format(it+1)))
+                print(('modes: {}'.format(pc_modes[it])))
+                print(('mweight: {}'.format(mweight[it])))
+                print(('minargs: {}'.format(minimise_args[it])))
+                print(('x0: {}'.format(x0)))
 
             x_hist_it, opt_dist_it, opt_rmse_it, info_it = _lower_limb_atlas_landmark_fit(
                     ll_model, target_landmark_coords, landmark_names,
@@ -295,6 +295,6 @@ def fit(ll_model, target_landmark_coords, landmark_names,
             output_info.append(info_it)
 
             if verbose:
-                print('it: {}, landmark rmse: {}'.format(it+1, opt_rmse_it))
+                print(('it: {}, landmark rmse: {}'.format(it+1, opt_rmse_it)))
 
     return x_history, opt_landmark_dist, opt_landmark_rmse, output_info
