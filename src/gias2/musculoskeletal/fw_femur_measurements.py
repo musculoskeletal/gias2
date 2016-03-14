@@ -194,7 +194,7 @@ class FemurMeasurements( object ):
         m = list(self.measurements.keys())
         m.sort()
         for mi in m:
-            print(mi, ':', self.measurements[mi].value)
+            print('{} : {}'.format(mi, self.measurements[mi].value))
         
     def _evaluateGF( self ):
         self.EP = self.GF.evaluate_geometric_field( self.epD ).T
@@ -351,7 +351,10 @@ class FemurMeasurements( object ):
         """
         nom = scipy.dot( self.neckAxis.a, self.shaftAxis.a )
         denom = _mag( self.neckAxis.a ) * _mag( self.shaftAxis.a )
-        m = measurement( 'neck_shaft_angle', scipy.arccos( nom/denom ) )
+        a = scipy.rad2deg(scipy.arccos(nom/denom))
+        if a<90.0:
+        	a = 180.0 - a
+        m = measurement('neck_shaft_angle', a)
         self.measurements['neck_shaft_angle'] = m
         return m.value
     
@@ -796,6 +799,8 @@ class FemurMeasurements( object ):
         
         # calculate angle between projections
         a = FT.angle(v1,v2)*180.0/scipy.pi
+        if a>90.0:
+        	a = 180.0 - a
 
         m = measurement( 'anteversion_angle', a )
         m.posteriorCondyleAxis = cv
