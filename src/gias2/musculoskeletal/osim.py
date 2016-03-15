@@ -126,6 +126,13 @@ class Muscle(object):
 
     def __init__(self, m):
         self._osimMuscle = m
+        self.path_points = {}
+        self._init_path_points()
+
+    def _init_path_points(self):
+        pps = self.getAllPathPoints()
+        for pp in pps:
+            self.path_points[pp.name] = pp
 
     @property
     def name(self):
