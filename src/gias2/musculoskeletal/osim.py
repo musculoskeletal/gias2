@@ -22,6 +22,8 @@ class Body(object):
 
     def __init__(self, b):
         self._osimBody = b
+        self._massScaleFactor = None
+        self._inertialScaleFactor = None
 
     @property
     def name(self):
@@ -64,6 +66,28 @@ class Body(object):
     def inertia(self, I):
         inertia = opensim.Inertia(I[0], I[1], I[2])
         self._osimBody.setInertia(inertia)
+
+    @property
+    def scaleFactors(self):
+        v = opensim.Vec3()
+        self._osimBody.getScaleFactors(v)
+        return np.array([v.get(i) for i in range(3)])
+
+    @scaleFactors.setter
+    def scaleFactors(self, s):
+        v = opensim.Vec3(s[0], s[1], s[2])
+        self._osimBody.scale(v)
+    
+    def scale(self, scaleFactors, scaleMass=False):
+        v = opensim.Vec3(scaleFactors[0], scaleFactors[1], scaleFactors[2])
+        self._osimBody.scale(v, scaleMass)
+
+    def scaleInertialProperties(self, scaleFactors, scaleMass=True):
+        v = opensim.Vec3(scaleFactors[0], scaleFactors[1], scaleFactors[2])
+        self._osimBody.scaleInertialProperties(v, scaleMass)
+
+    def scaleMass(self, scaleFactor):
+        self._osimBody.scaleMass(scaleFactor)
 
     def setDisplayGeometryFileName(self, filenames):
         geoset = self._osimBody.getDisplayer().getGeometrySet()
@@ -121,6 +145,18 @@ class PathPoint(object):
         self._osimPathPoint.setLocationCoord(0, x[0])
         self._osimPathPoint.setLocationCoord(1, x[1])
         self._osimPathPoint.setLocationCoord(2, x[2])
+
+    @property
+    def body(self):
+        return Body(self._osimPathPoint.getBody())
+
+    def scale(self, sf):
+        raise(NotImplementedError)
+        # state = opensim.State()
+        # scaleset = opensim.ScaleSet() # ???
+        # scaleset.setScale([integer]) #???
+        # mus._osimMuscle.scale(state, scaleset)
+    
     
 class Muscle(object):
 
@@ -157,6 +193,13 @@ class Muscle(object):
             pps.append(PathPoint(pp))
 
         return pps
+
+    def scale(self, sf):
+        raise(NotImplementedError)
+        # state = opensim.State()
+        # scaleset = opensim.ScaleSet() # ???
+        # scaleset.setScale([integer]) #???
+        # mus._osimMuscle.scale(state, scaleset)
 
 class CoordinateSet(object):
 
@@ -233,6 +276,12 @@ class Joint(object):
     @parentName.setter
     def parentName(self, name):
         self._osimJoint.setParentName(name)
+
+    def scale(self, sf):
+        raise(NotImplementedError)
+        # scaleset = opensim.ScaleSet() # ???
+        # scaleset.setScale([integer]) #???
+        # mus._osimMuscle.scale(state, scaleset)
     
 class Model(object):
 
