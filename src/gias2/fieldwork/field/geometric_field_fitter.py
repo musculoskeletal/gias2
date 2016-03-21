@@ -280,7 +280,7 @@ class geometryFit( object ):
         """
         print('host mesh fit...')
         # calc slave node xi in host
-        if slaveXi==None:
+        if slaveXi is None:
             print('calculating slave xi...')
             slaveXi = array( [ host.findXi( 0, node ) for node in self.G.field_parameters[:,:,0].T ] )
             #~ savetxt( 'host_mesh_fitting/slaveXi.txt', slaveXi )
@@ -986,12 +986,12 @@ class geometryFit( object ):
         
 #======================================================================#
 def makeObjEPEP( G, data, evalD, dataWeights=None, evaluator=None, nClosestPoints=None, treeArgs=None, epIndex=None, epXi=None, matPoints=None ):
-    if evaluator==None:
+    if evaluator is None:
         evaluator = geometric_field.makeGeometricFieldEvaluatorSparse( G, evalD, epIndex=epIndex, epXi=epXi, matPoints=matPoints )
     
     data = array( data )
     
-    if dataWeights==None:
+    if dataWeights is None:
         def obj( p ):
             ep = evaluator( p ).T
             err = ((ep - data)**2.0).sum(1)
@@ -1008,14 +1008,14 @@ def makeObjEPEP( G, data, evalD, dataWeights=None, evaluator=None, nClosestPoint
 
 def makeObjDPEP( G, data, evalD, dataWeights=None, evaluator=None, nClosestPoints=1, treeArgs={}, epIndex=None ):
     
-    if evaluator==None:
+    if evaluator is None:
         evaluator = geometric_field.makeGeometricFieldEvaluatorSparse( G, evalD )
     
     data1 = list(data)
     
-    if epIndex==None:
+    if epIndex is None:
         if nClosestPoints>1:
-            if dataWeights==None:
+            if dataWeights is None:
                 def obj( p ):
                     ep = evaluator( p ).T
                     err = mean( KDTree( ep ).query( data1, k=nClosestPoints, **treeArgs )[0], 1 )
@@ -1026,7 +1026,7 @@ def makeObjDPEP( G, data, evalD, dataWeights=None, evaluator=None, nClosestPoint
                     err = mean( KDTree( ep ).query( data1, k=nClosestPoints, **treeArgs )[0], 1 )
                     return err*err*dataWeights
         else:
-            if dataWeights==None:
+            if dataWeights is None:
                 def obj( p ):
                     ep = evaluator( p ).T
                     err = KDTree( ep ).query( data1, k=1, **treeArgs )[0]
@@ -1038,7 +1038,7 @@ def makeObjDPEP( G, data, evalD, dataWeights=None, evaluator=None, nClosestPoint
                     return err*err*dataWeights
     else:
         if nClosestPoints>1:
-            if dataWeights==None:
+            if dataWeights is None:
                 def obj( p ):
                     ep = evaluator( p ).T[epIndex]
                     err = mean( KDTree( ep ).query( data1, k=nClosestPoints, **treeArgs )[0], 1 )
@@ -1049,7 +1049,7 @@ def makeObjDPEP( G, data, evalD, dataWeights=None, evaluator=None, nClosestPoint
                     err = mean( KDTree( ep ).query( data1, k=nClosestPoints, **treeArgs )[0], 1 )
                     return err*err*dataWeights
         else:
-            if dataWeights==None:
+            if dataWeights is None:
                 def obj( p ):
                     ep = evaluator( p ).T[epIndex]
                     err = KDTree( ep ).query( data1, k=1, **treeArgs )[0]
@@ -1064,14 +1064,14 @@ def makeObjDPEP( G, data, evalD, dataWeights=None, evaluator=None, nClosestPoint
 
 def makeObjEPDP( G, data, evalD, dataWeights=None, evaluator=None, nClosestPoints=1, treeArgs={}, epIndex=None ):
     
-    if evaluator==None:
+    if evaluator is None:
         evaluator = geometric_field.makeGeometricFieldEvaluatorSparse( G, evalD )
     
     dataTree = KDTree( data )
     
-    if epIndex==None:
+    if epIndex is None:
         if nClosestPoints>1:
-            if dataWeights==None:
+            if dataWeights is None:
                 def obj( p ):
                     ep = evaluator( p ).T
                     err = mean( dataTree.query( list(ep), k=nClosestPoints, **treeArgs )[0], 1 )
@@ -1084,7 +1084,7 @@ def makeObjEPDP( G, data, evalD, dataWeights=None, evaluator=None, nClosestPoint
                     w = dataWeights[i]
                     return d*d*w
         else:
-            if dataWeights==None:
+            if dataWeights is None:
                 def obj( p ):
                     ep = evaluator( p ).T
                     err = dataTree.query( list(ep), k=1, **treeArgs )[0]
@@ -1097,7 +1097,7 @@ def makeObjEPDP( G, data, evalD, dataWeights=None, evaluator=None, nClosestPoint
                     return d*d*w
     else:
         if nClosestPoints>1:
-            if dataWeights==None:
+            if dataWeights is None:
                 def obj( p ):
                     ep = evaluator( p ).T[epIndex]
                     err = mean( dataTree.query( list(ep), k=nClosestPoints, **treeArgs )[0], 1 )
@@ -1110,7 +1110,7 @@ def makeObjEPDP( G, data, evalD, dataWeights=None, evaluator=None, nClosestPoint
                     w = dataWeights[i]
                     return d*d*w
         else:
-            if dataWeights==None:
+            if dataWeights is None:
                 def obj( p ):
                     ep = evaluator( p ).T[epIndex]
                     err = dataTree.query( list(ep), k=1, **treeArgs )[0]
@@ -2330,7 +2330,7 @@ def viewHostMesh( m,d, figure ):
     radius= 1.0
     edges = m.ensemble_field_function.mesh.elements[0].edge_points
     v = m.evaluate_geometric_field(d)
-    if figure==None:
+    if figure is None:
         figure = geometric_field.mlab.figure()
         
     geometric_field.mlab.points3d( v[0],v[1],v[2], scale_factor=scale, mode='point', figure=figure )
