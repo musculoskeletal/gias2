@@ -501,7 +501,8 @@ def _sortEigDesc( l, e ):
     return lSort, eSort
 
 def normals_is_out(x, xn):
-    check_point = scipy.array([1e6, 1e6, 1e6])
+    # check_point = scipy.array([1e6, 1e6, 1e6])
+    check_point = x.max(0)*10.0
     
     # find closest point to check_point
     c_i =scipy.argmin(((x - check_point)**2.0).sum(1))
