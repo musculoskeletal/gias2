@@ -268,21 +268,21 @@ class LineSegment3D(Line3D):
         p = scipy.array(p, dtype=float)
         tc = scipy.dot( (p-self.b), self.a )
 
-        bd = self._checkBound(tc)
-        output_eval = self.eval(tc, checkBound=False)
-        output_eval[tc<self.t0] = self.p0
-        output_eval[tc>self.t1] = self.p1
-
-        tc = tc.clip(min=self.t0, max=self.t1)
-
-        return output_eval, tc
-
-        # if self._checkBound(tc):
-        #     return self.eval(tc), tc
-        # elif tc < self.t0:
-        #     return self.p0, self.t0
-        # else:
-        #     return self.p1, self.t1
+        if isinstance(tc, float):
+            if self._checkBound(tc):
+                return self.eval(tc), tc
+            elif tc < self.t0:
+                return self.p0, self.t0
+            else:
+                return self.p1, self.t1
+        else:
+            # array
+            bd = self._checkBound(tc)
+            output_eval = self.eval(tc, checkBound=False)
+            output_eval[tc<self.t0] = self.p0
+            output_eval[tc>self.t1] = self.p1
+            tc = tc.clip(min=self.t0, max=self.t1)
+            return output_eval, tc
 
     def calcClosestDistanceToLine(self, l):
         if l.__class__==Line3D:
