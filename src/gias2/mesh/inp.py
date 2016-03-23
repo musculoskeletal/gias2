@@ -21,6 +21,7 @@ ELEMNODES = {'C3D8R': 8,
              'C3D4': 4,
              'T3D2': 2, 
              'S3': 3,
+             'S4': 4,
              }
 
 class Mesh(object):
@@ -175,7 +176,7 @@ class InpReader(object):
 
             doScan = 1
             while doScan:
-                l = f.next().strip()
+                l = next(f).strip()
                 if '*' not in l:
                     terms = l.split(',')
                     nodeNumbers.append(int(terms[0]))
@@ -221,7 +222,7 @@ class InpReader(object):
             elem = []
             while doScan:
                 try:
-                    l = f.next().strip()
+                    l = next(f).strip()
                 except StopIteration:
                     doScan = 0
                 else:
