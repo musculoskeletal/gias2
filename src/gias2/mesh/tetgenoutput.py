@@ -133,11 +133,12 @@ class TetgenOutput(object):
         return S
     
     def calcVolElemCentroids(self):
-        minNodeNumber = self.nodeNumbers.min()
 
         volElemShape = self.volElems.shape
+        nodes_exp = np.zeros([self.nodeNumbers.max()+1,self.nodes.shape[1]], dtype=float)
+        nodes_exp[self.nodeNumbers,:] = self.nodes
         volElemNodesFlat = np.ravel(self.volElems)
-        volElemNodeCoordsFlat = self.nodes[self.nodeNumbers[volElemNodesFlat-minNodeNumber]-minNodeNumber]
+        volElemNodeCoordsFlat = nodes_exp[volElemNodesFlat]
         volElemNodeCoords = volElemNodeCoordsFlat.reshape([volElemShape[0], volElemShape[1], 3])
         self.volElemCentroids = volElemNodeCoords.mean(1)
 
