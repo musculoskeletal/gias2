@@ -971,7 +971,8 @@ class Fieldvi(HasTraits):
         self.sceneObjectGF[self.GFList0].mlab_source.set( scalars=s )
         
 
-    def saveImagesRevolve( self, nAngles, flipRoll=False, elevation=None, distance=None, focalPoint=None, save=1 ):
+    def saveImagesRevolve(self, nAngles, flipRoll=False, elevation=None,
+        distance=None, focalPoint=None, save=1):
         
         fileSuffix = str(self.saveImageFilename).split('.')[-1]
         filePrefix = '.'.join(str(self.saveImageFilename).split('.')[:-1])
@@ -989,12 +990,17 @@ class Fieldvi(HasTraits):
         azimuths = scipy.where( azimuths>360.0, azimuths-360.0, azimuths )
         
         for i,a in enumerate(azimuths):
-            self.scene.mlab.view( a, elevation, distance, focalPoint, reset_roll=True )
+            self.scene.mlab.view(
+                a, elevation, distance, focalPoint, reset_roll=True
+                )
             if flipRoll:
                 self.scene.mlab.roll( -self.scene.mlab.roll() )
             if save:
                 filename = filePrefix+'_%(i)05i'%{'i':i}+'.'+fileSuffix
-                self.scene.mlab.savefig( filename, size=( int(self.saveImageWidth), int(self.saveImageLength) ) )
+                self.scene.mlab.savefig(
+                    filename,
+                    size=(int(self.saveImageWidth), int(self.saveImageLength))
+                    )
     
     def saveImagesModalDeformation( self, modeN, nImages, sdRange, modeType, save=1, startNumber=0, loop=False ):
         
