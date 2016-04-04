@@ -25,7 +25,8 @@ install_requires = [
 ]
 package_data = {
      'gias2': [
-          'src/gias2/examples/data/*', 
+          'src/gias2/examples/data/*',
+          'src/gias2/examples/outputs/README',
           'src/gias2/examples/data/tetgen_mesh/*',
           'src/gias2/examples/fieldwork/data/*',
           'src/gias2/examples/fieldwork/fit_whole_pelvis_data/*',
