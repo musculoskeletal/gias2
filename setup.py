@@ -17,7 +17,7 @@ def readme():
 
 #=============================================================================#
 name = 'gias2'
-version = '0.4.0'
+version = '0.4.1'
 install_requires = [
      'numpy >= 1.6.1',
      'scipy >= 0.9',
@@ -26,7 +26,7 @@ install_requires = [
 package_data = {
      'gias2': [
           'src/gias2/examples/data/*',
-          'src/gias2/examples/outputs/README',
+          'src/gias2/examples/outputs/*.md',
           'src/gias2/examples/data/tetgen_mesh/*',
           'src/gias2/examples/fieldwork/data/*',
           'src/gias2/examples/fieldwork/fit_whole_pelvis_data/*',
