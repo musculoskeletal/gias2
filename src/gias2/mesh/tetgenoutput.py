@@ -139,7 +139,7 @@ class TetgenOutput(object):
         nodes_exp[self.nodeNumbers,:] = self.nodes
         volElemNodesFlat = np.ravel(self.volElems)
         volElemNodeCoordsFlat = nodes_exp[volElemNodesFlat]
-        volElemNodeCoords = volElemNodeCoordsFlat.reshape([volElemShape[0], volElemShape[1], 3])
+        volElemNodeCoords = volElemNodeCoordsFlat.reshape([volElemShape[0], volElemShape[1], self.nodes.shape[1]])
         self.volElemCentroids = volElemNodeCoords.mean(1)
 
         return self.volElemCentroids

@@ -364,7 +364,8 @@ class SimpleMesh( object ):
         
         print('filtering normals...')
         aligned = scipy.zeros(len(self.v), dtype=bool)
-        front = set([0])
+        # front = set([0])
+        front = set([self.f.min(),])
         aligned[0] = True
         
         while front:
