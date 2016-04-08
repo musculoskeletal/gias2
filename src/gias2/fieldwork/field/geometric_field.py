@@ -59,7 +59,7 @@ def load_geometric_field( filename, ensFilename=None, meshFilename=None, path=No
             _db = bsddb3.hashopen(filename)
             S = shelve.Shelf(_db)
     except:
-        raise IOError(filename+' not found')
+        raise IOError(filename+' could not be read')
     else:
         if ensFilename:
             F = EFF.load_ensemble( ensFilename, meshFilename=meshFilename, path=path )
