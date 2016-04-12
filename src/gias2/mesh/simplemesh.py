@@ -366,7 +366,7 @@ class SimpleMesh( object ):
         aligned = scipy.zeros(len(self.v), dtype=bool)
         # front = set([0])
         front = set([self.f.min(),])
-        aligned[0] = True
+        aligned[self.f.min()] = True
         
         while front:
             sys.stdout.write( '\rfront size: '+str(len(front))+' aligned size: '+str(aligned.sum()) )
