@@ -12,7 +12,7 @@ License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
-
+import inspect
 import opensim
 from opensim.opensim import ProbeSet
 import numpy as np
@@ -218,12 +218,110 @@ class CoordinateSet(object):
 class Joint(object):
 
     def __init__(self, j):
-        self._osimJoint = j
+        if j.getConcreteClassName()=='CustomJoint':
+            self._osimJoint = opensim.CustomJoint_safeDownCast(j)
+            self._isCustomJoint = True
+        else:
+            self._osimJoint = j
+            self._isCustomJoint = False
+        
+        self._initCoordSets()
+        if self.isCustomJoint:
+            self._initSpatialTransform()
+        else:
+            self.spatialTransform = None
+
+    def _initCoordSets(self):
         self.coordSets = {}
         cs = self._osimJoint.getCoordinateSet()
         for csi in range(cs.getSize()):
             _cs = cs.get(csi)
             self.coordSets[_cs.getName()] = CoordinateSet(_cs)
+
+    def _initSpatialTransform(self):
+        """
+        Expose TransformAxes
+        """
+        self.spatialTransform = self._osimJoint.getSpatialTransform()
+
+    def getSimmSplineParams(self, taxisname):
+        """
+        Returns the SimmSpline parameters for a given TransformAxis.
+
+        inputs
+        ======
+        taxisname : str
+            Name of the TransformAxis
+
+        returns
+        =======
+        params : 2 x n ndarray
+            Array of SimmSpline parameters.
+        """
+
+        _method_name = 'get_{}'.format(taxisname)
+        _bound_methods = dict(
+            inspect.getmembers(
+                self.spatialTransform,
+                lambda m: inspect.ismethod(m) and m.__func__ in m.im_class.__dict__.values()
+                )
+            )
+        if _method_name not in _bound_methods:
+            raise(ValueError('Unknown axis {}'.format(_method_name)))
+
+        tfunc = _bound_methods[_method_name]().get_function()
+        ss = opensim.SimmSpline_safeDownCast(tfunc)
+        ss_x = np.array([ss.getX(i) for i in range(ss.getSize())])
+        ss_y = np.array([ss.getY(i) for i in range(ss.getSize())])
+        # ss_z = np.array([ss.getZ(i) for i in range(ss.getSize())])
+        return np.array([ss_x, ss_y])
+
+    def updateSimmSplineParams(self, taxisname, x, y):
+        """
+        Update the SimmSpline parameters for a given TransformAxis
+
+        inputs
+        ======
+        taxisname : str
+            Name of the TransformAxis
+        x : 1d ndarray
+            New SimmSpline x parameters. Length must be the same as the
+            existing x.
+        y : 1d ndarray
+            New SimmSpline y parameters. Length must be the same as the
+            existing y.
+
+        returns
+        =======
+        None
+        """
+        _method_name = 'get_{}'.format(taxisname)
+        _bound_methods = dict(
+            inspect.getmembers(
+                self.spatialTransform,
+                lambda m: inspect.ismethod(m) and m.__func__ in m.im_class.__dict__.values()
+                )
+            )
+        if _method_name not in _bound_methods:
+            raise(ValueError('Unknown axis {}'.format(_method_name)))
+
+        tfunc = _bound_methods[_method_name]().get_function()
+        ss = opensim.SimmSpline_safeDownCast(tfunc)
+        ssLength = ss.getSize()
+
+        if (len(x)!=ssLength) or (len(y)!=ssLength):
+            raise(
+                ValueError(
+                    'Input parameters must be of length {}'.format(ssLength)
+                    )
+                )
+        for i in range(ssLength):
+            ss.setX(i, x[i])
+            ss.setY(i, y[i])
+
+    @property
+    def isCustomJoint(self):
+        return self._isCustomJoint
 
     @property
     def locationInParent(self):
