@@ -1024,7 +1024,7 @@ def image2Simplemesh(imageArray, index2Coord, isoValue, deciRatio=None, smoothIt
     params.imgSmthSD = 1.0
     params.isoValue = isoValue
     params.smoothIt = smoothIt
-    params.smoothFeatureEdge = 1
+    params.smoothFeatureEdge = 0
     params.deciRatio = deciRatio
     params.deciPerserveTopology = 1
     params.clean = 1
@@ -1041,6 +1041,62 @@ def image2Simplemesh(imageArray, index2Coord, isoValue, deciRatio=None, smoothIt
     SM = simplemesh.SimpleMesh(v=index2Coord(V, zShift=zShift), f=T)
     SM.data = {'vertexnormal':N}
     return SM, SMImg, polydata
+
+def smoothMeshVTK(mesh, it, smoothboundary=False, smoothfeatures=False, relaxfactor=1.0, usewsinc=True):
+    """
+    Apply smoothing to a SimpleMesh instance using VTK's SmoothPolyDataFilter
+    or WindowedSincPolyDataFilter.
+
+    inputs
+    ======
+    mesh : SimpleMesh instance
+        Mesh to be smoothed
+    it : int
+        Smoothing iterations to apply
+    smoothboundary : bool
+        Whether to smooth boundary vertices
+    smoothfeatures : bool
+        Whether to smooth mesh feature edges differently.
+    relaxfactor : float
+        Relaxation factor for vtkSmoothPolyDataFilter
+    usewsinc : bool
+        Use vtkWindowedSincPolyDataFilter instead of 
+        vtkSmoothPolyDataFilter if True
+
+    returns
+    =======
+    mesh_smooth : SimpleMesh instance
+        A smoothed copy of the input mesh
+
+    """
+    poly = tri2Polydata(mesh.v, mesh.f, featureangle=None)
+
+    if usewsinc:
+        smoother = vtk.vtkWindowedSincPolyDataFilter()
+    else:
+        smoother = vtk.vtkSmoothPolyDataFilter()
+
+    if vtk.VTK_MAJOR_VERSION<6:
+        smoother.SetInput(poly)
+    else:
+        smoother.SetInputDataObject(poly)
+    smoother.SetNumberOfIterations(it)
+    if smoothfeatures:
+        smoother.FeatureEdgeSmoothingOn()
+    else:
+        smoother.FeatureEdgeSmoothingOff()
+    if smoothboundary:
+        smoother.BoundarySmoothingOn()
+    else:
+        smoother.BoundarySmoothingOff()
+    if not usewsinc:
+        smoother.SetRelaxationFactor(relaxfactor)
+    smoother.Update()
+    poly_smooth = smoother.GetOutput()
+
+    v,t,n = polyData2Tri(poly_smooth)
+    mesh_smooth = simplemesh.SimpleMesh(v=v, f=t)
+    return mesh_smooth
 
 #====================================================#
 class Colours:
