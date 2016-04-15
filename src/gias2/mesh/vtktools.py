@@ -1096,6 +1096,14 @@ def smoothMeshVTK(mesh, it, smoothboundary=False, smoothfeatures=False, relaxfac
 
     v,t,n = polyData2Tri(poly_smooth)
     mesh_smooth = simplemesh.SimpleMesh(v=v, f=t)
+    if mesh.has1Ring:
+        mesh_smooth.vertices1Ring = dict(mesh.vertices1Ring)
+        mesh_smooth.faces1Ring = dict(mesh.faces1Ring)
+        mesh_smooth.has1Ring = True
+    if mesh.hasNeighbourhoods:
+        mesh_smooth.neighbourFaces = list(mesh.neighbourFaces)
+        mesh_smooth.neighbourVertices = list(mesh.neighbourVertices)
+        mesh_smooth.hasNeighbourhoods = True
     return mesh_smooth
 
 #====================================================#
