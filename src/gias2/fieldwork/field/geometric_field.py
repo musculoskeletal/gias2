@@ -336,7 +336,7 @@ class geometric_field:
         """
         
         if len( field_parameters ) != self.dimensions:
-            raise ValueError('ERROR: geometric_field.add_point: parameters length/ dimension mismatch')
+            raise ValueError('ERROR: geometric_field.add_point: parameters length/dimension mismatch')
         
         self.points.append( geometric_point( self.dimensions, scipy.array(field_parameters) ) )
         if name:
@@ -402,7 +402,7 @@ class geometric_field:
         try:
             self.points[ point_number ].set_field_parameters( new_parameters )
         except KeyError:
-            print('ERROR: geometric_field.modify_geometric_point: invalid point number', point_number)
+            print('ERROR: geometric_field.modify_geometric_point: invalid point number {}'.format(point_number))
             return
         else:
             self.field_parameters[:,self.points_to_ensemble_map[point_number],:] = new_parameters
@@ -462,8 +462,8 @@ class geometric_field:
                 # get element point tuple for current connection point
                 connected_eps = self.ensemble_field_function.mapper.get_ensemble_point_element_points( ensemble_point )
                 if debug:
-                    print('existing point', p)
-                    print('connecting', (e_number, ep), 'to:', connected_eps)
+                    print('existing point {}'.format(p))
+                    print('connecting {} to {}'.format((e_number, ep), connected_eps))
                 
                 # connect
                 connected_eps.append( ( e_number, ep ) )
@@ -471,7 +471,7 @@ class geometric_field:
             else:
                 
                 if debug:
-                    print('new point', p)
+                    print('new point {}'.format(p))
                 
                 # otherwise point maps to a new ensemble point    
                 #~ new_ensemble_point = max( self.ensemble_to_points_map.keys() ) + 1
@@ -522,7 +522,10 @@ class geometric_field:
         element_points = element.get_number_of_ensemble_points()
         parameters = scipy.array(parameters)
         if parameters.shape[0:2] != ( self.dimensions, element_points ):
-            print('ERROR: geometric_field.add_element_with_parameters: parameters length/ dimension mismatch. need:', ( self.dimensions, element_points ))
+            print('ERROR: geometric_field.add_element_with_parameters: parameters length/dimension mismatch. need {}/{}'.format(
+                self.dimensions, element_points
+                )
+            )
             return None
         
         # get geometric point numbers for connecting the element to
@@ -641,7 +644,7 @@ class geometric_field:
         for e in pointMap:
             ep.append( ( e, list(pointMap[e].keys())[0] ) )
         
-        print('element points to hang:', ep)
+        print('element points to hang: {}'.format(ep))
         self.ensemble_field_function.connect_to_hanging_point( elem, ep, mode, xi )
         self.ensemble_field_function.map_parameters()
         
