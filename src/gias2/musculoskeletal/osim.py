@@ -126,7 +126,16 @@ class Body(object):
 class PathPoint(object):
 
     def __init__(self, p):
-        self._osimPathPoint = p
+        self._isConditionalPathPoint = False
+        self._isMovingPathPoint = False
+        if p.getConcreteClassName()=='MovingPathPoint':
+            self._osimPathPoint = opensim.MovingPathPoint_safeDownCast(p)
+            self._isMovingPathPoint = True
+        elif p.getConcreteClassName()=='ConditionalPathPoint':
+            self._osimPathPoint = opensim.ConditionalPathPoint_safeDownCast(p)
+            self._isConditionalPathPoint = True
+        else:
+            self._osimPathPoint = p
 
     @property
     def name(self):
@@ -156,6 +165,120 @@ class PathPoint(object):
         # scaleset = opensim.ScaleSet() # ???
         # scaleset.setScale([integer]) #???
         # mus._osimMuscle.scale(state, scaleset)
+
+    @property
+    def isMovingPathPoint(self):
+        return self._isMovingPathPoint
+
+    @property
+    def isConditionalPathPoint(self):
+        return self._isConditionalPathPoint
+
+    def _getSimmSplineParams(self, axis):
+        if axis=='x':
+            ss = opensim.SimmSpline_safeDownCast(
+                    self._osimPathPoint.getXFunction()
+                    )
+        elif axis=='y':
+            ss = opensim.SimmSpline_safeDownCast(
+                    self._osimPathPoint.getYFunction()
+                    )
+        elif axis=='z':
+            ss = opensim.SimmSpline_safeDownCast(
+                    self._osimPathPoint.getZFunction()
+                    )
+        ss_x = np.array([ss.getX(i) for i in range(ss.getSize())])
+        ss_y = np.array([ss.getY(i) for i in range(ss.getSize())])
+        return np.array([ss_x, ss_y])
+
+    def getSimmSplineParams(self):
+        """
+        Returns the SimmSpline parameters for the x, y, and z coordinates
+        of this path point if it is a MovingPathPoint.
+
+        inputs
+        ======
+        None
+
+        returns
+        =======
+        x_params : 2 x n ndarray
+            Array of SimmSpline parameters of the x coordinates. First
+            row contains the x knot values, second row contains the 
+            y knot values
+        y_params : 2 x n ndarray
+            Array of SimmSpline parameters of the y coordinates. First
+            row contains the x knot values, second row contains the 
+            y knot values
+        z_params : 2 x n ndarray
+            Array of SimmSpline parameters of the z coordinates. First
+            row contains the x knot values, second row contains the 
+            y knot values
+        """
+        if not self.isMovingPathPoint:
+            raise TypeError('Not a MovingPathPoint')
+
+        x_params = self._getSimmSplineParams('x')
+        y_params = self._getSimmSplineParams('y')
+        z_params = self._getSimmSplineParams('z')
+        return x_params, y_params, z_params
+
+    def _updateSimmSplineParams(self, axis, params):
+        if axis=='x':
+            ss = opensim.SimmSpline_safeDownCast(
+                    self._osimPathPoint.getXFunction()
+                    )
+        elif axis=='y':
+            ss = opensim.SimmSpline_safeDownCast(
+                    self._osimPathPoint.getYFunction()
+                    )
+        elif axis=='z':
+            ss = opensim.SimmSpline_safeDownCast(
+                    self._osimPathPoint.getZFunction()
+                    )
+
+        ssLength = ss.getSize()
+        x, y = params
+        if (len(x)!=ssLength) or (len(y)!=ssLength):
+            raise(
+                ValueError(
+                    'Input parameters must be of length {}'.format(ssLength)
+                    )
+                )
+        for i in range(ssLength):
+            ss.setX(i, x[i])
+            ss.setY(i, y[i])
+
+    def updateSimmSplineParams(self, x_params=None, y_params=None, z_params=None):
+        """
+        Update the SimmSpline parameters of the x, y, z coordinates of
+        this path point if it is a MovingPathPoint.
+
+        inputs
+        ======
+        x_params : 2 x n ndarray
+            New x and y knot values for the x coordinate spline. Length must
+            be the same as the existing spline.
+        y_params : 2 x n ndarray
+            New x and y knot values for the y coordinate spline. Length must
+            be the same as the existing spline.
+        z_params : 2 x n ndarray
+            New x and y knot values for the z coordinate spline. Length must
+            be the same as the existing spline.
+
+        returns
+        =======
+        None
+        """
+        if not self.isMovingPathPoint:
+            raise TypeError('Not a MovingPathPoint')
+
+        if x_params is not None:
+            self._updateSimmSplineParams('x', x_params)
+        if y_params is not None:
+            self._updateSimmSplineParams('y', y_params)
+        if z_params is not None:
+            self._updateSimmSplineParams('z', z_params)
     
     
 class Muscle(object):
@@ -383,21 +506,30 @@ class Joint(object):
     
 class Model(object):
 
-    def __init__(self, filename=None):
-        if filename is not None:
-            self.load(filename)
+    def __init__(self, filename=None, model=None):
+        self._model = None
         self.joints = {}
         self.bodies = {}
         self.muscles = {}
-        self._init_joints()
-        self._init_bodies()
-        self._init_muscles()
+
+        if filename is not None:
+            self.load(filename)
+
+        if model is not None:
+            self._model = model
+            self._init_model()
 
     def load(self, filename):
         self._model = opensim.Model(filename)
+        self._init_model()
 
     def save(self, filename):
         self._model.printToXML(filename)
+
+    def _init_model(self):
+        self._init_joints()
+        self._init_bodies()
+        self._init_muscles()
 
     def _init_joints(self):
         """
