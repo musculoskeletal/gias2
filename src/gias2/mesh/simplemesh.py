@@ -183,20 +183,21 @@ class SimpleMesh( object ):
         each vertex V. r is the number of vertices away from V.
         """
         
-        print('find neighbourhoods for r =', r)
+        print('finding neighbourhoods of size {}'.format(r))
         self.neighbourhoodSize = r
         self.neighbourFaces = []
         self.neighbourVertices = []
         
-        self.set1Ring()
-        getNeighbour = self.makeNeighbourhoodGetter( r )
+        if not self.has1Ring:
+            self.set1Ring()
+        getNeighbour = self.makeNeighbourhoodGetter(r)
         
         for vi, V in enumerate(self.v):
             sys.stdout.write('\r'+str(vi))
             sys.stdout.flush()
-            neighbourVertices, neighbourFaces = getNeighbour( vi )
-            self.neighbourFaces = append( list( neighbourFaces ) )
-            self.neighbourVertices.append( list(neighbourVertices) )
+            neighbourVertices, neighbourFaces = getNeighbour(vi)
+            self.neighbourFaces.append(list(neighbourFaces))
+            self.neighbourVertices.append(list(neighbourVertices))
         
         sys.stdout.write('\n')  
         self.hasNeighbourhoods = 1
@@ -277,8 +278,9 @@ class SimpleMesh( object ):
         self.faceAreas = 0.5*mag2( v1v2 )
         self.faceBarycenters = (faceVertices[:,0,:] + (faceVertices[:,1,:] + faceVertices[:,2,:]) )/3.0
     
-    def calcVertexNormals(self, sigma):
-        """ calculate the normal at each vertex using normal voting.
+    def calcVertexNormals(self, sigma, nsize=1):
+        """ calculate the normal at each vertex using normal voting. Considers
+        all neighbouring vertices up to nsize edges away.
         """
         # self.saliencyCoeff = saliencyCoeff
         print('calculating normals...')
@@ -286,6 +288,13 @@ class SimpleMesh( object ):
         self.calcFaceProperties()
         if not self.has1Ring:
             self.set1Ring()
+        if nsize==1:
+            allNeighFaces = self.faces1Ring
+            allNeighVerts = self.vertices1Ring
+        else:
+            self.setVerticesNeighbourhoods(nsize)
+            allNeighFaces = self.neighbourFaces
+            allNeighVerts = self.neighbourVertices
         
         fBary = self.faceBarycenters
         fNormal = self.faceNormals
@@ -298,7 +307,7 @@ class SimpleMesh( object ):
         # for each vertex get neighbourhood faces 
         for vi, v in enumerate(self.v):
             # for each face i calculate normal vote Ni and weighting
-            neighFaces = self.faces1Ring[vi]
+            neighFaces = allNeighFaces[vi]
             nFaces = len(neighFaces)
             if not nFaces:
                 raise RuntimeWarning('no faces: vertex').with_traceback(v.ID)
@@ -366,7 +375,7 @@ class SimpleMesh( object ):
         aligned = scipy.zeros(len(self.v), dtype=bool)
         # front = set([0])
         front = set([self.f.min(),])
-        aligned[0] = True
+        aligned[self.f.min()] = True
         
         while front:
             sys.stdout.write( '\rfront size: '+str(len(front))+' aligned size: '+str(aligned.sum()) )
@@ -479,6 +488,43 @@ class SimpleMesh( object ):
             
             self.boundaryVertexInd = boundaryVertexInd                  
             return self.boundaryVertexInd, self.v[self.boundaryVertexInd]
+
+    def getOrderedBoundaryVertices(self):
+        """
+        Returns lists of ordered boundary vertex indices. Each list contains the 
+        boundary vertices of a boundary on the mesh.
+        """
+
+        bv = self.getBoundaryVertices()[0]
+        bv_set = set(bv)
+        boundaries = []
+        while bv_set:
+            ordered_bv = [bv_set.pop(),]
+            search_boundary = 1
+            # starting from 1st bv, find next bv in its 1-ring
+            while search_boundary:
+                # get neighbour vertices
+                neighv = self.vertices1Ring[ordered_bv[-1]]
+                # look through each neighbour
+                search_neigh = 1
+                prev_bv = ordered_bv[-1]
+                for nvi in neighv:
+                    # if neighbour is a boundary vertex and isn't the previous one
+                    if (nvi in bv_set) and (nvi!=prev_bv):
+                        ordered_bv.append(nvi)
+                        bv_set.remove(nvi)
+                        prev_bv = nvi
+                        # stop searching neighbours
+                        search_neigh = 0
+                        break
+
+                # if one wasn't found, terminate the search for this boundary
+                if search_neigh==1:
+                    search_boundary = 0
+
+            boundaries.append(ordered_bv)
+
+        return boundaries
 
 def mag( x ):
     return scipy.sqrt((x*x).sum())
