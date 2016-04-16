@@ -63,8 +63,8 @@ def fitAffine( data, target, xtol=1e-5, maxfev=0, sample=None, verbose=0, output
     dataFitted = transform3D.transformAffine( data, t )
     rmsOpt = scipy.sqrt(((dataFitted - target)**2.0 ).sum(1).mean())
     if verbose:
-        print('initial RMS:', rms0)
-        print('final RMS:', rmsOpt)
+        print('initial RMS: {}'.format(rms0))
+        print('final RMS: {}'.format(rmsOpt))
 
     if outputErrors:
         return t, dataFitted, (rms0, rmsOpt)
@@ -94,13 +94,13 @@ def fitTranslation( data, target, xtol=1e-5, maxfev=0, sample=None, verbose=0, o
     
     rms0 = scipy.sqrt( obj( t0 ).mean() )
     if verbose:
-        print('initial RMS:', rms0)
+        print('initial RMS: {}'.format(rms0))
         
     xOpt = leastsq( obj, t0, xtol=xtol, maxfev=maxfev )[0]
     
     rmsOpt = scipy.sqrt( obj(xOpt).mean() )
     if verbose:
-        print('final RMS:', rmsOpt)
+        print('final RMS: {}'.format(rmsOpt))
     
     dataFitted = data + xOpt
     if outputErrors:
@@ -132,13 +132,13 @@ def fitRigid( data, target, t0=None, xtol=1e-3, maxfev=0, sample=None, verbose=0
     t0 = scipy.array(t0)
     rms0 = scipy.sqrt( obj( t0 ).mean() )
     if verbose:
-        print('initial RMS:', rms0)
+        print('initial RMS: {}'.format(rms0))
         
     xOpt = leastsq( obj, t0, xtol=xtol, maxfev=maxfev, epsfcn=epsfcn )[0]
     
     rmsOpt = scipy.sqrt( obj(xOpt).mean() )
     if verbose:
-        print('final RMS:', rmsOpt)
+        print('final RMS: {}'.format(rmsOpt))
     
     dataFitted = transform3D.transformRigid3DAboutCoM( data, xOpt )
     if outputErrors:
@@ -171,13 +171,13 @@ def fitRigidFMin( data, target, t0=None, xtol=1e-3, maxfev=0, sample=None, verbo
     t0 = scipy.array(t0)
     rms0 = scipy.sqrt( obj( t0 ).mean() )
     if verbose:
-        print('initial RMS:', rms0)
+        print('initial RMS: {}'.format(rms0))
         
     xOpt = fmin( obj, t0, xtol=xtol, maxiter=maxfev )
     
     rmsOpt = scipy.sqrt( obj(xOpt).mean() )
     if verbose:
-        print('final RMS:', rmsOpt)
+        print('final RMS: {}'.format(rmsOpt))
     
     dataFitted = transform3D.transformRigid3DAboutCoM( data, xOpt )
     if outputErrors:
@@ -209,13 +209,13 @@ def fitRigidScale( data, target, t0=None, xtol=1e-3, maxfev=0, sample=None, verb
     t0 = scipy.array(t0)
     rms0 = scipy.sqrt( obj( t0 ).mean() )
     if verbose: 
-        print('initial RMS:', rms0)
+        print('initial RMS: {}'.format(rms0))
         
     xOpt = leastsq( obj, t0, xtol=xtol, maxfev=maxfev )[0]
     
     rmsOpt = scipy.sqrt( obj(xOpt).mean() )
     if verbose:
-        print('final RMS:', rmsOpt)
+        print('final RMS: {}'.format(rmsOpt))
     
     dataFitted = transform3D.transformRigidScale3DAboutCoM( data, xOpt )
     if outputErrors:
@@ -1106,7 +1106,7 @@ def hostMeshFit(hostGF, slaveGF, slaveObj, slaveXi=None, maxIt=0,
     maxf = maxIt * (hostGF.get_number_of_points() * 3)  
     
     if verbose:
-        print('HMF initial rms:', scipy.sqrt(hostMeshObj(hostParam0).mean()))
+        print('HMF initial rms: {}'.format(scipy.sqrt(hostMeshObj(hostParam0).mean())))
 
     # do fit
     hostParamsOpt = leastsq(hostMeshObj, hostParam0.ravel(), xtol=xtol,
@@ -1127,7 +1127,7 @@ def hostMeshFit(hostGF, slaveGF, slaveObj, slaveXi=None, maxIt=0,
     finalHostRMS =  scipy.sqrt( hostMeshObj( hostParamsOpt.ravel().copy() ).mean() )
     finalSlaveRMS = scipy.sqrt( slaveObj( slaveParamsOpt.ravel().copy() ).mean() )
     if verbose:
-        print('final host rms:', finalHostRMS, ' final slave rms:', finalSlaveRMS)
+        print('final host rms: {}, final slave rms: {}'.format(finalHostRMS,finalSlaveRMS))
     
     return hostParamsOpt, slaveParamsOpt, slaveXi, finalSlaveRMS
 
@@ -1191,7 +1191,7 @@ def hostMeshFitMulti( hostGF, slaveGF, slaveObj, slaveXi=None, maxIt=0,
     maxf = maxIt * (hostGF.get_number_of_points() * 3)  
     
     if verbose:
-        print('HMF initial rms:', scipy.sqrt( hostMeshObj( hostParam0 ).mean() ))
+        print('HMF initial rms: {}'.format(scipy.sqrt(hostMeshObj(hostParam0).mean())))
 
     # do fit
     hostParamsOpt = leastsq( hostMeshObj, hostParam0.ravel(), xtol=xtol, maxfev=maxf )[0].reshape((3,-1,1))
@@ -1209,7 +1209,7 @@ def hostMeshFitMulti( hostGF, slaveGF, slaveObj, slaveXi=None, maxIt=0,
     finalHostRMS =  scipy.sqrt( hostMeshObj( hostParamsOpt.ravel().copy() ).mean() )
     finalSlaveRMS = scipy.sqrt( slaveObj( slaveParamsOpt.ravel().copy() ).mean() )
     if verbose:
-        print('final host rms:', finalHostRMS, ' final slave rms:', finalSlaveRMS)
+        print('final host rms: {}, final slave rms: {}'.format(finalHostRMS, finalSlaveRMS))
     
     return hostParamsOpt, slaveParamsOpt, slaveXi, finalSlaveRMS
 
