@@ -19,57 +19,12 @@ import scipy
 import copy
 import shelve
 import os
+import json
 from gias2.fieldwork.field.basis import basis
 from gias2.fieldwork.field.topology import mesh
 from gias2.fieldwork.field.topology import element_types
 from gias2.fieldwork.field import mapper
-
 #~ from field_ctypes import ensemble_evaluators 
-
-def load_ensemble( filename, meshFilename=None, path=None ):
-    
-    if path is not None:
-        filename = os.path.join(path, filename)
-
-    try:
-        try:
-            S = shelve.open( filename, 'r' )
-        except ImportError:
-            import bsddb3
-            _db = bsddb3.hashopen(filename)
-            S = shelve.Shelf(_db)
-    except:
-        raise IOError(filename+' not found')
-    else:
-        try:
-            E = ensemble_field_function( S['name'], S['dimensions'], S['debug'] )
-        except KeyError:
-            pdb.set_trace()
-            
-        try:
-            E.set_basis( S['basis'] )
-        except KeyError:
-            E.set_basis( {'tri10':S['basis_type']} )        #### HACK
-        
-        if meshFilename:
-            E.mesh = mesh.load_mesh( meshFilename, path=path )
-        else:
-            if S['mesh'][:len(path)]==path:
-                E.mesh = mesh.load_mesh(S['mesh'][len(path):], path=path)
-            else:
-                E.mesh = mesh.load_mesh( S['mesh'], path=path )
-        for s in S['subfields']:
-            if s[1][:len(path)]==path:
-                E.subfields[s[0]] = load_ensemble( s[1][len(path):], path=path )
-            else:
-                E.subfields[s[0]] = load_ensemble( s[1], path=path )
-    
-        E.subfield_counter = S['subfield_counter']
-        E.map_parameters()
-        if S['custom_map']:
-            E.mapper.set_custom_ensemble_ordering( S['custom_map'] )
-        
-        return E
 
 def eval_line_L3( B, P ):
     E = B[0]*P[0] + B[1]*P[1] + B[2]*P[2] + B[3]*P[3]
@@ -204,7 +159,7 @@ class ensemble_field_function:
                   'prism6-5': dot_Evaluator,\
                   }
                   
-    def __init__( self, name, dimensions, debug = 0 ):
+    def __init__(self, name, dimensions, debug=0):
         self.name = name                # string
         self.dimensions = dimensions    # integer
         self.basis = {}             # basis object dictionary { element.type: <basis_obj> }
@@ -221,8 +176,18 @@ class ensemble_field_function:
         self.debug = debug
     
     #==================================================================#
-    def save_ensemble( self, filename=None, mesh_filename=None, path='', subfieldFilenames=None ):
-        
+    def save_ensemble(self, filename=None, mesh_filename=None, path='', subfieldFilenames=None):
+        if os.path.splitext(filename)[1]=='':
+            filename = filename+'.ens'
+            
+        return save_eff_json(
+            filename, self, meshfn=mesh_filename, filedir=path, subfieldfns=subfieldFilenames
+            )
+
+
+    def save_ensemble_shelve( self, filename=None, mesh_filename=None, path='', subfieldFilenames=None ):
+        raise DeprecationWarning('Shelve serialisation will be deprecated')
+
         if path:
             if path[-1]!='/':
                 path += '/'
@@ -1211,4 +1176,209 @@ def reverse_dict( d ):
         
     return d_r
 
+#=============================================================================#
+def load_eff_shelve(filename, E, meshfn=None, filedir=None):
+    
+    if filedir is not None:
+        filename = os.path.join(filedir, filename)
+    else:
+        filedir = ''
 
+    try:
+        try:
+            S = shelve.open( filename, 'r' )
+        except ImportError:
+            import bsddb3
+            _db = bsddb3.hashopen(filename)
+            S = shelve.Shelf(_db)
+    except:
+        raise IOError(filename+' not found')
+    else:
+        E.name = S['name']
+        E.dimensions = S['dimensions']
+        E.debug = S['debug']
+            
+        try:
+            E.set_basis( S['basis'] )
+        except KeyError:
+            E.set_basis( {'tri10':S['basis_type']} )        #### HACK
+        
+        if meshfn:
+            E.mesh = mesh.load_mesh(meshfn, path=filedir)
+        else:
+            if S['mesh'][:len(filedir)]==filedir:
+                E.mesh = mesh.load_mesh(S['mesh'][len(filedir):], path=filedir)
+            else:
+                E.mesh = mesh.load_mesh(S['mesh'], path=filedir)
+        for s in S['subfields']:
+            if s[1][:len(filedir)]==filedir:
+                E.subfields[s[0]] = load_ensemble_shelve( s[1][len(filedir):], path=filedir )
+            else:
+                E.subfields[s[0]] = load_ensemble_shelve( s[1], path=filedir )
+    
+        E.subfield_counter = S['subfield_counter']
+        E.map_parameters()
+        if S['custom_map']:
+            E.mapper.set_custom_ensemble_ordering( S['custom_map'] )
+        
+        return E
+
+class EFFJSONWriter(object):
+    
+    def __init__(self, eff):
+        """
+        Writer class for serialising an ensemble file function to a
+        JSON format file or string.
+        """
+        self.eff = eff
+        self._file_dir = ''
+
+    def write(self, filename, meshfn=None, filedir=None, subfieldfns=None):
+        """
+        Write to file a json format file of the eff properties.
+        """
+        if filedir is not None:
+            self._file_dir = filedir
+        
+        d = self.serialise(meshfn, subfieldfns)
+        with open(filename, 'w') as f:
+            json.dump(d, f, indent=4, sort_keys=True)
+
+        return filename
+
+    def serialise(self, meshfn, subfieldfns):
+        """
+        Return a json-compatible dict of the eff properties.
+        """
+        d = {}
+        self._serialise_meta(d)
+        self._serialise_basis(d)
+        self._serialise_mesh(d, meshfn)
+        self._serialise_subfields(d, subfieldfns)
+        self._serialise_custom_map(d)
+        return d
+
+    def _serialise_meta(self, eff_dict):
+        eff_dict['name'] = self.eff.name
+        eff_dict['dimensions'] = self.eff.dimensions
+        eff_dict['subfield_counter'] = self.eff.subfield_counter
+
+    def _serialise_basis(self, eff_dict):
+        eff_dict['basis'] = dict([[i[0], i[1].type] for i in list(self.eff.basis.items())])
+
+    def _serialise_mesh(self, eff_dict, meshfn):
+        if meshfn is not None:
+            eff_dict['mesh'] = self.eff.mesh.save_mesh(
+                meshfn, path=self._file_dir
+                )
+        else:
+            eff_dict['mesh'] = self.eff.mesh.save_mesh(
+                self.eff.mesh.name, path=self._file_dir
+                )
+
+    def _serialise_subfields(self, eff_dict, subfieldfns):
+        subf_d = {}
+        subf_nums = sorted(list(self.eff.subfields.keys()))
+        for sn in subf_nums:
+            s = self.subfields[en]
+            if subfieldfns:
+                subf_d[sn] = save_eff_json(
+                    subfieldfns[sn],
+                    s,
+                    self._file_dir,
+                    )
+            else:
+                subf_d[sn] = save_eff_json(
+                    s.name,
+                    s,
+                    self._file_dir,
+                    )
+
+        eff_dict['subfields'] = subf_d
+
+    def _serialise_custom_map(self, eff_dict):
+        eff_dict['custom_map'] = self.eff.mapper._custom_ensemble_order
+
+
+class EFFJSONReader(object):
+
+    def __init__(self, eff):
+        """
+        Reader class for setting an ensemble field function with properties
+        from a JSON format file or string.
+        """
+        self.eff = eff
+        self._file_dir = ''
+
+    def read(self, filename, meshfn=None, filedir=None):
+        """
+        Load eff properties from a eff file.
+        """
+        if filedir is not None:
+            filename = os.path.join(filedir, filename)
+            self._file_dir = filedir
+        # else:
+        #     self._file_dir = os.path.split(filename)[0]
+        with open(filename, 'r') as f:
+            eff_dict = json.load(f)
+
+        self.deserialise(eff_dict, meshfn)
+
+    def deserialise(self, jsonstr, meshfn):
+        """
+        Set self.eff with properties from the json string.
+        file_dir is the directory of any embedded eff files.
+        """
+        self._parse_meta(jsonstr)
+        self._parse_basis(jsonstr)
+        self._parse_mesh(jsonstr, meshfn)
+        self._parse_subfields(jsonstr)
+        self._parse_custom_map(jsonstr)
+        self.eff.map_parameters()
+
+    def _parse_meta(self, eff_dict):
+        self.eff.name = eff_dict['name']
+        self.eff.dimensions = int(eff_dict['dimensions'])
+        self.eff.subfield_counter = int(eff_dict['subfield_counter'])
+
+    def _parse_basis(self, eff_dict):
+        basis_dict = dict([(str(i[0]), i[1]) for i in eff_dict['basis'].items()])
+        self.eff.set_basis(basis_dict)
+
+    def _parse_mesh(self, eff_dict, meshfn):
+        if meshfn is not None:
+            self.eff.mesh = mesh.load_mesh(meshfn, path=self._file_dir)
+        else:
+            self.eff.mesh = mesh.load_mesh(eff_dict['mesh'], path=self._file_dir)
+
+    def _parse_subfields(self, eff_dict):
+        for _sn in eff_dict['subfields']:
+            sn = int(sn)
+            self.eff.subfields[sn] = load_ensemble(
+                eff_dict['subfields'][_sn], path=self._file_dir
+                )
+
+    def _parse_custom_map(self, eff_dict):
+        if eff_dict['custom_map'] is not None:
+            self.eff.mapper.set_custom_ensemble_ordering(eff_dict['custom_map'])
+
+
+def load_eff_json(filename, eff, meshfn=None, filedir=None):
+    reader = EFFJSONReader(eff)
+    reader.read(filename, meshfn, filedir)
+    return eff
+
+def save_eff_json(filename, eff, meshfn=None, filedir=None, subfieldfns=None):
+    writer = EFFJSONWriter(eff)
+    writer.write(filename, meshfn, filedir, subfieldfns)
+
+def load_ensemble(filename, meshFilename=None, path=None):
+    mesh = ensemble_field_function(None, None)
+    with open(filename, 'r') as f:
+        head = f.read(1)
+        if head=='{':
+            load_eff_json(filename, mesh, meshfn=meshFilename, filedir=path)
+        else:
+            load_eff_shelve(filename, mesh, meshfn=meshFilename, filedir=path)
+
+    return mesh

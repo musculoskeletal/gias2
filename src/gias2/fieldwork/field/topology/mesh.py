@@ -15,63 +15,11 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import shelve
 import os
+import json
 from scipy import linspace, sort
 from gias2.fieldwork.field.topology import element_types
 
-def load_mesh( filename, path=None ):
-    
-    if path is not None:
-        filename = os.path.join(path, filename)
-    
-    if filename[-5:] != '.mesh':
-        filename += '.mesh'
-    try:
-        try:
-            S = shelve.open( filename, 'r' )
-        except ImportError:
-            import bsddb3
-            _db = bsddb3.hashopen(filename)
-            S = shelve.Shelf(_db)
-    except:
-        raise IOError(filename+' not found')
-        
-    name = S['name']
-    dimensions = S['dimensions']
-    debug = S['debug']
-    
-    # create mesh
-    mesh = mesh_ensemble( name, dimensions, debug=debug )
-    
-    # put in elements
-    for e in S['elements']:
-        if e[1]==0:
-            # true element
-            mesh.elements[e[0]] = element_types.create_element( e[2] )
-        else:
-            # submesh
-            if e[2][:len(path)]==path:
-                mesh.elements[e[0]] = load_mesh( e[2][len(path):], path=path )
-            else:
-                mesh.elements[e[0]] = load_mesh( e[2], path=path )
-    
-    # create hanging_points
-    for h in S['hanging_points']:
-        mesh.hanging_points[h[0]] = hanging_point( h[1], h[2] )
-    
-    # set connectivity
-    mesh.connectivity = S['connectivity']
-    # set element_points
-    mesh.element_points = S['element_points']
-    # set others
-    mesh.element_counter = S['element_counter']
-    mesh.hanging_point_counter = S['hanging_point_counter']
-    mesh.number_of_points = S['number_of_points']
-    mesh.submesh_counter = S['submesh_counter']
-    
-    S.close()
-    return mesh
-    
-    
+#=============================================================================#
 class mesh_ensemble:
     """ Class for holding information about field topology
     """
@@ -94,7 +42,16 @@ class mesh_ensemble:
         self.debug = debug
     
     #==================================================================#
-    def save_mesh( self, filename=None, path='', submeshFilenames=None ):
+    def save_mesh(self, filename=None, path=None, submeshFilenames=None):
+        if os.path.splitext(filename)[1]=='':
+            filename = filename+'.mesh'
+            
+        return save_mesh_json(
+            filename, self, filedir=path, subfieldfns=submeshFilenames
+            )
+
+    def save_mesh_shelve( self, filename=None, path='', submeshFilenames=None ):
+        raise DeprecationWarning('Shelve serialisation will be deprecated')
         
         if path:
             if path[-1]!='/':
@@ -562,3 +519,250 @@ class hanging_point:
         
     def get_element_coordinates( self ):
         return self.element_coordinates
+
+#=============================================================================#
+def load_mesh_shelve(filename, mesh, filedir=None):
+    
+    if filedir is not None:
+        filename = os.path.join(filedir, filename)
+    else:
+        filedir = ''
+    
+    if filename[-5:] != '.mesh':
+        filename += '.mesh'
+    try:
+        try:
+            S = shelve.open( filename, 'r' )
+        except ImportError:
+            import bsddb3
+            _db = bsddb3.hashopen(filename)
+            S = shelve.Shelf(_db)
+    except:
+        raise IOError(filename+' not found')
+        
+    mesh.name = S['name']
+    mesh.dimensions = S['dimensions']
+    mesh.debug = S['debug']
+    
+    # put in elements
+    for e in S['elements']:
+        if e[1]==0:
+            # true element
+            mesh.elements[e[0]] = element_types.create_element( e[2] )
+        else:
+            # submesh
+            if e[2][:len(filedir)]==filedir:
+                mesh.elements[e[0]] = load_mesh_shelve(e[2][len(filedir):], filedir=filedir)
+            else:
+                mesh.elements[e[0]] = load_mesh_shelve(e[2], filedir=filedir)
+    
+    # create hanging_points
+    for h in S['hanging_points']:
+        mesh.hanging_points[h[0]] = hanging_point( h[1], h[2] )
+    
+    # set connectivity
+    mesh.connectivity = S['connectivity']
+    # set element_points
+    mesh.element_points = S['element_points']
+    # set others
+    mesh.element_counter = S['element_counter']
+    mesh.hanging_point_counter = S['hanging_point_counter']
+    mesh.number_of_points = S['number_of_points']
+    mesh.submesh_counter = S['submesh_counter']
+    
+    S.close()
+    return mesh
+
+class MeshJSONWriter(object):
+    
+    def __init__(self, mesh):
+        """
+        Writer class for serialising a mesh to a
+        JSON format file or string.
+
+        Hanging points are not currently handled.
+        """
+        self.mesh = mesh
+        self._file_dir = ''
+
+    def write(self, filename, filedir=None, submeshfns=None):
+        """
+        Write to file a json format file of the mesh properties.
+        """
+        if filedir is not None:
+            self._file_dir = filedir
+        
+        d = self.serialise(submeshfns)
+        with open(os.path.join(self._file_dir, filename), 'w') as f:
+            json.dump(d, f, indent=4, sort_keys=True)
+
+        return filename
+
+    def serialise(self, submeshfns):
+        """
+        Return a json-compatible dict of the mesh properties.
+        """
+        d = {}
+        self._serialise_meta(d)
+        self._serialise_elements(d, submeshfns)
+        self._serialise_connectivity(d)
+        return d
+
+    def _serialise_meta(self, mesh_dict):
+        mesh_dict['name'] = self.mesh.name
+        mesh_dict['dimensions'] = self.mesh.dimensions
+        mesh_dict['number_of_points'] = self.mesh.number_of_points
+        mesh_dict['element_counter'] = self.mesh.element_counter
+        mesh_dict['submesh_counter'] = self.mesh.submesh_counter
+
+    def _serialise_elements(self, mesh_dict, submeshfn):
+        """
+        Create dictionary of elements. Each entry is of the format
+        [elem_number] : [is_submesh] [elem_name]
+        where is_submesh is 1 if element is another mesh else 0.
+        If is_submesh is 1, the elem_name is the is name of the mesh
+        or submesh[submesh.name].
+        If is_submesh is 0, the elem_name is the element type.
+        """ 
+        elems_d = {}
+        elem_nums = sorted(list(self.mesh.elements.keys()))
+        for en in elem_nums:
+            e = self.mesh.elements[en]
+            if e.is_element:
+                elems_d[en] = '{} {}'.format(0, e.type)
+            else:
+                if submeshfn:
+                    if self._file_dir is not None:
+                        elems_d[en] = '{} {}'.format(
+                            1,
+                            save_mesh_json(
+                                submeshfn[en],
+                                e,
+                                self._file_dir,
+                                )
+                            )
+                    else:
+                        elems_d[en] = '{} {}'.format(
+                            1,
+                            save_mesh_json(
+                                submeshfn[en],
+                                e
+                                )
+                            )
+                else:
+                    if self._file_dir is not None:
+                        elems_d[en] = '{} {}'.format(
+                            1,
+                            save_mesh_json(
+                                e.name, e, self._file_dir
+                                )
+                            )
+                    else:
+                        elems_d[en] = '{} {}'.format(
+                            1, save_mesh_json(e.name, e)
+                            )
+
+        mesh_dict['elements'] = elems_d
+
+    def _serialise_connectivity(self, mesh_dict):
+        """
+        Create json-compatible dict of the connectivity dict.
+        Each entry is of the format
+        [elem_num]_[point_num] : [elem_num]_[point_num] [elem_num]_[point_num] ...
+        """
+
+        conn_d = {}
+        keys = sorted(list(self.mesh.connectivity.keys()))
+        for k in keys:
+            k_str = '{}_{}'.format(*k)
+            v_str = ' '.join(['{}_{}'.format(v[0], v[1]) for v in self.mesh.connectivity[k]])
+            conn_d[k_str] = v_str
+
+        mesh_dict['connectivity'] = conn_d
+
+class MeshJSONReader(object):
+
+    def __init__(self, mesh):
+        """
+        Reader class for setting a mesh with properties from a
+        JSON format file or string.
+
+        Hanging points are not currently handled.
+        """
+        self.mesh = mesh
+        self._file_dir = ''
+
+    def read(self, filename, filedir=None):
+        """
+        Load mesh properties from a mesh file.
+        """
+        if filedir is not None:
+            filename = os.path.join(filedir, filename)
+            self._file_dir = filedir
+        # else:
+        #     self._file_dir = os.path.split(filename)[0]
+        with open(filename, 'r') as f:
+            mesh_dict = json.load(f)
+
+        self.deserialise(mesh_dict)
+
+    def deserialise(self, jsonstr):
+        """
+        Set self.mesh with properties from the json string.
+        file_dir is the directory of any embedded mesh files.
+        """
+        self._parse_meta(jsonstr)
+        self._parse_elements(jsonstr)
+        self._parse_connectivity(jsonstr)
+
+    def _parse_meta(self, mesh_dict):
+        self.mesh.name = mesh_dict['name']
+        self.mesh.dimensions = int(mesh_dict['dimensions'])
+        self.mesh.number_of_points = int(mesh_dict['number_of_points'])
+        self.mesh.element_counter = int(mesh_dict['element_counter'])
+        self.mesh.submesh_counter = int(mesh_dict['submesh_counter'])
+
+    def _parse_elements(self, mesh_dict):
+        elems_json = mesh_dict['elements']
+        for _en in elems_json.keys():
+            e = elems_json[_en].split(' ')
+            en = int(_en)
+            # set element
+            if int(e[0])==0:
+                # true element
+                elem = element_types.create_element(e[1])
+            else:
+                # submesh
+                elem = load_mesh(e[1], self._file_dir)
+
+            self.mesh.elements[en] = elem
+            self.mesh.element_points[en] = [(en, i) for i in range(elem.get_number_of_ensemble_points())]
+
+        self.mesh.element_counter = max(list(self.mesh.elements.keys()))+1
+
+    def _parse_connectivity(self, mesh_dict):
+        for k, v in mesh_dict['connectivity'].items():
+            _k = tuple(int(ki) for ki in k.split('_'))
+            _v = [tuple(int(vii) for vii in vi.split('_')) for vi in v.split( )]
+            self.mesh.connectivity[_k] = _v
+
+
+def load_mesh_json(filename, mesh, filedir=None):
+    reader = MeshJSONReader(mesh)
+    reader.read(filename, filedir)
+    return mesh
+
+def save_mesh_json(filename, mesh, filedir=None, subfieldfns=None):
+    writer = MeshJSONWriter(mesh)
+    return writer.write(filename, filedir, subfieldfns)
+
+def load_mesh(filename, path=None):
+    mesh = mesh_ensemble(None, None)
+    with open(filename, 'r') as f:
+        head = f.read(1)
+        if head=='{':
+            load_mesh_json(filename, mesh, filedir=path)
+        else:
+            load_mesh_shelve(filename, mesh, filedir=path)
+
+    return mesh
