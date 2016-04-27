@@ -20,14 +20,15 @@ import gias2.fieldwork.field.ensemble_field_function as E
 #=============#
 # empty field #
 #=============#
-def empty_field( name, dimensions, basis_type ):
+def empty_field(name=None, dimensions=None, basis_type=None):
     """ empty dimensions-D field with empty mesh and basis of type 
     basis_type
     """
     
-    f = E.ensemble_field_function( name, dimensions, debug = 0)
-    f.set_basis( basis_type )
-    f.set_new_mesh( name )
+    f = E.ensemble_field_function(name, dimensions, debug=0)
+    if basis_type is not None:
+        f.set_basis(basis_type)
+    f.set_new_mesh(name)
     
     return f
     

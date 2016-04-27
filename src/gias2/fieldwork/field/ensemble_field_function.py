@@ -177,13 +177,16 @@ class ensemble_field_function:
     
     #==================================================================#
     def save_ensemble(self, filename=None, mesh_filename=None, path='', subfieldFilenames=None):
+
+        if not filename:
+            filename = self.name
+            
         if os.path.splitext(filename)[1]=='':
             filename = filename+'.ens'
             
         return save_eff_json(
             filename, self, meshfn=mesh_filename, filedir=path, subfieldfns=subfieldFilenames
             )
-
 
     def save_ensemble_shelve( self, filename=None, mesh_filename=None, path='', subfieldFilenames=None ):
         raise DeprecationWarning('Shelve serialisation will be deprecated')

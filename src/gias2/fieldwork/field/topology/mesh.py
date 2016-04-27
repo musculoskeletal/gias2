@@ -43,6 +43,9 @@ class mesh_ensemble:
     
     #==================================================================#
     def save_mesh(self, filename=None, path=None, submeshFilenames=None):
+        if not filename:
+            filename = self.name
+            
         if os.path.splitext(filename)[1]=='':
             filename = filename+'.mesh'
             
