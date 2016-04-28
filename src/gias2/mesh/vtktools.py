@@ -1106,6 +1106,62 @@ def smoothMeshVTK(mesh, it, smoothboundary=False, smoothfeatures=False, relaxfac
         mesh_smooth.hasNeighbourhoods = True
     return mesh_smooth
 
+def optimiseMesh(sm, deciratio):
+    """
+    Optimise a triangle mesh by removing degenerate elements
+    and decimation.
+
+    Inputs
+    ======
+    sm : SimpleMesh instance
+        Mesh to be optimised
+    deciratio : float
+        Decimation target, fraction of original number of faces.
+
+    Returns
+    =======
+    newSM : SimpleMesh instance
+        Optimised mesh
+    """
+
+    poly = tri2Polydata(
+                sm.v, sm.f,
+                normals=True,
+                featureangle=None
+                )
+
+    print "cleaning..."
+    cleaner = vtk.vtkCleanPolyData()
+    if vtk.VTK_MAJOR_VERSION<6:
+        cleaner.SetInput(poly)
+    else:
+        cleaner.SetInputDataObject(poly)
+    cleaner.SetConvertLinesToPoints(1)
+    cleaner.SetConvertStripsToPolys(1)
+    cleaner.SetConvertPolysToLines(1)
+    cleaner.SetPointMerging(True)
+    cleaner.SetTolerance(0.001)
+    cleaner.Update()
+    getPreviousOutput = cleaner.GetOutput
+
+    # decimate polydata
+    print "decimating using quadric..."
+    decimator = vtk.vtkQuadricDecimation()
+    if vtk.VTK_MAJOR_VERSION<6:
+        decimator.SetInput(getPreviousOutput())
+    else:
+        decimator.SetInputDataObject(getPreviousOutput())
+    decimator.SetTargetReduction(deciratio)
+    # decimator.SetPreserveTopology(True)
+    # decimator.SplittingOn()
+    decimator.Update()
+    getPreviousOutput = decimator.GetOutput
+
+    # convert back to sm
+    v, f, N = polyData2Tri(getPreviousOutput())
+    newSM = simplemesh.SimpleMesh(v=v, f=f)
+    return newSM
+
 #====================================================#
 class Colours:
     def __init__( self ):
