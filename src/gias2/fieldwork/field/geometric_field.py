@@ -16,6 +16,7 @@ import os
 import sys
 import shelve
 import copy
+import json
 import scipy
 # import pdb
 from scipy.interpolate import splprep, splev, splrep
@@ -38,39 +39,6 @@ try:
 except ImportError:
     print('Mayavi not imported, 3D visualisation will be disabled')
 
-def load_geometric_field( filename, ensFilename=None, meshFilename=None, path=None ):
-    """
-    Deserialise a geometric_field.
-
-    Inputs:
-    filename: [str] geometric_field filename (.geof).
-    field_filename: [str] ensemble field function filename (.ens).
-    mesh_filename: [str] mesh filename (.mesh).
-    """
-    
-    if path is not None:
-        filename = os.path.join(path, filename)
-    
-    try:
-        try:
-            S = shelve.open( filename, 'r' )
-        except ImportError:
-            import bsddb3
-            _db = bsddb3.hashopen(filename)
-            S = shelve.Shelf(_db)
-    except:
-        raise IOError(filename+' could not be read')
-    else:
-        if ensFilename:
-            F = EFF.load_ensemble( ensFilename, meshFilename=meshFilename, path=path )
-        else:
-            F = EFF.load_ensemble( S['ensemble_field'], meshFilename=meshFilename, path=path )
-            
-        G = geometric_field( S['name'], S['dimensions'], ensemble_field_function=F )
-        G.set_field_parameters( S['field_parameters'] )
-        G.ensemble_point_counter = S['ensemble_point_counter']
-        return G
-
 # !!!!breaks ASM!!!!
 def normaliseVectors(x):
     return x/scipy.sqrt((x**2.0).sum(1))[:,scipy.newaxis]
@@ -85,7 +53,7 @@ class geometric_field:
     template_fields module with the given field_dimension and basis_type.
     """
     
-    def __init__(self, name, dimensions, ensemble_field_function = None, field_dimensions = None, field_basis = None ):
+    def __init__(self, name, dimensions, ensemble_field_function=None, field_dimensions=None, field_basis=None):
         self.name = name
         self.dimensions = dimensions
         self.field_parameters = None
@@ -122,7 +90,32 @@ class geometric_field:
         self.ensemble_field_function_filename = None
         
     #==================================================================#
-    def save_geometric_field( self, filename, field_filename=None, mesh_filename=None, path='' ):
+    def save_geometric_field(self, filename=None, field_filename=None, mesh_filename=None, path=''):
+        """
+        Serialise the geometric_field instance.
+
+        Inputs:
+        filename: [str] geometric_field filename. .geof suffix will be added.
+        field_filename: [str] ensemble field function filename. .ens suffix will be added.
+        mesh_filename: [str] mesh filename. .mesh suffix will be added.
+        
+        field_filename and mesh_filename are optional. If they are not defined,
+        .ens and .mesh files will not be produced. You might do this when you
+        are saving a deformed version of a mesh for which you have already have
+        .ens and .mesh files.
+        """
+
+        if not filename:
+            filename = self.name
+
+        if os.path.splitext(filename)[1]=='':
+            filename = filename+'.geof'
+            
+        return save_gf_json(
+            filename, self, ensfn=field_filename, meshfn=mesh_filename, filedir=path,
+            )
+
+    def save_geometric_field_shelve(self, filename, field_filename=None, mesh_filename=None, path=''):
         """
         Serialise the geometric_field instance.
 
@@ -2381,3 +2374,206 @@ def makeGeometricFieldDerivativesEvaluatorSparse( G, evalD, dim=3, epIndex=None,
         return D.T.reshape((dim,nDerivs,-1))
 
     return evaluator
+
+#=============================================================================#
+# serialisation
+
+def load_gf_shelve(filename, G, ensfn=None, meshfn=None, filedir=None):
+    """
+    Deserialise a geometric_field using the shelve package.
+
+    Inputs:
+    filename: [str] geometric_field filename (.geof).
+    G: a geometric_field instance
+    ensfn: [str] ensemble field function filename (.ens).
+    meshfn: [str] mesh filename (.mesh).
+    """
+    
+    if filedir is not None:
+        filename = os.path.join(filedir, filename)
+    
+    try:
+        try:
+            S = shelve.open( filename, 'r' )
+        except ImportError:
+            import bsddb3
+            _db = bsddb3.hashopen(filename)
+            S = shelve.Shelf(_db)
+    except:
+        raise IOError(filename+' could not be read')
+    else:
+        if ensfn:
+            F = EFF.load_ensemble(ensfn, meshFilename=meshfn, path=filedir)
+        else:
+            F = EFF.load_ensemble(S['ensemble_field'], meshFilename=meshfn, path=filedir)
+            
+        G.name = S['name']
+        G.dimensions = S['dimensions']
+        G.ensemble_field_function = F
+        G._create_ensemble_points()
+        G.triangulator.f = F
+        G.set_field_parameters(S['field_parameters'])
+        G.ensemble_point_counter = S['ensemble_point_counter']
+        return G
+
+class GeometricFieldJSONWriter(object):
+
+    node_ptr = 'node {:08d}'
+    dim_ptr = 'dim {:1d}'
+    num_pattern = '{:20.16E}'
+    
+    def __init__(self, gf):
+        """
+        Writer class for serialising a geometric field to a
+        JSON format file or string.
+        """
+        self.gf = gf
+        self._file_dir = ''
+
+    def write(self, filename, ensfn=None, meshfn=None, filedir=None):
+        """
+        Write to file a json format file of the eff properties.
+        """
+        if filedir is not None:
+            self._file_dir = filedir
+        
+        d = self.serialise(ensfn, meshfn)
+        with open(filename, 'w') as f:
+            json.dump(d, f, indent=4, sort_keys=True)
+
+        return filename
+
+    def serialise(self, ensfn, meshfn):
+        """
+        Return a json-compatible dict of the eff properties.
+        """
+        d = {}
+        self._serialise_meta(d)
+        self._serialise_ens(d, ensfn, meshfn)
+        self._serialise_field_parameters(d)
+        return d
+
+    def _serialise_meta(self, gf_dict):
+        gf_dict['name'] = self.gf.name
+        gf_dict['dimensions'] = self.gf.dimensions
+        gf_dict['ensemble_point_counter'] = self.gf.ensemble_point_counter
+
+    def _serialise_ens(self, gf_dict, ensfn, meshfn):
+        if ensfn is not None:
+            gf_dict['ensemble_field'] = self.gf.ensemble_field_function.save_ensemble(
+                ensfn, mesh_filename=meshfn, path=self._file_dir
+                )
+        else:
+            gf_dict['ensemble_field'] = self.gf.ensemble_field_function.save_ensemble(
+                self.gf.ensemble_field_function.name,
+                mesh_filename=meshfn,
+                path=self._file_dir
+                )
+
+    def _serialise_field_parameters(self, gf_dict):
+        d = {}
+        node_numbers = scipy.arange(self.gf.field_parameters.shape[1])
+        dims = scipy.arange(self.gf.field_parameters.shape[0])
+        params = self.gf.field_parameters.squeeze()
+
+        for n in node_numbers:
+            node_line = self.node_ptr.format(n)
+            d[node_line] = {}
+            for dim in dims:
+                d[node_line][self.dim_ptr.format(dim)] = ' '.join([self.num_pattern.format(x) for x in self.gf.field_parameters[dim,n,:]])
+            
+        gf_dict['field_parameters'] = d
+
+class GeometricFieldJSONReader(object):
+
+    node_ptr = 'node {:08d}'
+    dim_ptr = 'dim {:1d}'
+    num_pattern = '{:20.16E}'
+
+    def __init__(self, gf):
+        """
+        Reader class for setting a geometric field with properties
+        from a JSON format file or string.
+        """
+        self.gf = gf
+        self._file_dir = ''
+
+    def read(self, filename, ensfn=None, meshfn=None, filedir=None):
+        """
+        Load gf properties from a gf file.
+        """
+        if filedir is not None:
+            filename = os.path.join(filedir, filename)
+            self._file_dir = filedir
+        # else:
+        #     self._file_dir = os.path.split(filename)[0]
+        with open(filename, 'r') as f:
+            gf_dict = json.load(f)
+
+        self.deserialise(gf_dict, ensfn, meshfn)
+
+    def deserialise(self, jsonstr, ensfn, meshfn):
+        """
+        Set self.gf with properties from the json string.
+        file_dir is the directory of any embedded gf files.
+        """
+        self._parse_meta(jsonstr)
+        self._parse_ens(jsonstr, ensfn, meshfn)
+        self._parse_field_parameters(jsonstr)
+
+    def _parse_meta(self, gf_dict):
+        self.gf.name = gf_dict['name']
+        self.gf.dimensions = int(gf_dict['dimensions'])
+        self.gf.ensemble_point_counter = int(gf_dict['ensemble_point_counter'])
+
+    def _parse_ens(self, gf_dict, ensfn, meshfn):
+        if ensfn is not None:
+            self.gf.ensemble_field_function = EFF.load_ensemble(ensfn, meshfn, path=self._file_dir)
+        else:
+            self.gf.ensemble_field_function = EFF.load_ensemble(gf_dict['ensemble_field'], meshfn, path=self._file_dir)
+
+        self.gf.triangulator.f = self.gf.ensemble_field_function
+        self.gf._create_ensemble_points()
+
+    def _parse_field_parameters(self, gf_dict):
+        node_numbers = [int(k.split(' ')[1]) for k in gf_dict['field_parameters'].keys()]
+        node_keys = sorted(gf_dict['field_parameters'].keys())
+        dim_keys = sorted(gf_dict['field_parameters'][node_keys[0]].keys())
+        val_len = gf_dict['field_parameters'][node_keys[0]][dim_keys[0]].split(' ').__len__()
+        p = scipy.zeros([len(dim_keys), len(node_keys), val_len], dtype=float)
+        for ni, nk in enumerate(node_keys):
+            node_dict = gf_dict['field_parameters'][nk]
+            for di, dk in enumerate(dim_keys):
+                p[di, ni,:] = [float(x) for x in node_dict[dk].split(' ')]
+
+        self.gf.set_field_parameters(p)
+
+def load_gf_json(filename, gf, ensfn=None, meshfn=None, filedir=None):
+    reader = GeometricFieldJSONReader(gf)
+    reader.read(filename, ensfn, meshfn, filedir)
+    return gf
+
+def save_gf_json(filename, gf, ensfn=None, meshfn=None, filedir=None):
+    writer = GeometricFieldJSONWriter(gf)
+    writer.write(filename, ensfn, meshfn, filedir)
+
+def load_geometric_field(filename, ensFilename=None, meshFilename=None, path=None):
+    """
+    Deserialise a geometric_field from either a shelve file or a json file.
+
+    Inputs:
+    filename: [str] geometric_field filename (.geof).
+    ensFilename: [str] ensemble field function filename (.ens).
+    meshFilename: [str] mesh filename (.mesh).
+    path: [str] path of the directory of the above files. If defined, the filenames
+        above should not include the path to the file.
+    """
+    gf = geometric_field('none', 1)
+    with open(filename, 'r') as f:
+        head = f.read(1)
+        if head=='{':
+            load_gf_json(filename, gf, ensfn=ensFilename, meshfn=meshFilename, filedir=path)
+        else:
+            load_gf_shelve(filename, gf, ensfn=ensFilename, meshfn=meshFilename, filedir=path)
+
+    return gf
