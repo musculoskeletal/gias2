@@ -55,8 +55,13 @@ def _make_source_landmark_getter(landmark_names):
     """
     landmark_labels = []
     for ln in landmark_names:
-        body_name, landmark_name, side = ln.split('-')
-        landmark_labels.append(('{}-{}'.format(body_name, side), ln))
+        terms = ln.split('-')
+        if len(terms)==2:
+            body_name, landmark_name = terms
+            landmark_labels.append((body_name, ln))
+        elif len(terms)==3:
+            body_name, landmark_name, side = terms
+            landmark_labels.append(('{}-{}'.format(body_name, side), ln))
 
     def get_source_landmarks(model, coords):
         for i, (bn, ln) in enumerate(landmark_labels):

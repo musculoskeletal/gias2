@@ -213,6 +213,39 @@ class LowerLimbAtlas(object):
             self.knee_rot_r,
             )
 
+    def enable_knee_adduction_correction(self):
+        self.ll_l.enable_knee_adduction_correction()
+        self.ll_r.enable_knee_adduction_correction()
+        self._allow_knee_adduction_correction = True
+
+    def disable_knee_adduction_correction(self):
+        self.ll_l.disable_knee_adduction_correction()
+        self.ll_r.disable_knee_adduction_correction()
+        self._allow_knee_adduction_correction = False
+
+    def enable_knee_adduction_dof(self):
+        self.ll_l.enable_knee_adduction_dof()
+        self.ll_r.enable_knee_adduction_dof()
+        self._allow_knee_adduction_dof = True
+        self._neutral_params = [[0,],[0,],[0,0,0,0,0,0],[0,0,0],[0,0,0,],[0,0,],[0,0,]]
+        self.N_PARAMS_KNEE_L = 2
+        self.N_PARAMS_KNEE_R = 2
+        self.N_PARAMS_RIGID = self.N_PARAMS_PELVIS + \
+                              self.N_PARAMS_HIP_L + self.N_PARAMS_HIP_R +\
+                              self.N_PARAMS_KNEE_L + self.N_PARAMS_KNEE_R
+
+    def disable_knee_adduction_dof(self):
+        self.ll_l.disable_knee_adduction_dof()
+        self.ll_r.disable_knee_adduction_dof()
+        self._allow_knee_adduction_dof = False
+        self._neutral_params = [[0,],[0,],[0,0,0,0,0,0],[0,0,0],[0,0,0,],[0,],[0,]]
+        self.N_PARAMS_KNEE_L = 1
+        self.N_PARAMS_KNEE_R = 1
+        self.N_PARAMS_RIGID = self.N_PARAMS_PELVIS + \
+                              self.N_PARAMS_HIP_L + self.N_PARAMS_HIP_R +\
+                              self.N_PARAMS_KNEE_L + self.N_PARAMS_KNEE_R
+
+
     # @property
     # def uniformScalingX(self):
     #     self._uniformScalingX = np.hstack([
