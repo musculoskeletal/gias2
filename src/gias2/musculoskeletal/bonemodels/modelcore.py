@@ -82,13 +82,22 @@ class ACSCartesian(object):
         """
         return transform3D.transformAffine(x, self.local_transform)
 
-def make_source_landmark_getter(landmark_names):
+def make_source_landmark_getter(landmark_names, side=None):
     """ Creates a function to return the coordinates of landmarks
-    in a multibone atlas
+    in a multibone atlas.
+
+    inputs
+    ------
+    landmark_names : list of str
+        List of landmark names
+    side : str [optional]
+        'l' or 'r' if the names of models will be sided
     """
     landmark_labels = []
     for ln in landmark_names:
         body_name, landmark_name = ln.split('-')
+        if side:
+            body_name += '_{}'.format(side)
         landmark_labels.append((body_name, ln))
 
     def get_source_landmarks(model, coords):

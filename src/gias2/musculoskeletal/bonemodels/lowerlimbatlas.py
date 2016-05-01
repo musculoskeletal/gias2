@@ -34,6 +34,27 @@ class LowerLimbAtlas(object):
     Both sides
     """
     SHAPEMODESMAX = 100
+    _allow_knee_adduction_dof = False
+    _allow_knee_adduction_correction = False
+    _neutral_params = [
+        [0,],
+        [0,],
+        [0,0,0,0,0,0],
+        [0,0,0],
+        [0,0,0],
+        [0,]
+        [0,]
+        ]
+    N_PARAMS_PELVIS = 6
+    N_PARAMS_HIP_L = 3
+    N_PARAMS_HIP_R = 3
+    N_PARAMS_KNEE_L = 1
+    N_PARAMS_KNEE_R = 1
+    N_PARAMS_RIGID = N_PARAMS_PELVIS + \
+                     N_PARAMS_HIP_L + \
+                     N_PARAMS_HIP_R + \
+                     N_PARAMS_KNEE_L + \
+                     N_PARAMS_KNEE_R
 
     def __init__(self, name):
         self.name = name
@@ -44,8 +65,8 @@ class LowerLimbAtlas(object):
         self._map_model_params = None
         self._combined_param_map = None
 
-        self.ll_l = LowerLimbLeftAtlas(self.name+'_left')
-        self.ll_r = LowerLimbRightAtlas(self.name+'_right')
+        self.ll_l = LowerLimbLeftAtlas(self.name+'_l')
+        self.ll_r = LowerLimbRightAtlas(self.name+'_r')
 
         self._pelvis_rigid = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         self._hip_rot_l = np.array([0.0, 0.0, 0.0])
@@ -249,10 +270,10 @@ class LowerLimbAtlas(object):
 
     def _update_model_dict(self):
         for model_name, model in self.ll_l.models.items():
-            self.models[model_name+'-left'] = model
+            self.models[model_name+'-l'] = model
 
         for model_name, model in self.ll_r.models.items():
-            self.models[model_name+'-right'] = model
+            self.models[model_name+'-r'] = model
 
         # use the left pelvis as the reference
         self.models['pelvis'] = self.ll_l.models['pelvis']
@@ -308,8 +329,10 @@ class LowerLimbAtlas(object):
     #         self.ll_r.update_model_by_rigid_scale(_modelname, tx, ty, tz, rx, ry, rz, s)
 
     def update_pelvis(self, pelvis_rigid):
-        """Update position and orientation of the pelvis.
+        """
+        Update position and orientation of the pelvis.
         Inputs:
+        -------
         pelvis_rigid [list]: list of 6 floats describing a rigid
                              transformation in the global coordinate system 
                              of the pelvis - [tx, ty, tz, rx, ry, rz].
@@ -323,9 +346,11 @@ class LowerLimbAtlas(object):
         self, pc_weights, pc_modes, pelvis_rigid, hip_rot_l, hip_rot_r,
         knee_rot_l, knee_rot_r
         ):
-        """Update the lower limb geometry by pc weights and rigid transformations
+        """
+        Update the lower limb geometry by pc weights and rigid transformations
 
         Inputs:
+        -------
         pc_weights [list of floats]: list of pc weights
         pc_modes [list of ints]: list of the pcs that the weights are for
         pelvis_rigid [1-d array]: an array of six elements defining the rigid
