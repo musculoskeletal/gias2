@@ -17,7 +17,7 @@ def readme():
 
 #=============================================================================#
 name = 'gias2'
-version = '0.3.2'
+version = '0.4.1'
 install_requires = [
      'numpy >= 1.6.1',
      'scipy >= 0.9',
@@ -25,7 +25,8 @@ install_requires = [
 ]
 package_data = {
      'gias2': [
-          'src/gias2/examples/data/*', 
+          'src/gias2/examples/data/*',
+          'src/gias2/examples/outputs/*.md',
           'src/gias2/examples/data/tetgen_mesh/*',
           'src/gias2/examples/fieldwork/data/*',
           'src/gias2/examples/fieldwork/fit_whole_pelvis_data/*',
@@ -41,6 +42,7 @@ classifiers = [
      'Development Status :: 3 - Alpha',
      'License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)',
      'Programming Language :: Python :: 2.7',
+     'Programming Language :: Python :: 3.5',
      'Topic :: Scientific/Engineering :: Medical Science Apps.'
 ]
 

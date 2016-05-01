@@ -20,9 +20,9 @@ reload(gp)
 l1 = gp.Line3D([1,1,0], [0,0,0])
 l2 = gp.Line3D([1,1,0], [0,0,0])
 d, t1c, t2c = l1.calcClosestDistanceToLine(l2)
-print d, t1c, t2c
+print(d, t1c, t2c)
 
 s1 = gp.LineSegment3D([1,0,0], [0,0,0], -1, 0)
 s2 = gp.LineSegment3D([1,0,0], [0,0,0], -5, -4)
 d, t1c, t2c = s1.calcClosestDistanceToLine(s2)
-print d, t1c, t2c
+print(d, t1c, t2c)

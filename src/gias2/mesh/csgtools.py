@@ -45,7 +45,7 @@ def poly_2_csgeom(vertices, faces):
     """
 
     # instantiate csg vertices for all vertices
-    csg_vertices = [geom.Vertex(v) for v in vertices]
+    csg_vertices = [geom.Vertex(v.tolist()) for v in vertices]
     
     # instantiate csg polygons for all faces
     csg_polygons = []
@@ -90,8 +90,23 @@ def get_csg_triangles(csgeom, clean=False, normals=False):
     Return the vertex coordinates, triangle vertex indices, and point normals
     (if defined) of a triangulated csg geometry.
 
-    Returns a list of vertex coordinates, a list of 3-tuples, and a list of 
-    face normalse if normals=True, else last return variable is None.
+    inputs
+    ======
+    csgeom : CSG Solid instance
+        CSG solid to be meshed
+    clean : bool (default=False)
+        Clean the mesh
+    normals : bool (default=False)
+        Calculated normals
+
+    Returns
+    =======
+    v : nx3 array
+        a list of vertex coordinates
+    f : mx3 array
+        a list of 3-tuples face vertex indices
+    n : mx3 array
+        a list of face normals if normals=True, else None.
     """
     vertices, faces = get_csg_polys(csgeom)
     if len(vertices)==0:

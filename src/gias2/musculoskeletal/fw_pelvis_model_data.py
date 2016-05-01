@@ -18,33 +18,33 @@ combinedGFElemNumber = {'left_hemi':1, 'right_hemi':0, 'sacrum':2}
 
 # left_hemi_sacrum ens and mesh using right_hemi ens and mesh submeshes
 # left_hemi_right_hemi ens and mesh are flipped: 0: right, 1: left (actual order is still left, right)
-landmarksNodes = {'LASIS': 1004,	# anterior superior iliac spine
-				  'RASIS':  466,
-				  'LPSIS':  924,	# posterior superior iliac spine
-				  'RPSIS':  384,
-				  'LPS': 631,		# pubis symphysis 
-				  'RPS': 91,
-				  'LIS': 773,		# ischial spine
-				  'RIS': 233,
-				  'LIT': 566,		# ichial tuberosity (most inferior point)
-				  'RIT': 25,
-				  'LOFI': 549,		# obturator foramen inferior point
-				  'ROFI': 10,
-				  'LPAN': 827,		# posterior acetabular notch
-				  'RPAN': 289,
-				  'RPT': 102,		# pubic tubercle
-				  'LPT': 643,
-				  }
-				  
+landmarksNodes = {'LASIS': 1004,    # anterior superior iliac spine
+                  'RASIS':  466,
+                  'LPSIS':  924,    # posterior superior iliac spine
+                  'RPSIS':  384,
+                  'LPS': 631,       # pubis symphysis 
+                  'RPS': 91,
+                  'LIS': 773,       # ischial spine
+                  'RIS': 233,
+                  'LIT': 566,       # ichial tuberosity (most inferior point)
+                  'RIT': 25,
+                  'LOFI': 549,      # obturator foramen inferior point
+                  'ROFI': 10,
+                  'LPAN': 827,      # posterior acetabular notch
+                  'RPAN': 289,
+                  'RPT': 102,       # pubic tubercle
+                  'LPT': 643,
+                  }
+                  
 #lasis = 466 old 464 new
 LHLandmarkNodes = {'LASIS': 464,
-					'LPSIS': 384,
-					'LPS': 92,
-					'LIS': 233,
-					'LIT': 25,
-					'LOFI': 10,
-					'LPAN': 289,
-					}
+                    'LPSIS': 384,
+                    'LPS': 92,
+                    'LIS': 233,
+                    'LIT': 25,
+                    'LOFI': 10,
+                    'LPAN': 289,
+                    }
 
 # LHAcetabulumElements = [38,39,40,41,42]
 LHAcetabulumElements = [36,37,38,39,40,41,42]

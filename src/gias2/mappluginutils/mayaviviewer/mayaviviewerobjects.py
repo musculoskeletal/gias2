@@ -58,7 +58,7 @@ class MayaviViewerObjectsContainer(object):
         #     raise ValueError, 'name must be unique'
 
         if not isinstance(obj, MayaviViewerObject):
-            raise TypeError, 'obj must a MayaviViewerObject'
+            raise TypeError('obj must a MayaviViewerObject')
 
         self._objects[name] = obj
 
@@ -73,17 +73,17 @@ class MayaviViewerObjectsContainer(object):
 
     def getObjectNamesOfType(self, typeName):
         ret = []
-        for name, o in self._objects.items():
+        for name, o in list(self._objects.items()):
             if o.typeName==t:
                 ret.append(name)
 
         return ret
 
     def getObjectNames(self):
-        return self._objects.keys()
+        return list(self._objects.keys())
 
     def getNumberOfObjects(self):
-        return len(self._objects.keys())
+        return len(list(self._objects.keys()))
 
     def removeObject(self, name):
         if name in self._objects:

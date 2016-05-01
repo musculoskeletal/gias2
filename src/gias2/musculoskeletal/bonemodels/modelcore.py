@@ -258,7 +258,7 @@ class BoneModel(object):
         self.update_acs()
 
     def update_landmarks(self):
-        for ln, leval in self._landmark_evaluators.items():
+        for ln, leval in list(self._landmark_evaluators.items()):
             self.landmarks[ln] = leval(self.gf.field_parameters)
 
         return self.landmarks
@@ -367,7 +367,7 @@ class MultiBoneAtlas(object):
         self.models = {}
         self.model_elem_map = {}
         for mn in model_names:
-            print('loading models: {}'.format(mn))
+            print(('loading models: {}'.format(mn)))
             self.models[mn] = model_classes[mn](
                                 mn,
                                 geometric_field.load_geometric_field(
@@ -387,7 +387,7 @@ class MultiBoneAtlas(object):
         # get the global node numbers for each model
         elem2ens = self.combined_model_gf.ensemble_field_function.mapper._element_to_ensemble_map
         self._combined_param_map = {}
-        for mn, combined_elem in self.model_elem_map.items():
+        for mn, combined_elem in list(self.model_elem_map.items()):
             self._combined_param_map[mn] = [elem2ens[combined_elem][x][0][0] for x in sorted(elem2ens[combined_elem].keys())]
 
 
@@ -413,19 +413,19 @@ class MultiBoneAtlas(object):
                                     ).reshape((3,-1,1))
 
         # separate params for each model
-        for model_name, model in self.models.items():
+        for model_name, model in list(self.models.items()):
             model_params = combined_model_params[:,self._combined_param_map[model_name],:]
             model.update_gf(model_params)
 
     def update_models_by_combined_params(self, p):
-        for model_name, model in self.models.items():
+        for model_name, model in list(self.models.items()):
             model_params = p[:,self._combined_param_map[model_name],:]
             model.update_gf(model_params)
 
     def update_models_by_uniform_rigid_scale(self, tx, ty, tz, rx, ry, rz, s):
         """ Rotation and scaling is about model CoM
         """
-        for model in self.models.values():
+        for model in list(self.models.values()):
             model.transformRigidScale(tx, ty, tz, rx, ry, rz, s)
 
     def update_model_by_rigid_scale(self, modelname, tx, ty, tz, rx, ry, rz, s):

@@ -15,38 +15,38 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 import numpy as np
 
 class Transform(object):
-	transformType = None
+    transformType = None
 
-	def __init__(self, T, P=None):
-		self.T = T
-		self.P = P
+    def __init__(self, T, P=None):
+        self.T = T
+        self.P = P
 
-	def getT(self):
-		return np.array(self.T)
+    def getT(self):
+        return np.array(self.T)
 
-	def setT(self, T):
-		self.T = np.array(T)
+    def setT(self, T):
+        self.T = np.array(T)
 
-	def getP(self):
-		return np.array(self.P)
+    def getP(self):
+        return np.array(self.P)
 
-	def setP(self, P):
-		self.P = np.array(P)
+    def setP(self, P):
+        self.P = np.array(P)
 
 class AffineTransform(Transform):
-	transformType = 'affine'
+    transformType = 'affine'
 
 class RigidTransform(Transform):
-	transformType = 'rigid'
+    transformType = 'rigid'
 
 class RigidTransformAboutPoint(Transform):
-	transformType = 'rigid_about_point'
+    transformType = 'rigid_about_point'
 
 class RigidScaleTransform(Transform):
-	transformType = 'rigidscale'
+    transformType = 'rigidscale'
 
 class RigidScaleTransformAboutPoint(Transform):
-	transformType = 'rigidscale_about_point'
+    transformType = 'rigidscale_about_point'
 
 class RigidPCModesTransform(Transform):
-	transformType = 'rigidpcmodes'
+    transformType = 'rigidpcmodes'

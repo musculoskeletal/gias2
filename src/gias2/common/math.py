@@ -16,17 +16,17 @@ import numpy as np
 import scipy.stats as stats
 
 def norm( v ):
-	# return np.divide(v, np.sqrt((np.array(v)**2.0).sum()))
-	return np.divide(v, mag(v))
+    # return np.divide(v, np.sqrt((np.array(v)**2.0).sum()))
+    return np.divide(v, mag(v))
 
 def mag( v ):
-	return np.sqrt((np.array(v)**2.0).sum(-1))
+    return np.sqrt((np.array(v)**2.0).sum(-1))
 
 def angle(v1, v2):
-	return np.arccos((v1*v2).sum(-1)/(mag(v1)*mag(v2)))
+    return np.arccos((v1*v2).sum(-1)/(mag(v1)*mag(v2)))
 
 def rms(x):
-	return np.sqrt((x*x).mean(-1))
+    return np.sqrt((x*x).mean(-1))
 
 def meanConfidenceInterval(data, confidence=0.95):
     a = 1.0*np.array(data)

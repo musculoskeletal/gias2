@@ -51,7 +51,7 @@ class MayaviViewerDataPoints(MayaviViewerObject):
 
         self.sceneObject = None
         self.defaultColour = colours['bone']
-        if 'color' not in self.renderArgs.keys():
+        if 'color' not in list(self.renderArgs.keys()):
             self.renderArgs['color'] = self.defaultColour
 
     def setScalarSelection(self, scalarName):

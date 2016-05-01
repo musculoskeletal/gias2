@@ -11,7 +11,7 @@ License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
-
+from os import path
 import numpy as np
 from scipy.spatial import cKDTree
 from gias2.fieldwork.field import geometric_field
@@ -114,30 +114,31 @@ class PatellaModel(modelcore.BoneModel):
 #==================================================#
 # Multiple bone models                             #
 #==================================================#
+MAP_DIR = path.expanduser('~/work_projects/MAP/')
 class LowerLimbLeftAtlas(modelcore.MultiBoneAtlas):
 
     bone_names = ('pelvis', 'femur', 'patella', 'tibiafibula')
-    combined_pcs_filename = '../models/lower_limb/shapemodels/LLP26_rigid.pc'
+    combined_pcs_filename = path.join(MAP_DIR, 'models/lower_limb/shapemodels/LLP26_rigid.pc')
     bone_classes = {'pelvis': PelvisModel,
                     'femur': FemurModel,
                     'patella': PatellaModel,
                     'tibiafibula': TibiaFibulaModel,
                     }
-    bone_files = {'pelvis': ('../models/pelvis/template_meshes/pelvis_combined_cubic_mean_rigid_LLP26.geof',
-                             '../models/pelvis/template_meshes/pelvis_combined_cubic_flat.ens',
-                             '../models/pelvis/template_meshes/pelvis_combined_cubic_flat.mesh',
+    bone_files = {'pelvis': (path.join(MAP_DIR, 'models/pelvis/template_meshes/pelvis_combined_cubic_mean_rigid_LLP26.geof'),
+                             path.join(MAP_DIR, 'models/pelvis/template_meshes/pelvis_combined_cubic_flat.ens'),
+                             path.join(MAP_DIR, 'models/pelvis/template_meshes/pelvis_combined_cubic_flat.mesh'),
                              ),
-               'femur': ('../models/femur/template_meshes/femur_left_mean_rigid_LLP26.geof',
-                         '../models/femur/template_meshes/femur_left_quartic_flat.ens',
-                         '../models/femur/template_meshes/femur_left_quartic_flat.mesh',
+               'femur': (path.join(MAP_DIR, 'models/femur/template_meshes/femur_left_mean_rigid_LLP26.geof'),
+                         path.join(MAP_DIR, 'models/femur/template_meshes/femur_left_quartic_flat.ens'),
+                         path.join(MAP_DIR, 'models/femur/template_meshes/femur_left_quartic_flat.mesh'),
                          ),
-               'patella': ('../models/patella/template_meshes/patella_left_mean_rigid_LLP26.geof',
-                           '../models/patella/template_meshes/patella_11_left.ens',
-                           '../models/patella/template_meshes/patella_11_left.mesh',
+               'patella': (path.join(MAP_DIR, 'models/patella/template_meshes/patella_left_mean_rigid_LLP26.geof'),
+                           path.join(MAP_DIR, 'models/patella/template_meshes/patella_11_left.ens'),
+                           path.join(MAP_DIR, 'models/patella/template_meshes/patella_11_left.mesh'),
                            ),
-               'tibiafibula': ('../models/tibiafibula/template_meshes/tibia_fibula_cubic_left_mean_rigid_LLP26.geof',
-                                  '../models/tibiafibula/template_meshes/tibia_fibula_left_cubic_flat.ens',
-                                  '../models/tibiafibula/template_meshes/tibia_fibula_left_cubic_flat.mesh',
+               'tibiafibula': (path.join(MAP_DIR, 'models/tibiafibula/template_meshes/tibia_fibula_cubic_left_mean_rigid_LLP26.geof'),
+                                  path.join(MAP_DIR, 'models/tibiafibula/template_meshes/tibia_fibula_left_cubic_flat.ens'),
+                                  path.join(MAP_DIR, 'models/tibiafibula/template_meshes/tibia_fibula_left_cubic_flat.mesh'),
                                   ),
                 }
     combined_model_field_basis = {'tri10':'simplex_L3_L3',
@@ -198,7 +199,7 @@ class LowerLimbLeftAtlas(modelcore.MultiBoneAtlas):
         """
 
         if name not in self.bone_classes:
-            raise ValueError('Invalid bone name. Must be one of {}'.format(str(self.bone_classes.keys())))
+            raise ValueError('Invalid bone name. Must be one of {}'.format(str(list(self.bone_classes.keys()))))
 
         if not self.models.get(name):
             self.models[name] = self.bone_classes[name](name, gf)
