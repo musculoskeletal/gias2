@@ -41,7 +41,7 @@ def simplemesh2gtssurf(smesh):
 
 def gtssurf2simplemesh(gts_surf):
     """
-    Create a GTS surface from a SimpleMesh.
+    Create a SimpleMesh from a GTS surface.
 
     input
     =====
@@ -51,18 +51,9 @@ def gtssurf2simplemesh(gts_surf):
     =======
     smesh : SimpleMesh instance
     """
-
-    gts_surf_verts = gts_surf.vertices()
-
-    # read out vertices
-    vert_coords = np.array([v.coords() for v in gts_surf_verts])
-
-    # read out faces
-    face_inds = []
-    for f in gts_surf.faces():
-        face_inds.append([gts_surf_verts.index(v) for v in f.vertices()])
-
-    return simplemesh.SimpleMesh(v=vert_coords, f=face_inds)
+    x, y, z, f = gts.get_coords_and_face_indices(gts_surf, True)
+    v = np.array([x, y, z]).T
+    return simplemesh.SimpleMesh(v=v, f=f)
 
 def cylinder(**kwargs):
     """ Returns a cylinder with linearly changing radius between the two ends.
