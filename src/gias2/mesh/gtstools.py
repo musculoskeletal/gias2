@@ -73,10 +73,6 @@ def cylinder(**kwargs):
     """
     s = np.array(kwargs.get('start', (0.0, -1.0, 0.0)))
     e = np.array(kwargs.get('end', (0.0, 1.0, 0.0)))
-    # if isinstance(s, list):
-    #     s = geom.Vector(*s)
-    # if isinstance(e, list):
-    #     e = geom.Vector(*e)
     sr = kwargs.get('startr', 1.0)
     er = kwargs.get('endr', 1.0)
     slices = kwargs.get('slices', 16)
@@ -131,8 +127,6 @@ def cylinder(**kwargs):
             # round side tris
             add_triangle(point(i, j+1), point(i, j), point(i+1, j))
             add_triangle(point(i, j+1), point(i+1, j), point(i+1, j+1))
-            # polygons.append(geom.Polygon([point(0., t1, 0.), point(0., t0, 0.),
-            #                               point(1., t0, 0.), point(1., t1, 0.)]))
 
             # end side triangle
             if i==(stacks-1):
