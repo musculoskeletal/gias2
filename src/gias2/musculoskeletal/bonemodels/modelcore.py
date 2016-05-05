@@ -414,7 +414,7 @@ class MultiBoneAtlas(object):
         pc_modes [1-d array]: array of integers corresponding to the modes
 
         """
-
+        
         # evaluate combined model params
         combined_model_params = self.combined_pcs.reconstruct(
                                     self.combined_pcs.getWeightsBySD(pc_modes, pc_weights),

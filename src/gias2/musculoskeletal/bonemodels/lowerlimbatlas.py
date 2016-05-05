@@ -42,8 +42,8 @@ class LowerLimbAtlas(object):
         [0,0,0,0,0,0],
         [0,0,0],
         [0,0,0],
-        [0,]
-        [0,]
+        [0,],
+        [0,],
         ]
     N_PARAMS_PELVIS = 6
     N_PARAMS_HIP_L = 3
@@ -75,7 +75,7 @@ class LowerLimbAtlas(object):
         self._knee_rot_r = np.array([0.0, 0.0, 0.0])
         self.n_shape_modes = 1
         self.shape_modes = [0,]
-        self._shape_model_weights = np.zeros(self.SHAPEMODESMAX, dtype=float)
+        self._shape_mode_weights = np.zeros(self.SHAPEMODESMAX, dtype=float)
         self.uniform_scaling = 1.0
         self.pelvis_scaling = 1.0
         self.femur_scaling_l = 1.0
@@ -170,14 +170,14 @@ class LowerLimbAtlas(object):
         self.ll_r.update_patella()
     
     @property
-    def shape_model_weights(self):
-        return self._shape_model_weights[:self.n_shape_modes]
+    def shape_mode_weights(self):
+        return self._shape_mode_weights[:self.n_shape_modes]
 
-    @shape_model_weights.setter
-    def shape_model_weights(self, value):
-        self._shape_model_weights[:len(value)] = value
+    @shape_mode_weights.setter
+    def shape_mode_weights(self, value):
+        self._shape_mode_weights[:len(value)] = value
         self.n_shape_modes = len(value)
-        self.update_models_by_pcweights_sd(value, self.shape_modes)
+        self._update_models_by_pcweights_sd(value, self.shape_modes)
 
     # gets a flat array, sets using a list of arrays.
     @property
@@ -339,6 +339,7 @@ class LowerLimbAtlas(object):
     def _update_models_by_pcweights_sd(self, pc_weights, pc_modes):
         self.ll_l.update_models_by_pcweights_sd(pc_weights, pc_modes)
         self.ll_r.update_models_by_pcweights_sd(pc_weights, pc_modes)
+        # self._update_model_dict()
 
     # def update_models_by_combined_params_left(self, p):
     #     self.ll_l.update_models_by_combined_params(p)
@@ -374,6 +375,7 @@ class LowerLimbAtlas(object):
         """
         self.ll_l.update_pelvis(pelvis_rigid)
         self.ll_r.update_pelvis(pelvis_rigid)
+        # self._update_model_dict()
 
     def update_all_models(
         self, pc_weights, pc_modes, pelvis_rigid, hip_rot_l, hip_rot_r,
@@ -398,6 +400,7 @@ class LowerLimbAtlas(object):
         # evaluate shape model
         _pc_weights = np.zeros(np.max(pc_modes)+1, dtype=float)
         _pc_weights[pc_modes] = pc_weights
+        self.shape_modes = pc_modes
         self.shape_mode_weights = _pc_weights
 
         # rigid transform pelvis
@@ -410,3 +413,5 @@ class LowerLimbAtlas(object):
         # place tibia and fibula by knee_rot and default_knee_offset
         self.knee_rot_l = knee_rot_l
         self.knee_rot_r = knee_rot_r
+
+        # self._update_model_dict()

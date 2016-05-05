@@ -30,7 +30,8 @@ def _make_x0(ll, npcs, target_landmarks, source_landmarks, init_pc_weights=None)
                     xtol=1e-6, maxfev=999999,
                     maxfun=9999999999
                     )[0]
-    
+    print('init rigid')
+    print(init_rigid)
     if init_pc_weights is None:
         init_pc_weights = np.zeros(npcs, dtype=float)
     init_x = np.hstack([init_pc_weights,
@@ -61,7 +62,7 @@ def _make_source_landmark_getter(landmark_names):
             landmark_labels.append((body_name, ln))
         elif len(terms)==3:
             body_name, landmark_name, side = terms
-            landmark_labels.append(('{}-{}'.format(body_name, side), ln))
+            landmark_labels.append(('{}-{}'.format(body_name, side), '{}-{}'.format(body_name, landmark_name)))
 
     def get_source_landmarks(model, coords):
         for i, (bn, ln) in enumerate(landmark_labels):
@@ -107,7 +108,7 @@ def _lower_limb_atlas_landmark_fit(ll_model, target_landmark_coords, landmark_na
                 x[hip_rot_l_x_index:hip_rot_r_x_index],
                 x[hip_rot_r_x_index:knee_rot_l_x_index],
                 x[knee_rot_l_x_index:knee_rot_r_x_index],
-                x[knee_rot_x_r_index:],
+                x[knee_rot_r_x_index:],
                 ]
 
     #=========================================================================#
