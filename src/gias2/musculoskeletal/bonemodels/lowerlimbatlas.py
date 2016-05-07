@@ -73,7 +73,6 @@ class LowerLimbAtlas(object):
         self._hip_rot_r = np.array([0.0, 0.0, 0.0])
         self._knee_rot_l = np.array([0.0, 0.0, 0.0])
         self._knee_rot_r = np.array([0.0, 0.0, 0.0])
-        self.n_shape_modes = 1
         self.shape_modes = [0,]
         self._shape_mode_weights = np.zeros(self.SHAPEMODESMAX, dtype=float)
         self.uniform_scaling = 1.0
@@ -84,8 +83,6 @@ class LowerLimbAtlas(object):
         self.petalla_scaling_r = 1.0
         self.tibfib_scaling_l = 1.0
         self.tibfib_scaling_r = 1.0
-        self.knee_dof = False
-        self.knee_corr = False
         self.last_transform_set = None
 
         self._shape_model_x = None
@@ -135,21 +132,21 @@ class LowerLimbAtlas(object):
 
     @property
     def knee_rot_l(self):
-        if self.knee_dof:
+        if self._allow_knee_adduction_dof:
             return self._knee_rot_l[[0,2]]
         else:
             return self._knee_rot_l[[0]]
 
     @property
     def knee_rot_r(self):
-        if self.knee_dof:
+        if self._allow_knee_adduction_dof:
             return self._knee_rot_r[[0,2]]
         else:
             return self._knee_rot_r[[0]]
 
     @knee_rot_l.setter
     def knee_rot_l(self, value):
-        if self.knee_dof:
+        if self._allow_knee_adduction_dof:
             self._knee_rot_l[0] = _trim_angle(value[0])
             self._knee_rot_l[2] = _trim_angle(value[1])    
         else:
@@ -160,7 +157,7 @@ class LowerLimbAtlas(object):
 
     @knee_rot_r.setter
     def knee_rot_r(self, value):
-        if self.knee_dof:
+        if self._allow_knee_adduction_dof:
             self._knee_rot_r[0] = _trim_angle(value[0])
             self._knee_rot_r[2] = _trim_angle(value[1])
         else:
@@ -171,19 +168,21 @@ class LowerLimbAtlas(object):
     
     @property
     def shape_mode_weights(self):
-        return self._shape_mode_weights[:self.n_shape_modes]
+        return self._shape_mode_weights[self.shape_modes]
 
     @shape_mode_weights.setter
     def shape_mode_weights(self, value):
-        self._shape_mode_weights[:len(value)] = value
-        self.n_shape_modes = len(value)
+        if len(value)!=len(self.shape_modes):
+            raise ValueError('Length of value does not match length of self.shape_modes ({})'.format(self.shape_modes))
+
+        self._shape_mode_weights[self.shape_modes] = value
         self._update_models_by_pcweights_sd(value, self.shape_modes)
 
     # gets a flat array, sets using a list of arrays.
     @property
     def shape_model_x(self):
         self._shapeModelX = np.hstack([
-                                self.shape_model_weights[:self.n_shape_modes],
+                                self.shape_model_weights,
                                 self.pelvis_rigid,
                                 self.hip_rot_l,
                                 self.hip_rot_r,
@@ -194,7 +193,7 @@ class LowerLimbAtlas(object):
 
     @shape_model_x.setter
     def shape_model_x(self, value):
-        a = self.n_shape_modes
+        a = len(self.shape_modes)
         self._shape_model_x = value
         self.shape_model_weights = value[0]
         self.pelvis_rigid = value[1]
@@ -398,10 +397,8 @@ class LowerLimbAtlas(object):
         """
         
         # evaluate shape model
-        _pc_weights = np.zeros(np.max(pc_modes)+1, dtype=float)
-        _pc_weights[pc_modes] = pc_weights
         self.shape_modes = pc_modes
-        self.shape_mode_weights = _pc_weights
+        self.shape_mode_weights = pc_weights
 
         # rigid transform pelvis
         self.pelvis_rigid = pelvis_rigid
