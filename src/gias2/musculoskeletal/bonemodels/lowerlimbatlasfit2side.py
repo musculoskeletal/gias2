@@ -19,8 +19,6 @@ from scipy import optimize
 from gias2.registration import alignment_fitting
 from gias2.musculoskeletal.bonemodels import modelcore
 
-import pdb
-
 def _make_x0(ll, npcs, target_landmarks, source_landmarks, init_pc_weights=None):
     """ Generate initial parameters for lower limb atlas fitting.
     The pelvis landmarks are rigidly registered to get initial
@@ -143,9 +141,6 @@ def _lower_limb_atlas_landmark_fit(ll_model, target_landmark_coords, landmark_na
         # total error
         total_error = ssdist + m2
 
-        # if len(x_split[0])>1:
-        #     print('bong')
-        #     pdb.set_trace()
         return total_error
 
     # def default_callback(x):

@@ -13,13 +13,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 """
 
 import numpy as np
-from scipy.spatial import cKDTree
-from gias2.fieldwork.field import geometric_field
-from gias2.musculoskeletal import fw_model_landmarks as model_landmarks
-from gias2.musculoskeletal import model_alignment
 from gias2.musculoskeletal.bonemodels.bonemodels import LowerLimbLeftAtlas, LowerLimbRightAtlas
-from gias2.common import transform3D, math, geoprimitives
-from gias2.musculoskeletal.bonemodels import modelcore
 
 def _trim_angle(a):
     if a < -np.pi:
@@ -182,7 +176,7 @@ class LowerLimbAtlas(object):
     @property
     def shape_model_x(self):
         self._shapeModelX = np.hstack([
-                                self.shape_model_weights,
+                                self.shape_mode_weights,
                                 self.pelvis_rigid,
                                 self.hip_rot_l,
                                 self.hip_rot_r,
@@ -193,9 +187,9 @@ class LowerLimbAtlas(object):
 
     @shape_model_x.setter
     def shape_model_x(self, value):
-        a = len(self.shape_modes)
+        # a = len(self.shape_modes)
         self._shape_model_x = value
-        self.shape_model_weights = value[0]
+        self.shape_mode_weights = value[0]
         self.pelvis_rigid = value[1]
         self.hip_rot_l = value[2]
         self.hip_rot_r = value[3]
