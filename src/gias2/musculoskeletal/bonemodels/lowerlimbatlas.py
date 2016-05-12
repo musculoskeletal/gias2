@@ -175,7 +175,7 @@ class LowerLimbAtlas(object):
     # gets a flat array, sets using a list of arrays.
     @property
     def shape_model_x(self):
-        self._shapeModelX = np.hstack([
+        self._shape_model_x = np.hstack([
                                 self.shape_mode_weights,
                                 self.pelvis_rigid,
                                 self.hip_rot_l,
