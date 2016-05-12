@@ -812,7 +812,7 @@ class polydataFromImageParams   (object):
         self.isoValue = 200.0
         self.smoothIt = 100
         self.smoothFeatureEdge = 0
-        self.deciRatio = 0.5
+        self.deciRatio = 0.5 # higher the ratio, more decimation
         self.deciPerserveTopology = 0
         self.clean = True
         self.cleanPointMerging = 1

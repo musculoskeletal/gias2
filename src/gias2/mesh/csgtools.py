@@ -16,7 +16,7 @@ import math
 import numpy as np
 from csg.core import CSG
 from csg import geom
-from gias2.mesh import vtktools
+from gias2.mesh import vtktools, simplemesh
 from gias2.common import math as gmath
 vtk = vtktools.vtk
 
@@ -31,6 +31,12 @@ vtk = vtktools.vtk
 # def make_csg_vertex( x, y, z):
 #     pos = CSG_Pos(x, y, z)
 #     return geom.Vertex(pos)
+
+def _unit(v):
+    """
+    return the unit vector of vector v
+    """
+    return v/np.sqrt((v**2.0).sum(-1))
 
 def poly_2_csgeom(vertices, faces):
     """
@@ -113,15 +119,24 @@ def get_csg_triangles(csgeom, clean=False, normals=False):
         raise ValueError('no polygons in geometry')
     return vtktools.polygons2Tri(vertices, faces, clean, normals)
 
+def csg2simplemesh(csgeom, clean=True):
+    v, f, n = get_csg_triangles(csgeom, clean=clean, normals=False)
+    return simplemesh.SimpleMesh(v=v, f=f)
+    
+def simplemesh2csg(sm):
+    return poly_2_csgeom(sm.v, sm.f)
+
 def cup(centre, normal, ri, ro):
+    slices=16
+    stacks=8
     centre = np.array(centre)
     normal = gmath.norm(np.array(normal))
 
     # create outer sphere
-    sphere_out = CSG.sphere(center=list(centre), radius=ro)
+    sphere_out = CSG.sphere(center=list(centre), radius=ro, slices=slices, stacks=stacks)
 
     # create inner sphere
-    sphere_in = CSG.sphere(center=list(centre), radius=ri)
+    sphere_in = CSG.sphere(center=list(centre), radius=ri, slices=slices, stacks=stacks)
 
     # create shell
     shell = sphere_out.subtract(sphere_in)
@@ -136,7 +151,6 @@ def cup(centre, normal, ri, ro):
     cup = shell.subtract(cylinder)
 
     return cup
-    
 
 def cylinder_var_radius(**kwargs):
     """ Returns a cylinder with linearly changing radius between the two ends.
@@ -150,51 +164,84 @@ def cylinder_var_radius(**kwargs):
             
             enr (float): Radius of cylinder at the end, default 1.0.
             
-            slices (int): Number of slices, default 16.
+            slices (int): Number of radial slices, default 16.
+
+            stacks (int): Number of axial slices, default=2.
     """
-    s = kwargs.get('start', geom.Vector(0.0, -1.0, 0.0))
-    e = kwargs.get('end', geom.Vector(0.0, 1.0, 0.0))
+    s = kwargs.get('start', np.array([0.0, -1.0, 0.0]))
+    e = kwargs.get('end', np.array([0.0, 1.0, 0.0]))
     if isinstance(s, list):
-        s = geom.Vector(*s)
+        s = np.array(s)
     if isinstance(e, list):
-        e = geom.Vector(*e)
+        e = np.array(e)
     sr = kwargs.get('startr', 1.0)
     er = kwargs.get('endr', 1.0)
     slices = kwargs.get('slices', 16)
-    ray = e.minus(s)
+    stacks = kwargs.get('stacks', 2)
+    stack_l = 1.0/stacks # length of each stack segment
+    ray = e - s
     
-    axisZ = ray.unit()
-    isY = (math.fabs(axisZ.y) > 0.5)
-    axisX = geom.Vector(float(isY), float(not isY), 0).cross(axisZ).unit()
-    axisY = axisX.cross(axisZ).unit()
-    start = geom.Vertex(s, axisZ.negated())
-    end = geom.Vertex(e, axisZ.unit())
+    axisZ = _unit(ray)
+    isY = np.abs(axisZ[1])>0.5
+    axisX = _unit(np.cross([float(isY), float(not isY), 0], axisZ))
+    axisY = _unit(np.cross(axisX, axisZ))
+    start = geom.Vertex(s.tolist(), (-axisZ).tolist())
+    end = geom.Vertex(e.tolist(), axisZ.tolist())
     polygons = []
+    _verts = {}
+
+    def make_vert(stacki, slicei, normalBlend):
+        stackr = stacki*stack_l
+        slicer = slicei/float(slices)
+        angle = slicer*np.pi*2.0
+        out = axisX*np.cos(angle) + axisY*np.sin(angle)
+        r = sr + stackr*(er-sr)
+        pos = s + ray*stackr + out*r
+        normal = out*(1.0 - np.abs(normalBlend)) + (axisZ*normalBlend)
+        return geom.Vertex(pos.tolist(), normal.tolist())  
     
-    def point(stack, slice, normalBlend):
-        angle = slice * math.pi * 2.0
-        out = axisX.times(math.cos(angle)).plus(
-            axisY.times(math.sin(angle)))
-        if stack==0:
-            r = sr
-        else:
-            r = er
-        pos = s.plus(ray.times(stack)).plus(out.times(r))
-        normal = out.times(1.0 - math.fabs(normalBlend)).plus(
-            axisZ.times(normalBlend))
-        return geom.Vertex(pos, normal)
-        
-    for i in range(0, slices):
-        t0 = i / float(slices)
-        t1 = (i + 1) / float(slices)
-        # start side triangle
-        polygons.append(geom.Polygon([start, point(0., t0, -1.), 
-                                      point(0., t1, -1.)]))
-        # round side quad
-        polygons.append(geom.Polygon([point(0., t1, 0.), point(0., t0, 0.),
-                                      point(1., t0, 0.), point(1., t1, 0.)]))
-        # end side triangle
-        polygons.append(geom.Polygon([end, point(1., t1, 1.), 
-                                      point(1., t0, 1.)]))
+    def point(stacki, slicei, normalBlend):
+        # wrap around
+        if slicei==slices:
+            slicei = 0
+
+        # check if vertex already exists. Duplicated vertices may
+        # cause self-intersection errors
+        vert = _verts.get((stacki, slicei), None)
+        if vert is None:
+            vert = make_vert(stacki, slicei, normalBlend)
+            _verts[(stacki, slicei)] = vert
+        return vert
+    
+    for i in range(0, stacks):
+        for j in range(0, slices):
+            # start side triangle
+            if i==0:
+                polygons.append(
+                    geom.Polygon([
+                        start,
+                        point(i, j,   -1.), 
+                        point(i, j+1, -1.)
+                        ])
+                    )
+            # round side quad
+            polygons.append(
+                geom.Polygon([
+                    point(i,   j+1, 0.),
+                    point(i,   j,   0.),
+                    point(i+1, j,   0.),
+                    point(i+1, j+1, 0.)
+                    ])
+                )
+            
+            # end side triangle
+            if i==(stacks-1):
+                polygons.append(
+                    geom.Polygon([
+                        end,
+                        point(i+1, j+1, 1.), 
+                        point(i+1, j,   1.)
+                        ])
+                    )
     
     return CSG.fromPolygons(polygons)
