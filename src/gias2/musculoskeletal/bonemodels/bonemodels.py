@@ -164,6 +164,13 @@ class LowerLimbLeftAtlas(modelcore.MultiBoneAtlas):
     N_PARAMS_KNEE = 1
     N_PARAMS_RIGID = N_PARAMS_PELVIS + N_PARAMS_HIP + N_PARAMS_KNEE
 
+    hip_flex_coeff = 1.0
+    hip_abd_coeff = -1.0
+    hip_rot_coeff = -1.0
+    knee_flex_coeff = 1.0
+    knee_abd_coeff = -1.0
+    knee_rot_coeff = 1.0
+
     def load_bones(self):
         """ Load atlas bone models and set to neutral positions
         """
@@ -196,6 +203,8 @@ class LowerLimbLeftAtlas(modelcore.MultiBoneAtlas):
             "tibiafibula".
         gf : geometric_field instance
             geometric_field of the bone
+        side : str
+            one of 'left' or 'right'
         """
 
         if name not in self.bone_classes:
@@ -205,6 +214,9 @@ class LowerLimbLeftAtlas(modelcore.MultiBoneAtlas):
             self.models[name] = self.bone_classes[name](name, gf)
         else:
             self.models[name].update_gf(gf.field_parameters.copy())
+
+        self.models[name].side = self.side
+        self.models[name].update_acs()
 
     def _set_kneegap_function(self, f):
         self._reset_tibia_kneegap = f
@@ -465,24 +477,24 @@ class LowerLimbLeftAtlas(modelcore.MultiBoneAtlas):
         # flexion (pelvis-z)
         HJC = self.models['pelvis'].landmarks[self.HJC]
         self.models['femur'].gf.transformRotateAboutAxis(
-                        hip_rot[0], o,
-                        o + flex,
+                        self.hip_flex_coeff*hip_rot[0],
+                        o, o + flex,
                         )
         self.models['femur'].update_landmarks()
         self.models['femur'].update_acs()
 
         # abduction (floating)
         self.models['femur'].gf.transformRotateAboutAxis(
-                        hip_rot[2], o,
-                        o + abd
+                        self.hip_abd_coeff*hip_rot[2],
+                        o, o + abd
                         )
         self.models['femur'].update_landmarks()
         self.models['femur'].update_acs()
         
         # rotations (femur-z)
         self.models['femur'].gf.transformRotateAboutAxis(
-                        hip_rot[1], o,
-                        o + rot,
+                        self.hip_rot_coeff*hip_rot[1],
+                        o, o + rot,
                         )
         self.models['femur'].update_landmarks()
         self.models['femur'].update_acs()
@@ -502,7 +514,7 @@ class LowerLimbLeftAtlas(modelcore.MultiBoneAtlas):
 
         # apply knee rotations: flexion(femur-z)
         self.models['tibiafibula'].gf.transformRotateAboutAxis(
-                        knee_rot[0],
+                        self.knee_flex_coeff*knee_rot[0],
                         o,
                         o + flex,
                         )
@@ -513,7 +525,7 @@ class LowerLimbLeftAtlas(modelcore.MultiBoneAtlas):
         if self._allow_knee_adduction_dof:     
             x = self._get_knee_floating_x()
             self.models['tibiafibula'].gf.transformRotateAboutAxis(
-                            knee_rot[1],
+                            self.knee_abd_coeff*knee_rot[1],
                             o,
                             o + abd
                             )
@@ -669,3 +681,10 @@ class LowerLimbRightAtlas(LowerLimbLeftAtlas):
                 }
     HJC = 'pelvis-RHJC'
     side = 'right'
+
+    hip_flex_coeff = 1.0
+    hip_abd_coeff = 1.0
+    hip_rot_coeff = 1.0
+    knee_flex_coeff = 1.0
+    knee_abd_coeff = 1.0
+    knee_rot_coeff = -1.0
