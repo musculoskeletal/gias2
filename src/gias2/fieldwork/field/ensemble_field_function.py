@@ -1381,7 +1381,6 @@ class EFFJSONReader(object):
         self._parse_mesh(jsonstr, meshfn)
         self._parse_subfields(jsonstr)
         if self.eff.mesh is not None:
-            print('MAPPING PARAMS')
             self.eff.map_parameters()
         self._parse_custom_map(jsonstr)
 
