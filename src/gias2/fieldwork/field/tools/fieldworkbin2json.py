@@ -80,7 +80,7 @@ def convert_file(inpath, outpath=None, keepold=False, verbose=False):
         raise ValueError('Unknown file extension {}'.format(ext))
         sys.exit(1)
 
-    converter(inpath, outpath, keepold)
+    converter(inpath, outpath, keepold, verbose=verbose)
 
 def convert_dir(inpath, keepold=False, verbose=False):
 
