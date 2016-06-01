@@ -7,7 +7,6 @@
     }, 
     "custom_map": null, 
     "dimensions": 2, 
-    "mesh": "femur_right_quartic_flat_json", 
     "name": "femur_quartic_assembled_flat", 
     "subfield_counter": 0, 
     "subfields": {}

@@ -2378,7 +2378,7 @@ def makeGeometricFieldDerivativesEvaluatorSparse( G, evalD, dim=3, epIndex=None,
 #=============================================================================#
 # serialisation
 
-def load_gf_shelve(filename, G, ensfn=None, meshfn=None, filedir=None):
+def load_gf_shelve(filename, G, ensfn=None, meshfn=None, filedir=None, force=False):
     """
     Deserialise a geometric_field using the shelve package.
 
@@ -2404,16 +2404,29 @@ def load_gf_shelve(filename, G, ensfn=None, meshfn=None, filedir=None):
     else:
         if ensfn:
             F = EFF.load_ensemble(ensfn, meshFilename=meshfn, path=filedir)
+        elif S.get('ensemble_field'):
+            try:
+                F = EFF.load_ensemble(S['ensemble_field'], meshFilename=meshfn, path=filedir)
+            except IOError:
+                if force:
+                    print('WARNING: no ensemble field function loaded, ignoring.')
+                    F = None
         else:
-            F = EFF.load_ensemble(S['ensemble_field'], meshFilename=meshfn, path=filedir)
+            print('WARNING: no ensemble field function loaded')
+            F = None
             
         G.name = S['name']
         G.dimensions = S['dimensions']
-        G.ensemble_field_function = F
-        G._create_ensemble_points()
-        G.triangulator.f = F
-        G.set_field_parameters(S['field_parameters'])
         G.ensemble_point_counter = S['ensemble_point_counter']
+
+        if F is not None:
+            G.ensemble_field_function = F
+            G._create_ensemble_points()
+            G.triangulator.f = F
+            G.set_field_parameters(S['field_parameters'])
+        else:
+            G.field_parameters = S['field_parameters']
+            
         return G
 
 class GeometricFieldJSONWriter(object):
@@ -2460,15 +2473,17 @@ class GeometricFieldJSONWriter(object):
 
     def _serialise_ens(self, gf_dict, ensfn, meshfn):
         if ensfn is not None:
-            gf_dict['ensemble_field'] = self.gf.ensemble_field_function.save_ensemble(
+            self.gf.ensemble_field_function.save_ensemble(
                 ensfn, mesh_filename=meshfn, path=self._file_dir
                 )
+            gf_dict['ensemble_field'] = os.path.split(ensfn)[1]
         else:
-            gf_dict['ensemble_field'] = self.gf.ensemble_field_function.save_ensemble(
-                self.gf.ensemble_field_function.name,
-                mesh_filename=meshfn,
-                path=self._file_dir
-                )
+            pass
+            # gf_dict['ensemble_field'] = self.gf.ensemble_field_function.save_ensemble(
+            #     self.gf.ensemble_field_function.name,
+            #     mesh_filename=meshfn,
+            #     path=self._file_dir
+            #     )
 
     def _serialise_field_parameters(self, gf_dict):
         d = {}
@@ -2497,11 +2512,13 @@ class GeometricFieldJSONReader(object):
         """
         self.gf = gf
         self._file_dir = ''
+        self.force = False
 
-    def read(self, filename, ensfn=None, meshfn=None, filedir=None):
+    def read(self, filename, ensfn=None, meshfn=None, filedir=None, force=False):
         """
         Load gf properties from a gf file.
         """
+        self.force = force
         if filedir is not None:
             filename = os.path.join(filedir, filename)
             self._file_dir = filedir
@@ -2529,11 +2546,21 @@ class GeometricFieldJSONReader(object):
     def _parse_ens(self, gf_dict, ensfn, meshfn):
         if ensfn is not None:
             self.gf.ensemble_field_function = EFF.load_ensemble(ensfn, meshfn, path=self._file_dir)
+        elif gf_dict.get['ensemble_field']:
+            try:
+                self.gf.ensemble_field_function = EFF.load_ensemble(gf_dict['ensemble_field'], meshfn, path=self._file_dir)
+            except IOError:
+                if self.force:
+                    print('Cannot open {}, ignoring'.format(gf_dict['ensemble_field']))
+                    pass
+                else:
+                    raise IOError('Cannot open {}'.format(gf_dict['ensemble_field']))
         else:
-            self.gf.ensemble_field_function = EFF.load_ensemble(gf_dict['ensemble_field'], meshfn, path=self._file_dir)
+            print('WARNING: no ensemble field function loaded')
 
-        self.gf.triangulator.f = self.gf.ensemble_field_function
-        self.gf._create_ensemble_points()
+        if self.gf.ensemble_field_function is not None:
+            self.gf.triangulator.f = self.gf.ensemble_field_function
+            self.gf._create_ensemble_points()
 
     def _parse_field_parameters(self, gf_dict):
         node_numbers = [int(k.split(' ')[1]) for k in gf_dict['field_parameters'].keys()]
@@ -2546,18 +2573,21 @@ class GeometricFieldJSONReader(object):
             for di, dk in enumerate(dim_keys):
                 p[di, ni,:] = [float(x) for x in node_dict[dk].split(' ')]
 
-        self.gf.set_field_parameters(p)
+        if self.gf.ensemble_field_function is not None:
+            self.gf.set_field_parameters(p)
+        else:
+            self.gf.field_parameters = p
 
-def load_gf_json(filename, gf, ensfn=None, meshfn=None, filedir=None):
+def load_gf_json(filename, gf, ensfn=None, meshfn=None, filedir=None, force=False):
     reader = GeometricFieldJSONReader(gf)
-    reader.read(filename, ensfn, meshfn, filedir)
+    reader.read(filename, ensfn, meshfn, filedir, force=force)
     return gf
 
 def save_gf_json(filename, gf, ensfn=None, meshfn=None, filedir=None):
     writer = GeometricFieldJSONWriter(gf)
     writer.write(filename, ensfn, meshfn, filedir)
 
-def load_geometric_field(filename, ensFilename=None, meshFilename=None, path=None):
+def load_geometric_field(filename, ensFilename=None, meshFilename=None, path=None, force=False):
     """
     Deserialise a geometric_field from either a shelve file or a json file.
 
@@ -2572,8 +2602,14 @@ def load_geometric_field(filename, ensFilename=None, meshFilename=None, path=Non
     with open(filename, 'r') as f:
         head = f.read(1)
         if head=='{':
-            load_gf_json(filename, gf, ensfn=ensFilename, meshfn=meshFilename, filedir=path)
+            load_gf_json(
+                filename, gf, ensfn=ensFilename, meshfn=meshFilename,
+                filedir=path, force=force,
+                )
         else:
-            load_gf_shelve(filename, gf, ensfn=ensFilename, meshfn=meshFilename, filedir=path)
+            load_gf_shelve(
+                filename, gf, ensfn=ensFilename, meshfn=meshFilename,
+                filedir=path, force=force,
+                )
 
     return gf

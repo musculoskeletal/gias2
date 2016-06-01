@@ -1,6 +1,5 @@
 {
     "dimensions": 3, 
-    "ensemble_field": "femur_right_quartic_flat_json", 
     "ensemble_point_counter": 634, 
     "field_parameters": {
         "node 00000000": {
