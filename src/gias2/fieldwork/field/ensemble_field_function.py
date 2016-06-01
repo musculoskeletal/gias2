@@ -181,7 +181,7 @@ class ensemble_field_function:
         if not filename:
             filename = self.name
             
-        if os.path.splitext(filename)[1]=='':
+        if os.path.splitext(filename)[1].lower()!='.ens':
             filename = filename+'.ens'
             
         return save_eff_json(

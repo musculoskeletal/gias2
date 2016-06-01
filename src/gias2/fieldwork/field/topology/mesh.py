@@ -46,7 +46,7 @@ class mesh_ensemble:
         if not filename:
             filename = self.name
             
-        if os.path.splitext(filename)[1]=='':
+        if os.path.splitext(filename)[1].lower()!='.mesh':
             filename = filename+'.mesh'
             
         return save_mesh_json(

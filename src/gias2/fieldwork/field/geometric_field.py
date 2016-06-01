@@ -108,7 +108,7 @@ class geometric_field:
         if not filename:
             filename = self.name
 
-        if os.path.splitext(filename)[1]=='':
+        if os.path.splitext(filename)[1].lower()!='.geof':
             filename = filename+'.geof'
             
         return save_gf_json(
