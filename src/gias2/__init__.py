@@ -13,6 +13,10 @@ from gias2.fieldwork.field import geometric_field
 from gias2.learning import PCA, PCA_fitting
 
 import sys
-# needed to open PCA files pickled before PCA got moved to learning
-sys.modules['gias2.common.PCA'] = PCA
+# needed to open PCA files pickled by gias(1)
+import gias2
+from gias2 import learning
+sys.modules['gias'] = gias2
+sys.modules['gias.learning'] = learning
+sys.modules['gias.learning.PCA'] = PCA
 
