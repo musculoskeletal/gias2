@@ -243,7 +243,7 @@ class Reader( object ):
         self.polydata = actors.GetNextActor().GetMapper().GetInput()
         
         if self.polydata.GetPoints()==None:
-            raise IOError('file not loaded')
+            raise IOError('file not loaded {}'.format(self.filename))
         else:
             self._loadPoints()
             self._loadTriangles()
@@ -258,7 +258,7 @@ class Reader( object ):
         self.polydata = r.GetOutput()
         
         if self.polydata.GetPoints()==None:
-            raise IOError('file not loaded')
+            raise IOError('file not loaded {}'.format(self.filename))
         else:
             self._loadPoints()
             self._loadTriangles()
@@ -273,7 +273,7 @@ class Reader( object ):
         self.polydata = r.GetOutput()
         
         if self.polydata.GetPoints()==None:
-            raise IOError('file not loaded')
+            raise IOError('file not loaded {}'.format(self.filename))
         else:
             self._loadPoints()
             self._loadTriangles()
@@ -288,7 +288,7 @@ class Reader( object ):
         self.polydata = r.GetOutput()
         
         if self.polydata.GetPoints()==None:
-            raise IOError('file not loaded')
+            raise IOError('file not loaded {}'.format(self.filename))
         else:
             self._loadPoints()
             self._loadTriangles()
@@ -306,7 +306,7 @@ class Reader( object ):
         self.polydata = r.GetOutput()
         
         if self.polydata.GetPoints()==None:
-            raise IOError('file not loaded')
+            raise IOError('file not loaded {}'.format(self.filename))
         else:
             self._loadPoints()
             self._loadTriangles()
