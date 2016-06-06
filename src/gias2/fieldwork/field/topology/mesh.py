@@ -555,9 +555,17 @@ def load_mesh_shelve(filename, mesh, filedir=None):
         else:
             # submesh
             if e[2][:len(filedir)]==filedir:
-                mesh.elements[e[0]] = load_mesh_shelve(e[2][len(filedir):], filedir=filedir)
+                mesh.elements[e[0]] = load_mesh_shelve(
+                                        e[2][len(filedir):],
+                                        mesh_ensemble(None, None),
+                                        filedir=filedir
+                                        )
             else:
-                mesh.elements[e[0]] = load_mesh_shelve(e[2], filedir=filedir)
+                mesh.elements[e[0]] = load_mesh_shelve(
+                                        e[2],
+                                        mesh_ensemble(None, None),
+                                        filedir=filedir
+                                        )
     
     # create hanging_points
     for h in S['hanging_points']:
