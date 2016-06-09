@@ -51,7 +51,7 @@ def poly_2_csgeom(vertices, faces):
     """
 
     # instantiate csg vertices for all vertices
-    csg_vertices = [geom.Vertex(v.tolist()) for v in vertices]
+    csg_vertices = [geom.Vertex(list(v)) for v in vertices]
     
     # instantiate csg polygons for all faces
     csg_polygons = []
@@ -185,8 +185,8 @@ def cylinder_var_radius(**kwargs):
     isY = np.abs(axisZ[1])>0.5
     axisX = _unit(np.cross([float(isY), float(not isY), 0], axisZ))
     axisY = _unit(np.cross(axisX, axisZ))
-    start = geom.Vertex(s.tolist(), (-axisZ).tolist())
-    end = geom.Vertex(e.tolist(), axisZ.tolist())
+    start = geom.Vertex(list(s), list(-axisZ))
+    end = geom.Vertex(list(e), list(axisZ))
     polygons = []
     _verts = {}
 
@@ -198,7 +198,7 @@ def cylinder_var_radius(**kwargs):
         r = sr + stackr*(er-sr)
         pos = s + ray*stackr + out*r
         normal = out*(1.0 - np.abs(normalBlend)) + (axisZ*normalBlend)
-        return geom.Vertex(pos.tolist(), normal.tolist())  
+        return geom.Vertex(list(pos), list(normal))  
     
     def point(stacki, slicei, normalBlend):
         # wrap around
