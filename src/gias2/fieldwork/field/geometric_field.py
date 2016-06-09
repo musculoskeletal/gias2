@@ -839,23 +839,23 @@ class geometric_field:
         
         # evaluate each coordinate in field
         if not derivs:
-            for d in self.field_parameters:
-                V.append( scipy.hstack( [self.ensemble_field_function.evaluate_field_in_element( e, density, d, unpack=True ) for e in elements] ) )
+            for p in self.field_parameters:
+                V.append( scipy.hstack( [self.ensemble_field_function.evaluate_field_in_element( e, density, p, unpack=True ) for e in elements] ) )
             
             return scipy.array( V )
         else:
-            for d in self.field_parameters:
+            for p in self.field_parameters:
                 vv = []
                 dd = []
                 for e in elements:
-                    v,d = self.ensemble_field_function.evaluate_field_in_element( e, density, d, derivs )
+                    v, d = self.ensemble_field_function.evaluate_field_in_element( e, density, p, derivs )
                     vv.append( v )
                     dd.append( d )
                     
                 V.append( scipy.hstack( vv ) )
                 D.append( scipy.hstack( dd ) )
                 
-            return scipy.array(V),scipy.array(D)
+            return scipy.array(V), scipy.array(D)
                 
     #==================================================================#
     def evaluate_geometric_field_at_element_points( self, element, XI ):

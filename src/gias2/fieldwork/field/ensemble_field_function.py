@@ -666,7 +666,12 @@ class ensemble_field_function:
         
         # check parameter length
         if len( parameters ) != self.mapper.get_number_of_ensemble_points():
-            raise ValueError('wrong number of parameter sets, there are '+str( self.mapper.get_number_of_ensemble_points() )+' nodes')
+            raise ValueError(
+                'wrong number of parameter sets, there are {} node, given {} set of nodal parameters'.format(
+                    self.mapper.get_number_of_ensemble_points(),
+                    len(parameters),
+                    )
+                )
         else:
             self.parameters = parameters
             self.element_param_cache.clear()
@@ -896,7 +901,7 @@ class ensemble_field_function:
                 if derivs:
                     if derivs==-1:
                         element_deriv_values = self._evaluate_element_derivatives( element.type, element_parameters, eval_grid, None )
-                    elif type(derivs)==list:
+                    elif isinstance(derivs, (list, tuple)):
                         element_deriv_values = self._evaluate_element_derivatives( element.type, element_parameters, eval_grid, derivs )
                     else:
                         raise NotImplementedError('unrecognised derivative input')
