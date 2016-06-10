@@ -16,8 +16,17 @@ import numpy as np
 import scipy.stats as stats
 
 def norm( v ):
+    """
+    Normalise a vector v
+    """
     # return np.divide(v, np.sqrt((np.array(v)**2.0).sum()))
     return np.divide(v, mag(v))
+
+def norms(v):
+    """
+    Normalise a list of vectors v
+    """
+    return np.divide(v, mag(v)[:,np.newaxis])
 
 def mag( v ):
     return np.sqrt((np.array(v)**2.0).sum(-1))
