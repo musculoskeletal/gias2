@@ -49,7 +49,7 @@ class FemurModel(modelcore.BoneModel):
         super(FemurModel, self).__init__(name, gf)
         self.side = side
         self.init_landmarks(['femur-HC', 'femur-MEC',
-                             'femur-LEC',
+                             'femur-LEC', 'femur-GT',
                              ])
         self.knee_surf_disc = knee_surf_disc
         self.knee_surf_evaluator = geometric_field.makeGeometricFieldElementsEvaluatorSparse(
@@ -76,6 +76,7 @@ class TibiaFibulaModel(modelcore.BoneModel):
         self.side = side
         self.init_landmarks(['tibiafibula-LC', 'tibiafibula-MC',
                              'tibiafibula-LM', 'tibiafibula-MM',
+                             'tibiafibula-TT',
                              ])
         self.knee_surf_disc = knee_surf_disc
         self.knee_surf_evaluator = geometric_field.makeGeometricFieldElementsEvaluatorSparse(
