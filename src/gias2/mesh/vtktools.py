@@ -1106,7 +1106,7 @@ def smoothMeshVTK(mesh, it, smoothboundary=False, smoothfeatures=False, relaxfac
         mesh_smooth.hasNeighbourhoods = True
     return mesh_smooth
 
-def optimiseMesh(sm, deciratio):
+def optimiseMesh(sm, deciratio, clean=False):
     """
     Optimise a triangle mesh by removing degenerate elements
     and decimation.
@@ -1130,27 +1130,34 @@ def optimiseMesh(sm, deciratio):
                 featureangle=None
                 )
 
-    print "cleaning..."
-    cleaner = vtk.vtkCleanPolyData()
-    if vtk.VTK_MAJOR_VERSION<6:
-        cleaner.SetInput(poly)
-    else:
-        cleaner.SetInputDataObject(poly)
-    cleaner.SetConvertLinesToPoints(1)
-    cleaner.SetConvertStripsToPolys(1)
-    cleaner.SetConvertPolysToLines(1)
-    cleaner.SetPointMerging(True)
-    cleaner.SetTolerance(0.001)
-    cleaner.Update()
-    getPreviousOutput = cleaner.GetOutput
+    if clean:
+        print "cleaning..."
+        cleaner = vtk.vtkCleanPolyData()
+        if vtk.VTK_MAJOR_VERSION<6:
+            cleaner.SetInput(poly)
+        else:
+            cleaner.SetInputDataObject(poly)
+        cleaner.SetConvertLinesToPoints(1)
+        cleaner.SetConvertStripsToPolys(1)
+        cleaner.SetConvertPolysToLines(1)
+        cleaner.SetPointMerging(True)
+        cleaner.SetTolerance(1e-9)
+        cleaner.Update()
+        getPreviousOutput = cleaner.GetOutput
 
     # decimate polydata
     print "decimating using quadric..."
     decimator = vtk.vtkQuadricDecimation()
     if vtk.VTK_MAJOR_VERSION<6:
-        decimator.SetInput(getPreviousOutput())
+        if not clean:
+            decimator.SetInput(poly)
+        else:
+            decimator.SetInput(getPreviousOutput())
     else:
-        decimator.SetInputDataObject(getPreviousOutput())
+        if not clean:
+            decimator.SetInputDataObject(poly)
+        else:
+            decimator.SetInputDataObject(getPreviousOutput())
     decimator.SetTargetReduction(deciratio)
     # decimator.SetPreserveTopology(True)
     # decimator.SplittingOn()
