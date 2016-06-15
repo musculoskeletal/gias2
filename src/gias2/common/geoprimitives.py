@@ -452,17 +452,23 @@ class Plane( object ):
                         1.0
                         ])
                     )[:3]
-        self.N = scipy.dot(
-                    t[:3,:3],
-                    self.N
+        self.N = norm(
+                    scipy.dot(
+                        t[:3,:3],
+                        self.N
+                        )
                     )
-        self.X = scipy.dot(
-                    t[:3,:3],
-                    self.X
+        self.X = norm(
+                    scipy.dot(
+                        t[:3,:3],
+                        self.X
+                        )
                     )
-        self.Y = scipy.dot(
-                    t[:3,:3],
-                    self.Y
+        self.Y = norm(
+                    scipy.dot(
+                        t[:3,:3],
+                        self.Y
+                        )
                     )
 
     def drawPlane(self, mscene, l=100, acolor=(1,0,0), ascale=10.0, scolor=(0,1,0), sopacity=0.5):
