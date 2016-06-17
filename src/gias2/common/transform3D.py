@@ -393,3 +393,12 @@ def calcAffineMatrixSVD(A, B):
     T[:3,3] = t.squeeze()
 
     return T
+
+def calcAffineDifference(m1, m2):
+    """
+    Calculate the transformation matrix that is the transformation
+    between 2 affine matrices m1 and m2
+    """
+
+    # return scipy.dot(inv(m1), m2)
+    return scipy.dot(m2, inv(m1))
