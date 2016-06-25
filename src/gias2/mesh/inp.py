@@ -141,8 +141,11 @@ class InpReader(object):
                     if 'ELSET' in l:
                         for term in l.split(','):
                             if 'ELSET' in term:
-                                meshNames.add(term.split('=')[1].strip())
-                                break
+                                if term=='*ELSET':
+                                    break
+                                else:
+                                    meshNames.add(term.split('=')[1].strip())
+                                    break
 
         self.meshNames = list(meshNames)
         return self.meshNames
