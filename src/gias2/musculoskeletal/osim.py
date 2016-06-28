@@ -160,7 +160,7 @@ class PathPoint(object):
         return Body(self._osimPathPoint.getBody())
 
     def scale(self, sf):
-        raise(NotImplementedError)
+        raise(NotImplementedError, 'Consider using Muscle.scale.')
         # state = opensim.State()
         # scaleset = opensim.ScaleSet() # ???
         # scaleset.setScale([integer]) #???
@@ -317,12 +317,18 @@ class Muscle(object):
 
         return pps
 
-    def scale(self, sf):
-        raise(NotImplementedError)
-        # state = opensim.State()
-        # scaleset = opensim.ScaleSet() # ???
-        # scaleset.setScale([integer]) #???
-        # mus._osimMuscle.scale(state, scaleset)
+    def scale(self, state, *scales):
+        """
+        Scale a pathActuator for a given state by one or
+        more Scale instances that define the scale factors
+        on the inserted segments
+        """
+        scaleset = opensim.ScaleSet()
+        for sc in scales:
+            scaleset.cloneAndAppend(sc._osimScale)
+
+        self._osimMuscle.scale(state, scaleset)
+
 
 class CoordinateSet(object):
 
@@ -498,12 +504,73 @@ class Joint(object):
     def parentName(self, name):
         self._osimJoint.setParentName(name)
 
-    def scale(self, sf):
-        raise(NotImplementedError)
-        # scaleset = opensim.ScaleSet() # ???
-        # scaleset.setScale([integer]) #???
-        # mus._osimMuscle.scale(state, scaleset)
-    
+    def scale(self, *scales):
+        """
+        Scales joint parameters given one or more Scale instances
+        which should define scale factors for joined segments.
+        """
+
+        # create ScaleSet
+        scaleset = opensim.ScaleSet()
+        for sc in scales:
+            scaleset.cloneAndAppend(sc._osimScale)
+
+        self._osimJoint.scale(scaleset)
+
+class Scale(object):
+
+    def __init__(self, sfactors=None, name=None, segname=None):
+
+        if len(sfactors)!=3:
+            raise(ValueError, 'sfactors must be of length 3')
+
+        self._osimScale = opensim.Scale()
+        if sfactors is not None:
+            v = opensim.Vec3(
+                    sfactors[0],
+                    sfactors[1],
+                    sfactors[2],
+                    )
+            self._osimScale.setScaleFactors(v)
+        if segname is not None:
+            self._osimScale.setSegmentName(segname)
+        if name is not None:
+            self._osimScale.setName(name)
+        self._osimScale.setApply(True)
+
+    @property
+    def name(self):
+        return self._osimScale.getName()
+
+    @name.setter
+    def name(self, name):
+        self._osimScale.setName(name)
+
+    @property
+    def segmentName(self):
+        return self._osimScale.getSegmentName()
+
+    @segmentName.setter
+    def segmentName(self, name):
+        self._osimScale.setSegmentName(name)
+
+    @property
+    def scaleFactors(self):
+        v = self._osimScale.getScaleFactors()
+        return np.array([v.get(i) for i in range(v.getSize())])
+
+    @scaleFactors.setter
+    def scaleFactors(self, sfactors):
+        v = opensim.Vec3(
+                    sfactors[0],
+                    sfactors[1],
+                    sfactors[2],
+                    )
+        self._osimScale.setScaleFactors(v)
+
+    def apply(self, isapply):
+        self._osimScale.setApply(isapply)
+
 class Model(object):
 
     def __init__(self, filename=None, model=None):
@@ -557,3 +624,17 @@ class Model(object):
         for mi in range(muscles.getSize()):
             m = muscles.get(mi)
             self.muscles[m.getName()] = Muscle(m)
+
+    def scale(self, state, *scales):
+        """
+        Scale the entire model for a given state and one or more
+        Scale instances that define the scale factors for different
+        segments
+        """
+
+        scaleset = opensim.ScaleSet()
+        for sc in scales:
+            scaleset.cloneAndAppend(sc._osimScale)
+
+        self._model.scale(state, scaleset)
+
