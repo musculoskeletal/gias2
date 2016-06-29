@@ -1254,10 +1254,11 @@ def load_eff_shelve(filename, E, meshfn=None, filedir=None, force=False):
                 else:
                     print('WARNING: no mesh loaded')
             for s in S['subfields']:
+                sub_eff = ensemble_field_function(None, None)
                 if s[1][:len(filedir)]==filedir:
-                    E.subfields[s[0]] = load_ensemble_shelve( s[1][len(filedir):], path=filedir )
+                    E.subfields[s[0]] = load_eff_shelve( s[1][len(filedir):], sub_eff, filedir=filedir )
                 else:
-                    E.subfields[s[0]] = load_ensemble_shelve( s[1], path=filedir )
+                    E.subfields[s[0]] = load_eff_shelve( s[1], sub_eff, filedir=filedir )
     
         E.subfield_counter = S['subfield_counter']
         if E.mesh is not None:
