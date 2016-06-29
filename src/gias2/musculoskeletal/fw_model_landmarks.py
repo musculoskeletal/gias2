@@ -169,6 +169,7 @@ _pelvisLISNode = 773
 _pelvisRISNode = 233
 _pelvisLITNode = 566
 _pelvisRITNode = 25
+_pelvisSacPlatNode = 1300 # centre-posterior-most point on the vertebral plateau on the sacrum
 _pelvisLHJCElems = [109,111,112,113,114,115] # in flattened mesh
 _pelvisRHJCElems = [36,38,39,40,41,42] # in flattened mesh
 _pelvisRHElems = list(range(0, 73))
@@ -234,6 +235,11 @@ def makeEvaluatorPelvisRIT(gf):
     def evalPelvisRIT(meshParams):
         return meshParams[:,_pelvisRITNode].squeeze()
     return evalPelvisRIT
+
+def makeEvaluatorPelvisSacPlat(gf):
+    def evalPelvisSacPlat(meshParams):
+        return meshParams[:,_pelvisSacPlatNode].squeeze()
+    return evalPelvisSacPlat
 
 def makeEvaluatorPelvisSacral(gf):
     """Mid-point of PSISes
@@ -386,6 +392,7 @@ _landmarkEvaluators = {
                   'pelvis-RIT': makeEvaluatorPelvisRIT,
                   'pelvis-LHJC': makeEvaluatorPelvisLHJC,
                   'pelvis-RHJC': makeEvaluatorPelvisRHJC,
+                  'pelvis-SacPlat': makeEvaluatorPelvisSacPlat,
                   'tibiafibula-LC': makeEvaluatorTibiaFibulaLC,
                   'tibiafibula-MC': makeEvaluatorTibiaFibulaMC,
                   'tibiafibula-LM': makeEvaluatorTibiaFibulaLM,

@@ -31,6 +31,7 @@ class PelvisModel(modelcore.BoneModel):
                              'pelvis-Sacral',
                              'pelvis-LHJC', 'pelvis-RHJC',
                              'pelvis-LPSIS', 'pelvis-RPSIS',
+                             'pelvis-SacPlat',
                              ])
         
     def update_acs(self):
