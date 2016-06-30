@@ -344,8 +344,18 @@ def createFemurACSOpenSim(head, mc, lc, side='left'):
     # z - right in plane of head, mc, lc
     n1 = normaliseVector(scipy.cross(mc-head, lc-head))
     z = normaliseVector(scipy.cross(n1, y))
-    if side=='right':
-        z *= -1.0
+    # if left, z should point towards to MC
+    if side=='left':
+        if scipy.dot(z, mc-o_)<0.0:
+            z *= -1.0
+
+    # if right, z should point towards LC
+    elif side=='right':
+        if scipy.dot(z, lc-o_)<0.0:
+            z *= -1.0
+    else:
+        raise ValueError('Invalid side value {}'.format(side))
+
     # x - anteriorly 
     x = normaliseVector(scipy.cross(y, z))
     return head, x, y, z
