@@ -14,7 +14,6 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 """
 import inspect
 import opensim
-from opensim.opensim import ProbeSet
 import numpy as np
 import pdb
 
