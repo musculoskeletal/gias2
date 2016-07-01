@@ -13,6 +13,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
 
+import sys
 import numpy as np
 from scipy import optimize
 
@@ -97,7 +98,9 @@ def _lower_limb_atlas_landmark_fit_multi_scaling(ll_model, target_landmark_coord
         # calc sum of squared distance between target and source landmarks
         ssdist = ((target_landmark_coords - source_x)**2.0).sum()
 
-        print(('SSDist: {:12.6f}'.format(ssdist)))
+        # print(('SSDist: {:12.6f}'.format(ssdist)))
+        sys.stdout.write('SSDist: {:12.6f}\r'.format(ssdist))
+        sys.stdout.flush()
 
         return ssdist
 
@@ -179,7 +182,9 @@ def _lower_limb_atlas_landmark_fit_uniform_scaling(ll_model, target_landmark_coo
         # calc sum of squared distance between target and source landmarks
         ssdist = ((target_landmark_coords - source_x)**2.0).sum()
 
-        print(('SSDist: {:12.6f}'.format(ssdist)))
+        # print(('SSDist: {:12.6f}'.format(ssdist)))
+        sys.stdout.write('SSDist: {:12.6f}\r'.format(ssdist))
+        sys.stdout.flush()
 
         return ssdist
 
