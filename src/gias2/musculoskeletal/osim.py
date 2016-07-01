@@ -637,3 +637,11 @@ class Model(object):
 
         self._model.scale(state, scaleset)
 
+    def view_init_state(self):
+        self._model.setUseVisualizer(True)
+        state = self._model.initSystem()
+        v = self._model.updVisualizer()
+        v.show(state)
+        return v
+
+
