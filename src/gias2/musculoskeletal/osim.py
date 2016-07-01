@@ -15,7 +15,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 import inspect
 import opensim
 import numpy as np
-import pdb
+# import pdb
 
 class Body(object):
 
