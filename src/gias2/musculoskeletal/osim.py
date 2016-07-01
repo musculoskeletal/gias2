@@ -1,6 +1,6 @@
 """
 FILE: osim.py
-LAST MODIFIED: 09-02-2016
+LAST MODIFIED: 01-07-2016
 DESCRIPTION: Module of wrappers and helper functions and classes for opensim
 models
 
