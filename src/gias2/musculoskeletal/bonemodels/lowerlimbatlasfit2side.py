@@ -19,21 +19,50 @@ from scipy import optimize
 from gias2.registration import alignment_fitting
 from gias2.musculoskeletal.bonemodels import modelcore
 
-def _make_x0(ll, npcs, target_landmarks, source_landmarks, init_pc_weights=None):
+def _make_x0(ll, npcs, landmark_names, target_landmarks, source_landmarks, init_pc_weights=None):
     """ Generate initial parameters for lower limb atlas fitting.
     The pelvis landmarks are rigidly registered to get initial
     rigid transformation parameters
     """
-    init_rigid = alignment_fitting.fitRigid(
-                    source_landmarks[:3,:], target_landmarks[:3,:],
-                    rotcentre=0.5*(source_landmarks[0]+source_landmarks[1]),
-                    xtol=1e-6, maxfev=999999,
-                    maxfun=9999999999
-                    )[0]
-    print('init rigid')
-    print(init_rigid)
+    reg_landmarks = ('pelvis-LASIS', 'pelvis-RASIS', 'pelvis-Sacral')
+    
+    # check if we can do an auto registration of the pelvis
+    do_rigid = True
+    for name in reg_landmarks:
+        if name not in landmark_names:
+            print('Could not find {} pelvis landmarks. Using zero initial rigid transformations'.format(name))
+            do_rigid = False
+
+    if do_rigid:
+        # get pelvis landmark coords
+        _target = np.array([target_landmarks[landmark_names.index(n),:] for n in reg_landmarks])
+        _source = np.array([source_landmarks[landmark_names.index(n),:] for n in reg_landmarks])
+        
+        rx, ry, rz = [0,0,0]
+        t0 = np.hstack([
+            _target.mean(0) - _source.mean(0),
+            [rx, ry, rz],
+            ])
+        init_rigid, fitted_landmarks, fit_errors = alignment_fitting.fitRigid(
+                        _source, _target,
+                        t0=t0,
+                        rotcentre=0.5*(_source[0] + _source[1]),
+                        xtol=1e-9, maxfev=1e6,
+                        maxfun=1e6,
+                        epsfcn=1e-6,
+                        outputErrors=1,
+                        )
+        print('init rigid transform: {}'.format(init_rigid))
+        print('init rigid fit error {} -> {}'.format(*fit_errors))
+        # fitted_errors = np.sqrt(((_target - fitted_landmarks)**2.0).sum(1))
+        # print('fitted errors: {}'.format(fitted_errors))
+        # print('fitted ldmks: {}'.format(fitted_landmarks))
+    else:
+        init_rigid = np.zeros(6, dtype=float)
+
     if init_pc_weights is None:
         init_pc_weights = np.zeros(npcs, dtype=float)
+
     init_x = np.hstack([init_pc_weights,
                         init_rigid,
                         [0,]*ll.N_PARAMS_HIP_L,
@@ -165,7 +194,7 @@ def _lower_limb_atlas_landmark_fit(ll_model, target_landmark_coords, landmark_na
     #=========================================================================#
     # make initial parameters
     if x0 is None:
-        x0 = _make_x0(ll_model, n_pc_modes, target_landmark_coords,
+        x0 = _make_x0(ll_model, n_pc_modes, landmark_names, target_landmark_coords,
                 source_landmark_coords, initial_pc_weights)
     else:
         x0 = np.array(x0)
