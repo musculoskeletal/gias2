@@ -24,15 +24,17 @@ from gias2.musculoskeletal.bonemodels import modelcore
 # Individual bone models                #
 #=======================================#
 class PelvisModel(modelcore.BoneModel):
+    model_landmarks = [
+        'pelvis-LASIS', 'pelvis-RASIS',
+        'pelvis-Sacral',
+        'pelvis-LHJC', 'pelvis-RHJC',
+        'pelvis-LPSIS', 'pelvis-RPSIS',
+        'pelvis-SacPlat',
+        ]
 
-    def __init__(self, name, gf):
+    def __init__(self, name, gf, side=None):
         super(PelvisModel, self).__init__(name, gf)
-        self.init_landmarks(['pelvis-LASIS', 'pelvis-RASIS',
-                             'pelvis-Sacral',
-                             'pelvis-LHJC', 'pelvis-RHJC',
-                             'pelvis-LPSIS', 'pelvis-RPSIS',
-                             'pelvis-SacPlat',
-                             ])
+        self.init_landmarks(self.model_landmarks)
         
     def update_acs(self):
         self.acs.update(*model_alignment.createPelvisACSISB(
@@ -45,13 +47,15 @@ class PelvisModel(modelcore.BoneModel):
     
 class FemurModel(modelcore.BoneModel):
     KNEE_ELEMS = [46,43,44,47,26,27,28,29,30,52,51,48,49]
+    model_landmarks = [
+        'femur-HC', 'femur-MEC',
+        'femur-LEC', 'femur-GT',
+        ]
 
     def __init__(self, name, gf, knee_surf_disc=4.0, side='left'):
         super(FemurModel, self).__init__(name, gf)
         self.side = side
-        self.init_landmarks(['femur-HC', 'femur-MEC',
-                             'femur-LEC', 'femur-GT',
-                             ])
+        self.init_landmarks(self.model_landmarks, side=self.side)
         self.knee_surf_disc = knee_surf_disc
         self.knee_surf_evaluator = geometric_field.makeGeometricFieldElementsEvaluatorSparse(
                                         self.gf, self.KNEE_ELEMS,
@@ -71,14 +75,16 @@ class FemurModel(modelcore.BoneModel):
 
 class TibiaFibulaModel(modelcore.BoneModel):
     KNEE_ELEMS = [37,38,39,40,41,42,43,44,45]
+    model_landmarks = [
+        'tibiafibula-LC', 'tibiafibula-MC',
+        'tibiafibula-LM', 'tibiafibula-MM',
+        'tibiafibula-TT',
+        ]
 
     def __init__(self, name, gf, knee_surf_disc=4.0, side='left'):
         super(TibiaFibulaModel, self).__init__(name, gf)
         self.side = side
-        self.init_landmarks(['tibiafibula-LC', 'tibiafibula-MC',
-                             'tibiafibula-LM', 'tibiafibula-MM',
-                             'tibiafibula-TT',
-                             ])
+        self.init_landmarks(self.model_landmarks, side=self.side)
         self.knee_surf_disc = knee_surf_disc
         self.knee_surf_evaluator = geometric_field.makeGeometricFieldElementsEvaluatorSparse(
                                         self.gf, self.KNEE_ELEMS,
@@ -98,11 +104,16 @@ class TibiaFibulaModel(modelcore.BoneModel):
         return self.knee_surf_evaluator(self.gf.get_field_parameters()).T
 
 class PatellaModel(modelcore.BoneModel):
-
+    model_landmarks = [
+        'patella-sup', 'patella-inf', 'patella-lat'
+        ]
     def __init__(self, name, gf, side='left'):
         super(PatellaModel, self).__init__(name, gf)
         self.side = side
-        self.init_landmarks(['patella-sup', 'patella-inf', 'patella-lat'])
+        self.init_landmarks(
+            self.model_landmarks,
+            side=self.side
+            )
 
     def update_acs(self):
         self.acs.update(*model_alignment.createPatellaACSTest(
@@ -178,11 +189,23 @@ class LowerLimbLeftAtlas(modelcore.MultiBoneAtlas):
         """
         self.load_models(self.bone_names, self.bone_classes, self.bone_files)
         self.load_combined_pcs(self.combined_pcs_filename)
+
         self.models['femur'].side = self.side
+        self.models['femur'].init_landmarks(
+            self.models['femur'].model_landmarks, side=self.side
+            )
         self.models['femur'].update_acs()
+
         self.models['patella'].side = self.side
+        self.models['patella'].init_landmarks(
+            self.models['patella'].model_landmarks, side=self.side
+            )
         self.models['patella'].update_acs()
+
         self.models['tibiafibula'].side = self.side
+        self.models['tibiafibula'].init_landmarks(
+            self.models['tibiafibula'].model_landmarks, side=self.side
+            )
         self.models['tibiafibula'].update_acs()
 
         # zero shape model
@@ -218,6 +241,9 @@ class LowerLimbLeftAtlas(modelcore.MultiBoneAtlas):
             self.models[name].update_gf(gf.field_parameters.copy())
 
         self.models[name].side = self.side
+        self.models[name].init_landmarks(
+            self.models[name].model_landmarks, side=self.side
+            )
         self.models[name].update_acs()
 
     def _set_kneegap_function(self, f):
@@ -690,3 +716,5 @@ class LowerLimbRightAtlas(LowerLimbLeftAtlas):
     knee_flex_coeff = 1.0
     knee_abd_coeff = 1.0
     knee_rot_coeff = -1.0
+
+    patella_shift = np.array([50.0, 50.0, 10.0])

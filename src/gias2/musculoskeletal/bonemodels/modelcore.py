@@ -245,11 +245,17 @@ class BoneModel(object):
         self._landmark_evaluators = {}
         self._source_field_parameters = self.gf.field_parameters.copy()
 
-    def init_landmarks(self, landmark_names):
+    def init_landmarks(self, landmark_names, side=None):
+        self.landmarks = {}
         for ln in landmark_names:
-            self._landmark_evaluators[ln] = model_landmarks.makeLandmarkEvaluator(
-                                                ln, self.gf
-                                                )
+            if side is None:
+                self._landmark_evaluators[ln] = model_landmarks.makeLandmarkEvaluator(
+                                                    ln, self.gf
+                                                    )
+            else:
+                self._landmark_evaluators[ln] = model_landmarks.makeLandmarkEvaluator(
+                                                    ln, self.gf, side=side
+                                                    )
         self.update_landmarks()
         self.update_acs()
 
