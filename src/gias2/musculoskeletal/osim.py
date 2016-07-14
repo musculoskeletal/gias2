@@ -63,7 +63,14 @@ class Body(object):
 
     @inertia.setter
     def inertia(self, I):
-        inertia = opensim.Inertia(I[0], I[1], I[2])
+        _I = np.array(I)
+        if len(_I.shape)==1:
+            inertia = opensim.Inertia(_I[0], _I[1], _I[2])
+        else:
+            inertia = opensim.Inertia(
+                        _I[0,0], _I[1,1], _I[2,2],
+                        _I[0,1], _I[0,2], _I[1,2],
+                        )
         self._osimBody.setInertia(inertia)
 
     @property
@@ -300,6 +307,22 @@ class Muscle(object):
     def name(self, name):
         self._osimMuscle.setName(name)
 
+    @property
+    def tendonSlackLength(self):
+        return self._osimMuscle.getTendonSlackLength()
+
+    @tendonSlackLength.setter
+    def tendonSlackLength(self, tsl):
+        self._osimMuscle.setTendonSlackLength(tsl)
+
+    @property
+    def optimalFiberLength(self):
+        return self._osimMuscle.getOptimalFiberLength()
+
+    @optimalFiberLength.setter
+    def optimalFiberLength(self, tsl):
+        self._osimMuscle.setOptimalFiberLength(tsl)
+    
     def getPathPoint(self, i):
         gp = self._osimMuscle.getGeometryPath()
         pathPoints = gp.getPathPointSet()
@@ -316,6 +339,18 @@ class Muscle(object):
 
         return pps
 
+    def preScale(self, state, *scales):
+        """
+        Scale a pathActuator for a given state by one or
+        more Scale instances that define the scale factors
+        on the inserted segments
+        """
+        scaleset = opensim.ScaleSet()
+        for sc in scales:
+            scaleset.cloneAndAppend(sc._osimScale)
+
+        self._osimMuscle.preScale(state, scaleset)
+
     def scale(self, state, *scales):
         """
         Scale a pathActuator for a given state by one or
@@ -327,6 +362,18 @@ class Muscle(object):
             scaleset.cloneAndAppend(sc._osimScale)
 
         self._osimMuscle.scale(state, scaleset)
+
+    def postScale(self, state, *scales):
+        """
+        Scale a pathActuator for a given state by one or
+        more Scale instances that define the scale factors
+        on the inserted segments
+        """
+        scaleset = opensim.ScaleSet()
+        for sc in scales:
+            scaleset.cloneAndAppend(sc._osimScale)
+
+        self._osimMuscle.postScale(state, scaleset)
 
 
 class CoordinateSet(object):
@@ -371,6 +418,14 @@ class Joint(object):
         Expose TransformAxes
         """
         self.spatialTransform = self._osimJoint.getSpatialTransform()
+
+    @property
+    def name(self):
+        return self._osimJoint.getName()
+
+    @name.setter
+    def name(self, name):
+        self._osimJoint.setName(name)
 
     def getSimmSplineParams(self, taxisname):
         """
@@ -556,7 +611,7 @@ class Scale(object):
     @property
     def scaleFactors(self):
         v = self._osimScale.getScaleFactors()
-        return np.array([v.get(i) for i in range(v.getSize())])
+        return np.array([v.get(i) for i in range(3)])
 
     @scaleFactors.setter
     def scaleFactors(self, sfactors):

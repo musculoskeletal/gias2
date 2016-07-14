@@ -43,3 +43,6 @@ def meanConfidenceInterval(data, confidence=0.95):
     m, se = np.mean(a), stats.sem(a)
     h = se * stats.t.ppf((1+confidence)/2., n-1)
     return m, m-h, m+h
+
+def trimAngle(x):
+    return np.mod(x, 2*np.pi)*np.sign(x)

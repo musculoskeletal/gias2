@@ -43,6 +43,8 @@ _femurLECNode = 550 # was 546
 _femurRightLECNode = 550
 _femurGTNode = 172
 _femurRightGTNode = 174
+_femurLTNode = 276
+_femurRightLTNode = 276
 # _femurLandmarkEvaluators = {
 #                   'Head Centre': makeEvaluatorFemurHeadCentre,
 #                   'MEC': makeEvaluatorFemurMedialEpicondyle,
@@ -99,6 +101,16 @@ def makeEvaluatorFemurGreaterTrochanter(gf, side='left'):
             return meshParams[:,_femurRightGTNode].squeeze()
         
     return evalFemurGreaterTrochanter
+
+def makeEvaluatorFemurLesserTrochanter(gf, side='left'):
+    if side=='left':
+        def evalFemurLesserTrochanter(meshParams):
+            return meshParams[:,_femurLTNode].squeeze()
+    elif side=='right':
+        def evalFemurLesserTrochanter(meshParams):
+            return meshParams[:,_femurRightLTNode].squeeze()
+        
+    return evalFemurLesserTrochanter
 
 def makeEvaluatorFemurKneeCentre(gf, side='left'):
     evalMC = makeEvaluatorFemurMedialEpicondyle(gf, side=side)
@@ -456,6 +468,7 @@ _landmarkEvaluators = {
                   'femur-MEC': makeEvaluatorFemurMedialEpicondyle,
                   'femur-LEC': makeEvaluatorFemurLateralEpicondyle,
                   'femur-GT': makeEvaluatorFemurGreaterTrochanter,
+                  'femur-LT': makeEvaluatorFemurLesserTrochanter,
                   'femur-kneecentre': makeEvaluatorFemurKneeCentre,
                   'hpelvis-ASIS': makeEvaluatorHemiPelvisASIS,
                   'hpelvis-PSIS': makeEvaluatorHemiPelvisPSIS,
