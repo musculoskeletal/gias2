@@ -340,14 +340,17 @@ def makeEvaluatorPelvisRHJC(gf, disc=5.0, radius=False, side=None):
 
 #===========================================================================#
 # tibia fibula combined landmarks
-_tibiaFibulaLCNode = 256
+
+# aligned with opensim tibia model
+_tibiaFibulaLCNode = 257 #256
 _tibiaFibulaRightLCNode = 258
-_tibiaFibulaMCNode = 235
-_tibiaFibulaRightMCNode = 237
+_tibiaFibulaMCNode = 236 #s235
+_tibiaFibulaRightMCNode = 235 #237
 _tibiaFibulaLMNode = 528
-_tibiaFibulaRightLMNode = 535
+_tibiaFibulaRightLMNode = 527 #535
 _tibiaFibulaMMNode = 150
 _tibiaFibulaRightMMNode = 151
+
 _tibiaFibulaTTNode  = 203
 _tibiaFibulaRightTTNode  = 203
 _tibiaFibulaKneeCentreOffset = 50.0 # 389.55 from KC to ankle average of 45 subjects from Mousa K.
