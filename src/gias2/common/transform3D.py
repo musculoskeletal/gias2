@@ -252,7 +252,7 @@ def directAffine(u, ut):
     t1 = scipy.dot( B, b1 )
     t2 = scipy.dot( B, b2 )
     
-    T = scipy.vstack( [ t0, t1, t2 ] )
+    T = scipy.vstack( [ t0, t1, t2, [0,0,0,1] ] ) # make matrix square
 
     return T
 
