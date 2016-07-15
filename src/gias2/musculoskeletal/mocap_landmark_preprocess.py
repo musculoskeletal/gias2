@@ -15,17 +15,35 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 import numpy as np
 from gias2.common import math
 
+class InsufficientLandmarksError(Exception):
+    pass
+
 def preprocess_lower_limb(marker_radius, skin_pad, LASIS, RASIS, sacral, LEC,
                           MEC, LM, MM,):
     """Returns adjusted coordinates of LASIS, RASIS, Sacral, LEC, MEC, LM, MM
     """
-    pelvis_output = preprocess_pelvis(marker_radius, skin_pad, LASIS, RASIS,
-                                      None, None, sacral)
-    femur_output = preprocess_femur(marker_radius, skin_pad, LEC, MEC)
-    tibiafibula_output = preprocess_tibiafibula(marker_radius, skin_pad, LM, MM)
+    pelvis_output = preprocess_pelvis(
+        marker_radius, skin_pad, LASIS, RASIS, None, None, sacral
+        )
+    femur_output = preprocess_femur(
+        marker_radius, skin_pad, LEC, MEC
+        )
+    tibiafibula_output = preprocess_tibiafibula(
+        marker_radius, skin_pad, LM, MM
+        )
     return tuple(list(pelvis_output)+list(femur_output)+list(tibiafibula_output))
 
 def preprocess_pelvis(marker_radius, skin_pad, LASIS, RASIS, LPSIS, RPSIS, sacral):
+
+    if sacral is None:
+        if (LPSIS is None) or (RPSIS is None):
+            raise(
+                InsufficientLandmarksError,
+                'Either Sacral or the PSISs must be defined'
+                )
+
+    if (LASIS is None) or (RASIS is None):
+        raise(InsufficientLandmarksError, 'LASIS and RASIS must be defined')
 
     # calculate AP axis
     oa = (LASIS+RASIS)/2.0
@@ -54,7 +72,7 @@ def preprocess_pelvis(marker_radius, skin_pad, LASIS, RASIS, LPSIS, RPSIS, sacra
     else:
         sacral2 = sacral
 
-    return LASIS2, RASIS2, sacral2
+    return LASIS2, RASIS2, LPSIS2, RPSIS2, sacral2
 
 def preprocess_femur(marker_radius, skin_pad, LEC, MEC):
 
@@ -81,3 +99,9 @@ def preprocess_tibiafibula(marker_radius, skin_pad, LM, MM):
     LM2 = LM - ML*(marker_radius+skin_pad)
 
     return LM2, MM2
+
+preprocessors = {
+    'pelvis': preprocess_pelvis,
+    'femur': preprocess_femur,
+    'tibiafibula': preprocess_tibiafibula,
+}
