@@ -285,6 +285,19 @@ class PathPoint(object):
             self._updateSimmSplineParams('y', y_params)
         if z_params is not None:
             self._updateSimmSplineParams('z', z_params)
+
+    # def removeMultiplierFunction(self):
+    #     """
+    #     If pathpoint has a multiplierfunction for its X, Y, or Z, function,
+    #     replace the multiplierfunction with the function it is multiplying.
+    #     """
+    #     if not self.isMovingPathPoint:
+    #         raise TypeError('Not a MovingPathPoint')
+
+    #     newfunc = self._osimPathPoint.getXFunction()
+    #     if newfunc.getConcreteClassName()=='MultiplierFunction':
+    #         oldfunc = opensim.MultiplierFunction_safeDownCast(newfunc).getFunction()
+    #         owner.setFunction(oldfunc.clone())
     
     
 class Muscle(object):
@@ -624,6 +637,59 @@ class Scale(object):
 
     def apply(self, isapply):
         self._osimScale.setApply(isapply)
+
+class Marker(object):
+    """
+    Pythonic wrap of opensim's Marker class
+    """
+
+    def __init__(self, m=None, bodyname=None, offset=None):
+        if m is None:
+            self._osimMarker = opensim.Marker()
+            self.bodyName = bodyname
+            self.offset = offset
+        else:
+            self._osimMarker = m
+
+    @property
+    def name(self):
+        return self._osimMarker.getName()
+
+    @name.setter
+    def name(self, name):
+        self._osimMarker.setName(name)
+
+    @property
+    def bodyName(self):
+        return self._osimMarker.getBodyName()
+
+    @bodyName.setter
+    def bodyName(self, bodyName):
+        self._osimMarker.setBodyName(bodyName)
+
+    @property
+    def offset(self):
+        v = opensim.Vec3()
+        self._osimMarker.getOffset(v)
+        return np.array([v.get(i) for i in range(3)])
+
+    @offset.setter
+    def offset(self, x):
+        v = opensim.Vec3(x[0], x[1], x[2])
+        self._osimMarker.setOffset(v)
+
+    # Same as location
+    @property
+    def offset(self):
+        v = opensim.Vec3()
+        self._osimMarker.getOffset(v)
+        return np.array([v.get(i) for i in range(3)])
+
+    # Same as location
+    @offset.setter
+    def offset(self, x):
+        v = opensim.Vec3(x[0], x[1], x[2])
+        self._osimMarker.setOffset(v)
 
 class Model(object):
 

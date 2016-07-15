@@ -13,6 +13,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 """
 
 import numpy as np
+from numpy.linalg import inv
 import copy
 import xml.etree.cElementTree as ET
 
@@ -81,6 +82,12 @@ class ACSCartesian(object):
         coordinates.
         """
         return transform3D.transformAffine(x, self.local_transform)
+
+    def map_global(self, x):
+        """Calculate the global coordinates of points in x with local
+        coordinates.
+        """
+        return transform3D.transformAffine(x, inv(self.local_transform))
 
 def make_source_landmark_getter(landmark_names, side=None):
     """ Creates a function to return the coordinates of landmarks
