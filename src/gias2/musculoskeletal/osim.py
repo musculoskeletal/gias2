@@ -643,11 +643,12 @@ class Marker(object):
     Pythonic wrap of opensim's Marker class
     """
 
-    def __init__(self, m=None, bodyname=None, offset=None):
+    def __init__(self, m=None, name=None, bodyname=None, offset=None):
         if m is None:
             self._osimMarker = opensim.Marker()
             self.bodyName = bodyname
             self.offset = offset
+            self.name = name
         else:
             self._osimMarker = m
 
@@ -657,7 +658,7 @@ class Marker(object):
 
     @name.setter
     def name(self, name):
-        self._osimMarker.setName(name)
+        self._osimMarker.setName(str(name))
 
     @property
     def bodyName(self):
