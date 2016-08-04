@@ -17,6 +17,11 @@ import opensim
 import numpy as np
 # import pdb
 
+try:
+    opensim_version = getattr(opensim, '__version__')
+except AttributeError:
+    opensim_version = None
+
 class Body(object):
 
     def __init__(self, b):
@@ -180,19 +185,25 @@ class PathPoint(object):
     def isConditionalPathPoint(self):
         return self._isConditionalPathPoint
 
-    def _getSimmSplineParams(self, axis):
+    def _getSimmSpline(self, axis):
+        """
+        Return the SimmSpline of a given axis (x, y, or z) if self.isMovingPathPoint
+        """
         if axis=='x':
-            ss = opensim.SimmSpline_safeDownCast(
-                    self._osimPathPoint.getXFunction()
-                    )
+            func = self._osimPathPoint.getXFunction()
         elif axis=='y':
-            ss = opensim.SimmSpline_safeDownCast(
-                    self._osimPathPoint.getYFunction()
-                    )
+            func = self._osimPathPoint.getYFunction()
         elif axis=='z':
-            ss = opensim.SimmSpline_safeDownCast(
-                    self._osimPathPoint.getZFunction()
-                    )
+            func = self._osimPathPoint.getZFunction()
+
+        ss = opensim.SimmSpline_safeDownCast(func)
+        if ss is None:
+            raise TypeError('MovingPathPoint function not a simmspline, {} instead'.format(func.getConcreteClassName()))
+
+        return ss
+
+    def _getSimmSplineParams(self, axis):
+        ss = self._getSimmSpline(axis)
         ss_x = np.array([ss.getX(i) for i in range(ss.getSize())])
         ss_y = np.array([ss.getY(i) for i in range(ss.getSize())])
         return np.array([ss_x, ss_y])
@@ -230,19 +241,8 @@ class PathPoint(object):
         return x_params, y_params, z_params
 
     def _updateSimmSplineParams(self, axis, params):
-        if axis=='x':
-            ss = opensim.SimmSpline_safeDownCast(
-                    self._osimPathPoint.getXFunction()
-                    )
-        elif axis=='y':
-            ss = opensim.SimmSpline_safeDownCast(
-                    self._osimPathPoint.getYFunction()
-                    )
-        elif axis=='z':
-            ss = opensim.SimmSpline_safeDownCast(
-                    self._osimPathPoint.getZFunction()
-                    )
-
+        
+        ss = self._getSimmSpline(axis)
         ssLength = ss.getSize()
         x, y = params
         if (len(x)!=ssLength) or (len(y)!=ssLength):
@@ -670,14 +670,20 @@ class Marker(object):
 
     @property
     def offset(self):
-        v = opensim.Vec3()
-        self._osimMarker.getOffset(v)
+        if opensim_version==4.0:
+            v = self._osimMarker.get_location(v)
+        else:
+            v = opensim.Vec3()
+            self._osimMarker.getOffset(v)
         return np.array([v.get(i) for i in range(3)])
 
     @offset.setter
     def offset(self, x):
         v = opensim.Vec3(x[0], x[1], x[2])
-        self._osimMarker.setOffset(v)
+        if opensim_version==4.0:
+            self._osimMarker.set_location(v)
+        else:
+            self._osimMarker.setOffset(v)
 
     # Same as location
     @property
