@@ -28,6 +28,19 @@ def _make_x0(ll, npcs, landmark_names, target_landmarks, source_landmarks, init_
     
     # check if we can do an auto registration of the pelvis
     do_rigid = True
+    if 'pelvis-Sacral' not in landmark_names:
+        # calculate sacral from LPSIS and RPSIS
+        if ('pelvis-LPSIS' in landmark_names) and ('pelvis-RPSIS' in landmark_names):
+            landmark_names.append('pelvis-Sacral')
+            targ_lpsis = target_landmarks[landmark_names.index('pelvis-LPSIS')]
+            targ_rpsis = target_landmarks[landmark_names.index('pelvis-RPSIS')]
+            targ_sac = (np.array(targ_lpsis) + np.array(targ_rpsis))*0.5
+            target_landmarks = np.vstack([target_landmarks, targ_sac])
+            src_lpsis = target_landmarks[landmark_names.index('pelvis-LPSIS')]
+            src_rpsis = target_landmarks[landmark_names.index('pelvis-RPSIS')]
+            src_sac = (np.array(src_lpsis) + np.array(src_rpsis))*0.5
+            source_landmarks = np.vstack([source_landmarks, src_sac])
+
     for name in reg_landmarks:
         if name not in landmark_names:
             print('Could not find {} pelvis landmarks. Using zero initial rigid transformations'.format(name))
