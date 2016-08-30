@@ -45,4 +45,4 @@ def meanConfidenceInterval(data, confidence=0.95):
     return m, m-h, m+h
 
 def trimAngle(x):
-    return np.mod(x, 2*np.pi)*np.sign(x)
+    return np.mod(x, 2*np.pi*np.sign(x))
