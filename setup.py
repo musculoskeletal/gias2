@@ -10,6 +10,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #!/usr/bin/env python
 from setuptools import setup, find_packages
+from gias2.version import __version__
 
 def readme():
      with open('README.md', 'r') as f:
@@ -17,7 +18,7 @@ def readme():
 
 #=============================================================================#
 name = 'gias2'
-version = '0.4.4'
+version = __version__
 install_requires = [
      'numpy >= 1.6.1',
      'scipy >= 0.9',
