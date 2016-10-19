@@ -1116,7 +1116,8 @@ def optimiseMesh(sm, deciratio, clean=False):
     sm : SimpleMesh instance
         Mesh to be optimised
     deciratio : float
-        Decimation target, fraction of original number of faces.
+        Decimation target, fraction of original number of faces to remove.
+        Closer to 1 - more faces removed.
 
     Returns
     =======
