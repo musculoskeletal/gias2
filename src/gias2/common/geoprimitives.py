@@ -237,12 +237,21 @@ class LineOutOfBoundsError(Exception):
 class LineSegment3D(Line3D):
 
     def __init__(self, a, b, t0, t1 ):
-        super(LineSegment3D, self).__init__(a,b)
         self.t0 = t0
         self.t1 = t1
+        self._l = Line3D(a, b)
+        self.setAB(a, b)
+        # super(LineSegment3D, self).__init__(a,b)
         self.p0 = self.eval(t0)
         self.p1 = self.eval(t1)
-        self._l = Line3D(a,b)
+
+    def setAB(self, a, b):
+        self.a = norm(scipy.array(a, dtype=float))
+        self._a = self.a[:,scipy.newaxis]
+        self.b = scipy.array(b, dtype=float)   
+        self.p0 = self.eval(self.t0)
+        self.p1 = self.eval(self.t1)
+        self._l.setAB(a, b)
 
     def _checkBound(self, t):
         return (self.t0<=t) & (t<=self.t1)
