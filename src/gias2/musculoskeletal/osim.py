@@ -402,6 +402,26 @@ class CoordinateSet(object):
     @defaultValue.setter
     def defaultValue(self, x):
         self._cs.setDefaultValue(x)
+
+class wrapObject(object):
+
+	def __init__(self, WrObj):
+		self._wrapObject = WrObj
+
+	@property
+	def name(self):
+		return self._wrapObject.getName()
+
+	@name.setter
+	def name(self, name):
+		self._wrapObject.setName(name)
+
+	def getDimensions(self):
+		return self._wrapObject.getDimensionsString()
+
+	def scale(self, scaleFactors):
+		v = opensim.Vec3(scaleFactors[0], scaleFactors[1], scaleFactors[2])
+		self._wrapObject.scale(v)
     
 class Joint(object):
 
@@ -705,6 +725,7 @@ class Model(object):
         self.joints = {}
         self.bodies = {}
         self.muscles = {}
+        self.wrapObjects = {}
 
         if filename is not None:
             self.load(filename)
@@ -724,6 +745,7 @@ class Model(object):
         self._init_joints()
         self._init_bodies()
         self._init_muscles()
+        self._init_wrapObjects()
 
     def _init_joints(self):
         """
@@ -751,6 +773,19 @@ class Model(object):
         for mi in range(muscles.getSize()):
             m = muscles.get(mi)
             self.muscles[m.getName()] = Muscle(m)
+
+    def _init_wrapObjects(self):
+        """
+        Make a dict of all wrapping objects in model
+        """
+        bodies = self._model.getBodySet()
+        for bi in range(bodies.getSize()):
+            b = bodies.get(bi)
+            wObjects = b.getWrapObjectSet()
+            if (wObjects.getSize() != 0):
+                for wi in range(wObjects.getSize()):
+                    w = wObjects.get(wi)
+                    self.wrapObjects[w.getName()] = wrapObject(w)		
 
     def scale(self, state, *scales):
         """
