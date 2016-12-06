@@ -141,6 +141,7 @@ class ensemble_field_function:
                   'line4l': eval_line_L3,\
                   'line5l': eval_line_L4,\
                   'tri10': eval_simplex_L3_L3,\
+                  'tri6': dot_Evaluator,\
                   'tri6_ql': dot_Evaluator,\
                   'tri15': dot_Evaluator,\
                   'tri16': dot_Evaluator,\

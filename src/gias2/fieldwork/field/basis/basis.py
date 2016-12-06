@@ -10,7 +10,7 @@ License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
 """
 
-from scipy import array, dot, kron, zeros, sqrt, cos, where
+from scipy import array, dot, kron, zeros, ones, sqrt, cos, where, newaxis
 from scipy.linalg import det
 
 # basis matrices of implemented bases for tensor product basis 
@@ -1181,6 +1181,7 @@ class simplex_L2_L2( simplex_2d ):
         self.dimensions = 2
         self.type = 'simplex_L2_L2'
         self.basis_order = 2
+        self.tol = 1e-12
 
     def eval( self, x ):
         
@@ -1193,6 +1194,68 @@ class simplex_L2_L2( simplex_2d ):
                        l1 * ( 2.0*l1 - 1.0 ),\
                        4.0 * l1 * l2 ] )
                        
+        return phi
+
+    def eval_derivatives( self, x, deriv=None ):
+        """ if deriv==None, evaluate all derivatives
+        """
+        
+        get_derivatives = {(1,0): self.eval_dx0,\
+                           (0,1): self.eval_dx1,\
+                           (2,0): self.eval_dx0x0,\
+                           (0,2): self.eval_dx1x1,\
+                           (1,1): self.eval_dx0x1}
+                           
+        if deriv:
+            try:
+                d = get_derivatives[ deriv ](x)
+            except KeyError:
+                raise Warning('derivative '+str(deriv)+' not supported')
+        else:
+            d = array( [ get_derivatives[(1,0)](x),get_derivatives[(0,1)](x),get_derivatives[(2,0)](x),get_derivatives[(0,2)](x),get_derivatives[(1,1)](x) ] )
+            
+        return d
+    
+    def eval_dx0( self, x ):
+        x2 = -1.0 + x[0] + x[1]
+        print(x)
+        phi = array([
+                x[0]*0.0,
+                -4.0*x[1],
+                2.0*x2 + 2.0*x[1] + 2.0*x[0]-1.0,
+                -4.0*x2-4.0*x[0],
+                4.0*x[0]-1,
+                4.0*x[1],
+                ])
+                        
+        return where(abs(phi)<self.tol, 0.0, phi)
+        
+    def eval_dx1( self, x ):
+        x2 = -1.0 + x[0] + x[1]
+        phi = array([
+                4.0*x[1]-1.0,
+                -4.0*x2-4.0*x[1],
+                2.0*x2+2.0*x[1]+2.0*x[0]-1.0,
+                -4.0*x[0],
+                x[0]*0.0,
+                4.0*x[0],
+                ])
+
+        return where(abs(phi)<self.tol, 0.0, phi)
+                            
+    def eval_dx0x0( self, x ):
+        phi = ones([6,x.shape[1]])
+        phi  = phi * array([0.0,0.0,4.0,-8.0,4.0,0.0])[:,newaxis]
+        return phi
+                       
+    def eval_dx1x1( self, x ):
+        phi = ones([6,x.shape[1]])
+        phi  = phi * array([4.0, -8.0, 4.0, 0.0, 0.0, 0.0])[:,newaxis]
+        return phi
+        
+    def eval_dx0x1( self, x ):  
+        phi = ones([6,x.shape[1]])
+        phi  = phi * array([0.0, -4.0, 4.0, -4.0, 0.0, 4.0])[:,newaxis]
         return phi
 
 class simplex_L3_L3( simplex_2d ):
