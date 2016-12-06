@@ -1218,7 +1218,6 @@ class simplex_L2_L2( simplex_2d ):
     
     def eval_dx0( self, x ):
         x2 = -1.0 + x[0] + x[1]
-        print(x)
         phi = array([
                 x[0]*0.0,
                 -4.0*x[1],
