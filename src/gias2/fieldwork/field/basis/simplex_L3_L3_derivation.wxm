@@ -1,0 +1,59 @@
+/* Quadratic Lagrange 2D basis */
+
+/* area coordinate conversions */
+l0( x0, x1 ) := 1-x0-x1;
+l1( x0, x1 ) := x0;
+l2( x0, x1 ) := x1;
+
+/* 2D cubic simplex basis function in area coordinates */
+p0(l0,l1,l2) := l2*(2*l2-1);
+p1(l0,l1,l2) := 4*l2*l0;
+p2(l0,l1,l2) := l0*(2*l0-1);
+p3(l0,l1,l2) := 4*l0*l1;
+p4(l0,l1,l2) := l1*(2*l1-1);
+p5(l0,l1,l2) := 4*l1*l2;
+
+/*  2D cubic simplex basis function in cartesian coordinates */
+p0C : factor( subst( [l0=l0(x0,x1), l1=l1(x0,x1), l2=l2(x0,x1)], p0(l0,l1,l2) ) );
+p1C : factor( subst( [l0=l0(x0,x1), l1=l1(x0,x1), l2=l2(x0,x1)], p1(l0,l1,l2) ) );
+p2C : factor( subst( [l0=l0(x0,x1), l1=l1(x0,x1), l2=l2(x0,x1)], p2(l0,l1,l2) ) );
+p3C : factor( subst( [l0=l0(x0,x1), l1=l1(x0,x1), l2=l2(x0,x1)], p3(l0,l1,l2) ) );
+p4C : factor( subst( [l0=l0(x0,x1), l1=l1(x0,x1), l2=l2(x0,x1)], p4(l0,l1,l2) ) );
+p5C : factor( subst( [l0=l0(x0,x1), l1=l1(x0,x1), l2=l2(x0,x1)], p5(l0,l1,l2) ) );
+
+/* 1st derivatives in cartesian coords */
+dp0Cdx : diff( p0C, x0 );
+dp1Cdx : diff( p1C, x0 );
+dp2Cdx : diff( p2C, x0 );
+dp3Cdx : diff( p3C, x0 );
+dp4Cdx : diff( p4C, x0 );
+dp5Cdx : diff( p5C, x0 );
+
+dp0Cdy : diff( p0C, x1 );
+dp1Cdy : diff( p1C, x1 );
+dp2Cdy : diff( p2C, x1 );
+dp3Cdy : diff( p3C, x1 );
+dp4Cdy : diff( p4C, x1 );
+dp5Cdy : diff( p5C, x1 );
+
+/* 2nd derivatives in cartesian coords */
+d2p0Cdx2 : diff( dp0Cdx, x0 );
+d2p1Cdx2 : diff( dp1Cdx, x0 );
+d2p2Cdx2 : diff( dp2Cdx, x0 );
+d2p3Cdx2 : diff( dp3Cdx, x0 );
+d2p4Cdx2 : diff( dp4Cdx, x0 );
+d2p5Cdx2 : diff( dp5Cdx, x0 );
+
+d2p0Cdy2 : diff( dp0Cdy, x1 );
+d2p1Cdy2 : diff( dp1Cdy, x1 );
+d2p2Cdy2 : diff( dp2Cdy, x1 );
+d2p3Cdy2 : diff( dp3Cdy, x1 );
+d2p4Cdy2 : diff( dp4Cdy, x1 );
+d2p5Cdy2 : diff( dp5Cdy, x1 );
+
+d2p0Cdxdy : diff( dp0Cdx, x1 );
+d2p1Cdxdy : diff( dp1Cdx, x1 );
+d2p2Cdxdy : diff( dp2Cdx, x1 );
+d2p3Cdxdy : diff( dp3Cdx, x1 );
+d2p4Cdxdy : diff( dp4Cdx, x1 );
+d2p5Cdxdy : diff( dp5Cdx, x1 );
