@@ -17,6 +17,8 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 import scipy
 import gias2.fieldwork.field.ensemble_field_function as E
 
+BASIS_TYPE = {'tri6':'simplex_L2_L2'}
+
 #=============#
 # empty field #
 #=============#
@@ -49,7 +51,7 @@ def four_tri_patch():
     dimensions = 2
     elements = 4
     element_type = 'tri6'
-    basis_type = 'triangular_quadratic_2d'
+    basis_type = BASIS_TYPE
 
     f = E.ensemble_field_function('4_tri_patch', dimensions, debug = 0)
     f.set_basis( basis_type )
@@ -87,7 +89,7 @@ def eight_tri_patch():
     dimensions = 2
     elements = 8
     element_type = 'tri6'
-    basis_type = 'triangular_quadratic_2d'
+    basis_type = BASIS_TYPE
 
     f = E.ensemble_field_function('8_tri_patch', dimensions, debug = 0)
     f.set_basis( basis_type )
@@ -139,7 +141,7 @@ def two_quad_patch():
     dimensions = 2
     elements = 2
     element_type = 'tri6'
-    basis_type = 'triangular_quadratic_2d'
+    basis_type = BASIS_TYPE
 
     f = E.ensemble_field_function('2_quad_patch', dimensions, debug = 0)
     f.set_basis( basis_type )
@@ -147,16 +149,23 @@ def two_quad_patch():
     f.create_elements(element_type, elements)
 
     # connect elements
-    f.connect_element_points( [(0,2),(1,0)] )
-    f.connect_element_points( [(0,3),(1,5)] )
-    f.connect_element_points( [(0,4),(1,4)] )
+    # f.connect_element_points( [(0,2),(1,0)] )
+    # f.connect_element_points( [(0,3),(1,5)] )
+    # f.connect_element_points( [(0,4),(1,4)] )
+
+    f.connect_element_points( [(0,2),(1,4)] )
+    f.connect_element_points( [(0,3),(1,3)] )
+    f.connect_element_points( [(0,4),(1,2)] )
     
     #~ f.connect_element_points( [(0,2),(1,2)] )
     #~ f.connect_element_points( [(0,3),(1,3)] )
     #~ f.connect_element_points( [(0,4),(1,4)] )
 
     f.map_parameters()
-    f.mapper.set_custom_ensemble_ordering({ 0:0, 1:1, 2:2, 3:4, 4:6, 5:3, 6:5, 7:8, 8:7 })
+    f.mapper.set_custom_ensemble_ordering(
+        { 0:0, 1:1, 2:2, 3:4, 4:6, 5:3, 6:8, 7:7, 8:5 }
+        )
+    # f.mapper.set_custom_ensemble_ordering({ 0:0, 1:1, 2:2, 3:4, 4:6, 5:3, 6:5, 7:8, 8:7 })
     #~ f.mapper.set_custom_ensemble_ordering({ 0:0, 1:1, 2:2, 3:4, 4:6, 5:3, 6:8, 7:5, 8:7 })
 
     return f
@@ -175,7 +184,7 @@ def triangular_strip( n ):
     dimensions = 2
     elements = n
     element_type = 'tri6'
-    basis_type = 'triangular_quadratic_2d'
+    basis_type = BASIS_TYPE
 
     f = E.ensemble_field_function('triangular_strip_'+str(n), dimensions, debug = 0)
     f.set_basis( basis_type )
@@ -249,7 +258,7 @@ def three_quad_patch():
     dimensions = 2
     elements = 3
     element_type = 'tri6'
-    basis_type = 'triangular_quadratic_2d'
+    basis_type = BASIS_TYPE
 
     f = E.ensemble_field_function('3_quad_patch', dimensions, debug = 0)
     f.set_basis( basis_type )
@@ -294,7 +303,7 @@ def three_quad_ring( number_of_quads, height, radius, debug=0 ):
     
     dimensions = 2
     elements = number_of_quads
-    basis_type = 'triangular_quadratic_2d'
+    basis_type = BASIS_TYPE
     npoints = elements*6
 
     # initialise main field ensemble
@@ -412,7 +421,7 @@ def three_quad_ring( number_of_quads, height, radius, debug=0 ):
 #   |____\|____\|____\|____\|
 #  0   1  2  3  4  5  6  7   0  radius[0]
 
-def two_quad_ring( number_of_quads, height = None, radius = None ):
+def two_quad_ring(number_of_quads, height=None, radius=None):
     """
     number_of_quads defines the number of 2-triangle quads in the ring
     ( number of triangles / 2 ).
@@ -424,7 +433,7 @@ def two_quad_ring( number_of_quads, height = None, radius = None ):
     # initialise main field ensemble
     dimensions = 2
     elements = number_of_quads
-    basis_type = 'triangular_quadratic_2d'
+    basis_type = {'tri6':'simplex_L2_L2'}
     npoints = elements*6
 
     ring = E.ensemble_field_function('2_quad_ring', dimensions, debug = 0)
@@ -502,7 +511,7 @@ def sphere( azimuth_divs, incline_divs, radius, inclination_max ):
     """
     
     dimensions = 2
-    basis_type = 'triangular_quadratic_2d'
+    basis_type = BASIS_TYPE
     
     # initialise main field ensemble
     sphere = E.ensemble_field_function('sphere', dimensions, debug = 0)
@@ -723,7 +732,7 @@ def tri_hemisphere(radius, elements):
 
     dimensions = 2
     element_type = 'tri6'
-    basis_type = 'triangular_quadratic_2d'
+    basis_type = BASIS_TYPE
 
     # initialise main field ensemble
     hemi = E.ensemble_field_function('hemisphere', dimensions, debug = 0)
@@ -813,7 +822,7 @@ def tri_hemisphere(radius, elements):
 def four_tri_patch_hemisphere( radius, elements ):
 
     dimensions = 2
-    basis_type = 'triangular_quadratic_2d'
+    basis_type = BASIS_TYPE
 
     # initialise main field ensemble
     hemi = E.ensemble_field_function('4_tri_patch_hemisphere', dimensions, debug = 0)
@@ -1080,7 +1089,7 @@ def head_neck( h_r, n_l, n_r = None, h_adiv = 5, h_idiv = 3, h_maxi = 3.0/4.0*sc
     
     # initialise main field ensemble
     dimensions = 2
-    basis_type = 'triangular_quadratic_2d'
+    basis_type = BASIS_TYPE
     
     head_neck = E.ensemble_field_function('head_neck', dimensions, debug = 0)
     head_neck.set_basis( basis_type )
