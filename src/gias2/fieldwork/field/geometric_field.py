@@ -1461,14 +1461,31 @@ class geometric_field:
             # label all ensemble points with their index number
             if label == 'all':
                 labels = list(range( len( self.points )))
-                for i in range( len(labels ) ):
-                    l = mlab.text( p[i,0], p[i,1], str(labels[i]), z = p[i,2], line_width = 0.01, width = 0.005*len(str(labels[i]))**1.1, figure=figure )
+
+                labelSceneObjs = [
+                    mlab.text3d(
+                        p[i,0], p[i,1], p[i,2], str(labels[i]),
+                        scale=5.0, color=(1,1,1), figure=figure,
+                        ) for i in range(len(labels))
+                    ]
+
+                # for i in range( len(labels ) ):
+                #     l = mlab.text( p[i,0], p[i,1], str(labels[i]), z = p[i,2], line_width = 0.01, width = 0.005*len(str(labels[i]))**1.1, figure=figure )
             
             elif label == 'landmarks':
                 m = self.named_points_map
                 labels = list(m.keys())
-                for label in labels:
-                    l = mlab.text( p[m[label]][0], p[m[label]][1], label, z = p[m[label]][2], line_width = 0.01, width = 0.005*len( label )**1.1, figure=figure )
+
+                labelSceneObjs = [
+                    mlab.text3d(
+                        p[m[label]][0], p[m[label]][1], p[m[label]][2], label,
+                        scale=5.0, color=(1,1,1), figure=figure,
+                        ) for label in labels
+                    ]
+
+                # for label in labels:
+                #     l = mlab.text( p[m[label]][0], p[m[label]][1], label, z = p[m[label]][2], line_width = 0.01, width = 0.005*len( label )**1.1, figure=figure )
+            
             return points_plot
         else:
             return None
