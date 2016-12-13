@@ -862,7 +862,7 @@ class Fieldvi(HasTraits):
         gElemLabels = [ self.scene.mlab.text3d( ex[i][0], ex[i][1], ex[i][2], str(ei[i]), color=textColor, scale=textScale ) for i in range(len(ei)) ]
         return gElemLabels
 
-    def drawGeometricFieldNodeNumbers(self, name, textScale=5.0, textColor=(0,0,0.5)):
+    def drawGeometricFieldNodeNumbers(self, name, textScale=5.0, textColor=(0,0,1)):
         P = self.geometricFields[name].get_all_point_positions()
         nodeLabels = [
             self.scene.mlab.text3d(

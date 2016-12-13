@@ -28,7 +28,7 @@ from gias2.fieldwork.field import geometric_field_fitter as GFF
 from gias2.common import transform3D
 from gias2.fieldwork.field.tools import duanes_fitter
 
-# import pdb
+import pdb
 #======================================================================#
 def _sampleData(data, N):
     """
@@ -1040,33 +1040,47 @@ def hostMeshFit(hostGF, slaveGF, slaveObj, slaveXi=None, maxIt=0,
     host mesh and slaveObj as the objective function to minimise
     """
     print('host mesh fit...')
+    
+    # # calc slave node xi in host
+    # if slaveXi==None:
+    #     if verbose:
+    #         print('calculating slave xi...')
+    #     slaveXi = scipy.array([hostGF.findXi(0, node)[0] for node in slaveGF.field_parameters[:,:,0].T])
+    #     #~ pdb.set_trace()
+    #     #~ savetxt( 'host_mesh_fitting/slaveXi.txt', slaveXi )
+    
+    # # calc host basis values at slaveXis
+    # hostElem = hostGF.ensemble_field_function.mesh.elements[0]
+    # evaluator = hostGF.ensemble_field_function.evaluators[hostElem.type]
+    # basisFunction = hostGF.ensemble_field_function.basis[hostElem.type]
+    # slaveBasis = basisFunction.eval( slaveXi.T )
+    # #~ pdb.set_trace()
+    # A = scipy.zeros( [slaveGF.get_number_of_points(), hostGF.get_number_of_points()], dtype=float )
+    # slaveEvalEntries = [ [0,b] for b in slaveBasis.T ]
+    # evalSlaveParams = geometric_field.buildEvaluatorSparse(A, slaveEvalEntries,
+    #                     hostGF.ensemble_field_function.mapper._element_to_ensemble_map,
+    #                     hostGF.dimensions
+    #                     )
+
     # calc slave node xi in host
     if slaveXi==None:
         if verbose:
             print('calculating slave xi...')
-        slaveXi = scipy.array([hostGF.findXi(0, node)[0] for node in slaveGF.field_parameters[:,:,0].T])
-        #~ pdb.set_trace()
-        #~ savetxt( 'host_mesh_fitting/slaveXi.txt', slaveXi )
+        slaveXi = hostGF.find_closest_material_points(
+                    slaveGF.field_parameters[:,:,0].T,
+                    initGD=[40,40,40],
+                    verbose=True
+                    )[0]
     
     # calc host basis values at slaveXis
-    hostElem = hostGF.ensemble_field_function.mesh.elements[0]
-    evaluator = hostGF.ensemble_field_function.evaluators[hostElem.type]
-    basisFunction = hostGF.ensemble_field_function.basis[hostElem.type]
-    slaveBasis = basisFunction.eval( slaveXi.T )
-    #~ pdb.set_trace()
-    A = scipy.zeros( [slaveGF.get_number_of_points(), hostGF.get_number_of_points()], dtype=float )
-    slaveEvalEntries = [ [0,b] for b in slaveBasis.T ]
-    evalSlaveParams = geometric_field.buildEvaluatorSparse(A, slaveEvalEntries,
-                        hostGF.ensemble_field_function.mapper._element_to_ensemble_map,
-                        hostGF.dimensions
+    evalSlaveParams = geometric_field.makeGeometricFieldEvaluatorSparse(
+                        hostGF, [1,1], matPoints=slaveXi
                         )
 
     # initialise smoothing for host mesh
     sobolevW = scipy.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 3.0]) 
     hostParam0 = hostGF.get_field_parameters()
-    smoother = GFF.makeSobelovPenalty3D( hostGF, sobD, sobolevW*sobW )
-    #~ smoother = GFF.elementDotPenalty3D( hostGF.ensemble_field_function, smoothD, hostParam0, smoothW ) 
-    #~ smoothErr = scipy.array([])
+    smoother = GFF.makeSobelovPenalty3D(hostGF, sobD, sobolevW*sobW)
 
     # handle fixed slave nodes
     if fixedSlaveNodes is not None:
@@ -1078,32 +1092,33 @@ def hostMeshFit(hostGF, slaveGF, slaveObj, slaveXi=None, maxIt=0,
     else:
         fixedSlave = False
 
-    it = 0
+    c = itertools.count(0)
     # hostmesh obj function
-    def hostMeshObj( hostParams ):
+    def hostMeshObj(hostParams):
         
         hostParams = hostParams.reshape(3,-1,1)
-        hostGF.set_field_parameters( hostParams )
-        #~ slaveParams = scipy.array( [ evaluator( slaveBasis, p ) for p in hostParams] ).ravel()
-        slaveParams = evalSlaveParams( hostParams ).ravel()
+        hostGF.set_field_parameters(hostParams)
+        slaveParams = evalSlaveParams(hostParams).ravel()
+        # pdb.set_trace()
         if fixedSlave:
             # replace parameters at fixed indices with their original values
             slaveParams[fixedSlaveInd] = fixedSlaveParams
         
-        slaveErr = slaveObj( slaveParams )
-        
-        smoothErr = smoother( hostParams )
-        Err = scipy.hstack( (slaveErr, smoothErr) )
-        #~ print len(Err)
-        #~ it += 1
-        #~ print 'slaveRMS: %(srms)8.6f  smoothingRMS: %(Srms)8.6f  combinedRMS: %(crms)8.6f'%{
-                                                                                            #~ 'srms': scipy.sqrt( slaveErr.mean() ),
-                                                                                            #~ 'Srms': scipy.sqrt( smoothErr.mean() ),
-                                                                                            #~ 'crms': scipy.sqrt( Err.mean() )
-                                                                                            #~ }
-        return Err
+        slaveErr = slaveObj(slaveParams)
+        smoothErr = smoother(hostParams)
+        err = scipy.hstack((slaveErr, smoothErr))
+
+        sys.stdout.write(
+            'it: {it:d}, slaveRMS: {srms:8.6f}, combinedRMS: {crms:8.6f}\r'.format(
+                it=next(c),
+                srms=scipy.sqrt(slaveErr.mean()),
+                crms=scipy.sqrt(err.mean())
+                ))
+        sys.stdout.flush()
+
+        return err
     
-    maxf = maxIt * (hostGF.get_number_of_points() * 3)  
+    maxf = maxIt*hostGF.get_number_of_points()*3
     
     if verbose:
         print('HMF initial rms: {}'.format(scipy.sqrt(hostMeshObj(hostParam0).mean())))
@@ -1112,20 +1127,18 @@ def hostMeshFit(hostGF, slaveGF, slaveObj, slaveXi=None, maxIt=0,
     hostParamsOpt = leastsq(hostMeshObj, hostParam0.ravel(), xtol=xtol,
                         maxfev=maxf
                         )[0].reshape((3,-1,1))
-    hostGF.set_field_parameters( hostParamsOpt )
-    slaveParamsOpt = hostGF.evaluate_geometric_field_at_element_points(
-                        0, slaveXi
-                        )[:,:,scipy.newaxis]
+    hostGF.set_field_parameters(hostParamsOpt)
+    slaveParamsOpt = evalSlaveParams(hostParamsOpt)[:,:,scipy.newaxis]
     if fixedSlave:
         # replace parameters at fixed indices with their original values
         slaveParamsOptFlat = slaveParamsOpt.ravel()
         slaveParamsOptFlat[fixedSlaveInd] = fixedSlaveParams
         slaveParamsOpt = slaveParamsOptFlat.reshape((3,-1,1))
 
-    slaveGF.set_field_parameters( slaveParamsOpt )
+    slaveGF.set_field_parameters(slaveParamsOpt)
     
-    finalHostRMS =  scipy.sqrt( hostMeshObj( hostParamsOpt.ravel().copy() ).mean() )
-    finalSlaveRMS = scipy.sqrt( slaveObj( slaveParamsOpt.ravel().copy() ).mean() )
+    finalHostRMS = scipy.sqrt(hostMeshObj(hostParamsOpt.ravel().copy()).mean())
+    finalSlaveRMS = scipy.sqrt(slaveObj(slaveParamsOpt.ravel().copy()).mean())
     if verbose:
         print('final host rms: {}, final slave rms: {}'.format(finalHostRMS,finalSlaveRMS))
     
