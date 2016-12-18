@@ -1544,6 +1544,33 @@ class geometric_field:
         return lineGF
         
     #==================================================================#
+    def makeLineElementsFromPointSets( self, pointSets, elemTypes, elemBasisMap ):
+        """ returns a geometric field of line element(s) through the sets of
+        global points.
+
+        inputs
+        ------
+        pointSets : a list of lists of node numbers. Each nested list contains
+            the nodes of a line element.
+        elemTypes: a dictionary of the number of nodes per line segment mapping
+            to the element type name.
+        elemBasisMap : a dictionary of the line element types mapping to line 
+            basis functions, i.e. {elemtype:basistype}
+        """
+        
+        lineGF = geometric_field( 'line', 3, field_dimensions=1, field_basis=elemBasisMap )
+        params = self.field_parameters.copy()
+        
+        # assume only one type of elements and basis   
+        for elemPoints in pointSets:
+            e = element_types.create_element(elemTypes[len(elemPoints)])
+            lineGF.add_element_with_parameters(
+                e, params[:,elemPoints,:], tol=1e-3
+                )
+
+        return lineGF
+
+    #==================================================================#
     def makeElementBoundaryCurve( self, elemNumber, nNodesElemTypeMap, elemBasisMap ):
         
         bNodes = self.ensemble_field_function.get_element_boundary_nodes( elemNumber )
