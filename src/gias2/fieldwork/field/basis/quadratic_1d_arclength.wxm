@@ -1,0 +1,15 @@
+/* Quadratic 1D Arc length */
+p1 : 1-3*t+2*t^2;
+p2 : 4*t-4*t^2;
+p3 : -t+2*t^2;
+dp1 : diff(p1, t,1);
+dp2 : diff(p2, t,1);
+dp3 : diff(p3, t,1);
+
+a_x : dp1*x1 + dp2*x2 + dp3*x3;
+a_y : dp1*y1 + dp2*y2 + dp3*y3;
+a_z : dp1*z1 + dp2*z2 + dp3*z3;
+
+d : sqrt(a_x^2 + a_y^2 + a_z^2);
+
+L : integrate(d, t, 0, 1);
