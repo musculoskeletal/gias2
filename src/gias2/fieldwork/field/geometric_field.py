@@ -1378,7 +1378,7 @@ class geometric_field:
         return f
     
     #==================================================================#
-    def _draw_curve( self, density, scene=None, **kwargs ):
+    def _draw_curve_old( self, density, scene=None, **kwargs ):
         E = self.evaluate_geometric_field( density )
         
         # remove every density points to avoid overlap
@@ -1397,6 +1397,23 @@ class geometric_field:
             line = scene.mlab.plot3d( points[0], points[1], points[2], **kwargs )
         #~ line = mlab.points3d( e[0], e[1], e[2], scale_factor=0.4, **kwargs )
         return line
+
+    def _draw_curve( self, density, scene=None, **kwargs ):
+        n_elems = self.ensemble_field_function.mesh.get_number_of_true_elements()
+        x = self.evaluate_geometric_field(density).T.reshape((n_elems,-1,3))
+
+        lines = []
+        if scene is None:
+            for epts in x:
+                lines.append(
+                    mlab.plot3d(epts[:,0], epts[:,1], epts[:,2], **kwargs)
+                    )
+        else:
+            for epts in x:
+                lines.append(
+                    scene.mlab.plot3d(epts[:,0], epts[:,1], epts[:,2], **kwargs)
+                    )
+        return lines
         
     #==================================================================#
     def _draw_surface( self, density, scalar=None, figure=None, name=None, lim=[None, None] ):
@@ -2418,6 +2435,32 @@ def makeGeometricFieldDerivativesEvaluatorSparse( G, evalD, dim=3, epIndex=None,
         return D.T.reshape((dim,nDerivs,-1))
 
     return evaluator
+
+#=============================================================================#
+# arc length evaluation
+
+def makeArclengthEvalDisc(c, d):
+    """
+    Return a function for evaluating all element arclengths in geometric_field
+    c by discretisation of each element into d linear segments.
+    """
+
+    ceval = makeGeometricFieldEvaluatorSparse(c, [d,])
+    p = scipy.array(c.field_parameters)
+    n_elems = c.ensemble_field_function.mesh.get_number_of_true_elements()
+
+    def f(p):
+        x = ceval(p).T
+        
+        # separate x into element points per element
+        _x = x.reshape((n_elems,-1,3))
+        return scipy.sum(
+            scipy.sqrt(
+                ((_x[:,1:,:] - _x[:,:-1,:])**2.0).sum(2)
+                ), 1)
+
+    return f
+
 
 #=============================================================================#
 # serialisation
