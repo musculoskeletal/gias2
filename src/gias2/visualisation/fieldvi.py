@@ -588,7 +588,12 @@ class Fieldvi(HasTraits):
         
     def _GFVisible_changed( self ):
         try:
-            self.sceneObjectGF[self.GFList0].visible = self.GFVisible
+            scnObj = self.sceneObjectGF[self.GFList0]
+            if isinstance(scnObj, (list, tuple)):
+                for _scnObj in scnObj:
+                    _scnObj.visible = self.GFVisible
+            else:
+                self.sceneObjectGF[self.GFList0].visible = self.GFVisible
             if self.displayGFNodes:
                 self.sceneObjectGFPoints[self.GFList0].visible = self.GFVisible
         except KeyError:
