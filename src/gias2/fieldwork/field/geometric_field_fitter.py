@@ -1162,11 +1162,50 @@ class normalSmoother2(object):
         
         return
 
-    def _find_common_edges(self):
+    def _findCommonEdges(self):
         """
-        Create a list of 2-tuples containing pairs of element edge instances that are overlapped
+        Create a list of tuples containing pairs of element edge instances that are overlapped
         """
 
+        # list of shared edges
+        # each tuple contains (elem1, edge1, elem2, edge2, [1|-1]) where the
+        # last element is 1 if direction is align or -1 if direction is
+        # opposite 
+        self.common_edges = [] 
+
+        # loop through each element
+        for elemNum, elem in self.F.mesh.elements.values():
+            # loop through each set of edge points
+            for edgeInd, edgePoints in enumerate(elem.edge_points):
+                # get ensemble number of each point
+                edgeEnsPoints = [self.el2en[elemNum][ep][0][0] for ep in edgePoints]
+                self.el2en[elemNum]
+
+                # get elem number and elem node number connected to each edge point
+                connections = [self.F.mesh.connectivity[(elemNum, ep)] for ep in edgePoints]
+                
+                neigh_elem = _findCommonElem(connections)
+        
+        def _find_common_elem(c):
+            """Given a list contain lists of elemnum and elem node number connected to 
+            edge nodes, find the element that is connect to all edge points
+
+            e.g. c = [[(1,0),(2,1)], [(1,1)], [(1,2),(3,2)]] will return 1 since nodes
+            from elem 1 is connect in all cases.
+            """
+
+            elemSets = []
+            for ci in c:
+                elemSets.append(set([t[0] for t in ci]))
+
+            sCommon = elemSets[0]
+            for s in elemSets[1:]
+                sCommon = sCommon.intersection(s)
+
+            if len(sCommon)>1:
+                raise RuntimeError('sdfsaf')
+
+            return sCommon.pop()
 
     def _procEdge( self, D ):
         """ for each pair in edgePoints, find the element and edge shared
