@@ -1162,6 +1162,12 @@ class normalSmoother2(object):
         
         return
 
+    def _find_common_edges(self):
+        """
+        Create a list of 2-tuples containing pairs of element edge instances that are overlapped
+        """
+
+
     def _procEdge( self, D ):
         """ for each pair in edgePoints, find the element and edge shared
         and generate eval points along the shared edges
@@ -1169,7 +1175,7 @@ class normalSmoother2(object):
         self.edgeEvalBasis = []
         self.edgeEvalPoints = []
         self.nPairs = 0 # number of pairs of edge points
-        doneEdges = [] # list of element edges that have been done
+        doneEdges = set() # list of element edges that have been done
         # for each pair
         for ep1, ep2 in self.edgePoints:
             # get elements
@@ -1184,6 +1190,7 @@ class normalSmoother2(object):
                 pass
             else:
                 try:
+                    # get edge number, point number (on edge), edge instance
                     (ei1,pi1,edge1) = edgeList1[0]
                     (ei2,pi2,edge2) = edgeList2[0]
                 except IndexError:
@@ -1194,6 +1201,8 @@ class normalSmoother2(object):
                 else:
                     # check if element edges are reversed
                     ### assumes no hanging nodes and same number of nodes per edge!!! ###
+
+                    # get next node along edge
                     if pi1 != pi2:
                         eval1 = edge1.get_elem_coord( linspace( 0.0, 1.0, D ) )
                         eval2 = edge2.get_elem_coord( linspace( 1.0, 0.0, D ) )
@@ -1207,8 +1216,8 @@ class normalSmoother2(object):
                     
                     self.edgeEvalPoints.append( (ep1[0], eval1, ep2[0], eval2) )    # ( element1, ep1, element2, ep2 )
                     self.edgeEvalBasis.append( (ep1[0], basis1, ep2[0], basis2) )   # ( element1, basis1, element2, basis2 )
-                    doneEdges.append( (ep1[0],ei1) )
-                    doneEdges.append( (ep2[0],ei2) )
+                    doneEdges.add( (ep1[0],ei1) )
+                    doneEdges.add( (ep2[0],ei2) )
                     self.nPairs += eval1.shape[0]
                     
         return
@@ -1264,7 +1273,7 @@ class normalSmoother2(object):
             d1dxi2 = sA1dxi2*P
             # cross product and normalise
             n1 = norm( cross( d1dxi1, d1dxi2 ) )
-            n10, n11, n12 = n1.T
+            # n10, n11, n12 = n1.T
             
             # evaluation normal of the other side
             # evaluate  dxi1
@@ -1273,10 +1282,10 @@ class normalSmoother2(object):
             d2dxi2 = sA2dxi2*P
             # cross product and normalise
             n2 = norm( cross( d2dxi1, d2dxi2 ) )
-            n20, n21, n22 = n2.T
+            # n20, n21, n22 = n2.T
             
             # dot product normals
-            err = 1.0 - (n1[:,0]*n2[:,0] + n1[:,1]*n2[:,1] + n1[:,2]*n2[:,2])
+            err = 1.0 - abs(n1[:,0]*n2[:,0] + n1[:,1]*n2[:,1] + n1[:,2]*n2[:,2])
             # err = ne.evaluate( '1.0 - (n1[:,0]*n2[:,0] + n1[:,1]*n2[:,1] + n1[:,2]*n2[:,2])' )
             # err = ne.evaluate( '1.0 - (n10*n20 + n11*n21 + n12*n22)' )
             
