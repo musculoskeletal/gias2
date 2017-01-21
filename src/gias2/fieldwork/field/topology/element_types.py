@@ -110,6 +110,22 @@ class Element:
             except ValueError:
                 pass
         return ret
+
+    def get_edge_by_edge_points(self, p):
+        """Given a sequence of element node numbers, return the edge that the
+        nodes are on. Also return an integer i denoting the direction of the
+        edge that matches the sequence (1 if along, -1 if opposite). Returns
+        None, None if no match.
+        """
+        _p = tuple(p)
+        for edge_i, edge_points in enumerate(self.edge_points):
+            if _p==edge_points:
+                return self.edges[edge_i], 1
+            elif _p[::-1]==edge_points:
+                return self.edges[edge_i], -1
+
+        return None, None
+
 #======================================================================#
 class line( Element ):
     def is_interior( self, coords ):
