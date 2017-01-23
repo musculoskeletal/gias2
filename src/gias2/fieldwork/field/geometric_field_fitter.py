@@ -1181,6 +1181,9 @@ class normalSmoother2(object):
             for ci in c:
                 elemSets.append(set([t[0] for t in ci]))
 
+            if len(elemSets)==0:
+                return None, None
+                
             # find the intersection of the sets
             sCommon = elemSets[0]
             for s in elemSets[1:]:

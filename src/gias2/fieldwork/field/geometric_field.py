@@ -859,6 +859,16 @@ class geometric_field:
                 
     #==================================================================#
     def evaluate_geometric_field_at_element_points( self, element, XI ):
+        """
+        inputs
+        ------
+        element : (int) the number of the element to evaluate
+        XI : (n*m array) a list of x XI coordinates to evaluate. m is the dimension of the element
+
+        returns
+        -------
+        X : (p*n) n evaluated coordinates, p is the dimension of the geometric field.
+        """ 
         C = []
         # evaluate derivatives of coordinate fields
         for P in self.field_parameters:
