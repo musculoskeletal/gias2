@@ -1175,6 +1175,8 @@ class simplex_L1_L1( simplex_2d ):
 
 class simplex_L2_L2( simplex_2d ):
     """ Triangular element bases are hard coded for now
+
+    See simplex_L2_L2_derivation.wxm for maxima derivation.
     """
     
     def __init__( self ):
@@ -1185,14 +1187,15 @@ class simplex_L2_L2( simplex_2d ):
 
     def eval( self, x ):
         
-        l0, l1, l2 = self._cart2area( x )
-        
-        phi = array( [ l2 * ( 2.0*l2 - 1.0 ),\
-                       4.0 * l2 * l0,\
-                       l0 * ( 2.0*l0 - 1.0 ),\
-                       4.0 * l0 * l1,\
-                       l1 * ( 2.0*l1 - 1.0 ),\
-                       4.0 * l1 * l2 ] )
+        phi = array([
+                (x[1]+x[0]-1)*(2*x[1]+2*x[0]-1),
+                -4*x[0]*(-1+x[0]+x[1]),
+                # 2*x[0]-1,
+                x[0]*(2*x[0]-1),
+                4*x[0]*x[1],
+                x[1]*(2*x[1]-1),
+                -4*x[1]*(-1+x[0]+x[1]),
+                ])
                        
         return phi
 
@@ -1208,53 +1211,59 @@ class simplex_L2_L2( simplex_2d ):
                            
         if deriv:
             try:
-                d = get_derivatives[ deriv ](x)
+                d = get_derivatives[deriv](x)
             except KeyError:
                 raise Warning('derivative '+str(deriv)+' not supported')
         else:
-            d = array( [ get_derivatives[(1,0)](x),get_derivatives[(0,1)](x),get_derivatives[(2,0)](x),get_derivatives[(0,2)](x),get_derivatives[(1,1)](x) ] )
+            d = array([
+                    get_derivatives[(1,0)](x),
+                    get_derivatives[(0,1)](x),
+                    get_derivatives[(2,0)](x),
+                    get_derivatives[(0,2)](x),
+                    get_derivatives[(1,1)](x)
+                    ])
             
         return d
     
     def eval_dx0( self, x ):
-        x2 = -1.0 + x[0] + x[1]
+
         phi = array([
-                x[0]*0.0,
-                -4.0*x[1],
-                2.0*x2 + 2.0*x[1] + 2.0*x[0]-1.0,
-                -4.0*x2-4.0*x[0],
-                4.0*x[0]-1,
-                4.0*x[1],
+                2*(-1+x[0]+x[1])+2*x[1]+2*x[0]-1,
+                -4*(-1+x[0]+x[1])-4*x[0],
+                4*x[0]-1,
+                4*x[1],
+                [0,]*x.shape[1],
+                -4*x[1],
                 ])
-                        
+
         return where(abs(phi)<self.tol, 0.0, phi)
         
     def eval_dx1( self, x ):
-        x2 = -1.0 + x[0] + x[1]
+
         phi = array([
-                4.0*x[1]-1.0,
-                -4.0*x2-4.0*x[1],
-                2.0*x2+2.0*x[1]+2.0*x[0]-1.0,
-                -4.0*x[0],
-                x[0]*0.0,
-                4.0*x[0],
+                2*(-1+x[0]+x[1])+2*x[1]+2*x[0]-1,
+                -4*x[0],
+                [0,]*x.shape[1],
+                4*x[0],
+                4*x[1]-1,
+                -4*(-1+x[0]+x[1])-4*x[1],
                 ])
 
         return where(abs(phi)<self.tol, 0.0, phi)
                             
     def eval_dx0x0( self, x ):
         phi = ones([6,x.shape[1]])
-        phi  = phi * array([0.0,0.0,4.0,-8.0,4.0,0.0])[:,newaxis]
+        phi  = phi * array([4.0,-8.0,4.0,0.0,0.0,0.0])[:,newaxis]
         return phi
                        
     def eval_dx1x1( self, x ):
         phi = ones([6,x.shape[1]])
-        phi  = phi * array([4.0, -8.0, 4.0, 0.0, 0.0, 0.0])[:,newaxis]
+        phi  = phi * array([4.0, 0.0, 0.0, 0.0, 4.0, -8.0])[:,newaxis]
         return phi
         
     def eval_dx0x1( self, x ):  
         phi = ones([6,x.shape[1]])
-        phi  = phi * array([0.0, -4.0, 4.0, -4.0, 0.0, 4.0])[:,newaxis]
+        phi  = phi * array([4.0, -4.0, 0.0, 4.0, 0.0, -4.0])[:,newaxis]
         return phi
 
 class simplex_L3_L3( simplex_2d ):

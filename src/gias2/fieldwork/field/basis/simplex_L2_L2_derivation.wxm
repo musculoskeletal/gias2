@@ -1,4 +1,4 @@
-/* Quadratic Lagrange 2D basis */
+/* Quadratic Lagrange 2D basis taken from fembem notes */
 
 /* area coordinate conversions */
 l0( x0, x1 ) := 1-x0-x1;
@@ -6,12 +6,14 @@ l1( x0, x1 ) := x0;
 l2( x0, x1 ) := x1;
 
 /* 2D cubic simplex basis function in area coordinates */
-p0(l0,l1,l2) := l2*(2*l2-1);
-p1(l0,l1,l2) := 4*l2*l0;
-p2(l0,l1,l2) := l0*(2*l0-1);
-p3(l0,l1,l2) := 4*l0*l1;
-p4(l0,l1,l2) := l1*(2*l1-1);
-p5(l0,l1,l2) := 4*l1*l2;
+/* ordering of fembem nodes is 1 4 2 5 3 6 */
+p0(l0,l1,l2) := l0*(2*l0-1);
+p1(l0,l1,l2) := 4*l0*l1;
+/* p2(l0,l1,l2) := 2*l1-1; this is incorrect in fembem notes*/
+p2(l0,l1,l2) := l1*(2*l1-1);
+p3(l0,l1,l2) := 4*l1*l2;
+p4(l0,l1,l2) := l2*(2*l2-1);
+p5(l0,l1,l2) := 4*l2*l0;
 
 /*  2D cubic simplex basis function in cartesian coordinates */
 p0C : factor( subst( [l0=l0(x0,x1), l1=l1(x0,x1), l2=l2(x0,x1)], p0(l0,l1,l2) ) );
