@@ -920,6 +920,11 @@ class ensemble_field_function:
         If derivs = a list of derivative tuples, evaluates those derivatives,
         if derivs = -1, evaluates all derivatives
         derivative tuples: ( order, direction ), direction=3 for cross
+
+        returns
+        -------
+        element_field_values : field values at the specified xi positions
+        element_deriv_values : field derivatives at the specified xi positions
         """
         if parameters is not None:
             self.set_parameters( parameters )
@@ -940,14 +945,20 @@ class ensemble_field_function:
             if element.is_element:
                 # if element is local, evaluate using evaluate_field_in_element
                 #~ element_field_values = self._evaluate_element( element.type, element_parameters, xi )
-                element_field_values = self.evaluators[element.type]( self.basis[element.type].eval( xi.T ), element_parameters )
+                element_field_values = self.evaluators[element.type](
+                                        self.basis[element.type].eval(xi.T), element_parameters
+                                        )
                 if derivs is not None:
                     if derivs==-1:
                         element_deriv_basis_values = self.basis[element.type].eval_derivatives( xi.T, None )
-                        element_deriv_values = scipy.array( [ self.evaluators[element.type]( b, element_parameters ) for b in element_deriv_basis_values ] )
+                        element_deriv_values = scipy.array([
+                            self.evaluators[element.type](b, element_parameters) for b in element_deriv_basis_values
+                            ])
                         #~ element_deriv_values = self._evaluate_element_derivatives( element.type, element_parameters, scipy.array(xi), None )
                     else:
-                        element_deriv_values = self.evaluators[element.type]( self.basis[element.type].eval_derivatives( xi.T, derivs ), element_parameters )
+                        element_deriv_values = self.evaluators[element.type](
+                            self.basis[element.type].eval_derivatives(xi.T, derivs), element_parameters
+                            )
                         #~ element_deriv_values = self._evaluate_element_derivatives( element.type, element_parameters, scipy.array(xi), derivs )
                     
                     return element_field_values, element_deriv_values
@@ -956,7 +967,11 @@ class ensemble_field_function:
                     return element_field_values
             else:
                 #~ raise RuntimeError, 'element is not true element'
-                element_field_values = scipy.hstack([self.subfields[element_number].evaluate_field_at_element_point( elemNumber, xi[elemNumber], element_parameters, derivs ) for elemNumber in list(xi.keys())])
+                element_field_values = scipy.hstack([
+                    self.subfields[element_number].evaluate_field_at_element_point(
+                        elemNumber, xi[elemNumber], element_parameters, derivs
+                        ) for elemNumber in list(xi.keys())
+                    ])
                 
                 return element_field_values
     #==================================================================#    
