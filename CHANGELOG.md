@@ -1,5 +1,9 @@
 # GIAS2 Change log
 
+## 0.4.7
+- Fixed quadratic simplex element basis functions
+- Fixed normalsmoother2 getting edge direction confused with quadratic elements. New method for finding shared edges and their relative directions.
+
 ## 0.4.6
 
 This release focuses on the addition of simplex quadratric Lagrange elements and evaluation of arc-lengths to the fieldwork sub-package.
