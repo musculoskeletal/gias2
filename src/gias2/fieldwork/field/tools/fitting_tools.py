@@ -52,7 +52,7 @@ def fitAffine( data, target, xtol=1e-5, maxfev=0, sample=None, verbose=0, output
 
     rms0 = scipy.sqrt(((data - target)**2.0 ).sum(1).mean())
 
-    if sample!=None:
+    if sample is not None:
         D = _sampleData(data,sample)
         T = _sampleData(target,sample)
     else:
@@ -77,7 +77,7 @@ def fitTranslation( data, target, xtol=1e-5, maxfev=0, sample=None, verbose=0, o
     order
     """ 
 
-    if sample!=None:
+    if sample is not None:
         D = _sampleData(data,sample)
         T = _sampleData(target,sample)
     else:
@@ -114,14 +114,14 @@ def fitRigid( data, target, t0=None, xtol=1e-3, maxfev=0, sample=None, verbose=0
     order
     """ 
 
-    if sample!=None:
+    if sample is not None:
         D = _sampleData(data,sample)
         T = _sampleData(target,sample)
     else:
         D = data
         T = target
 
-    if t0==None:
+    if t0 is None:
         t0 = [0.0,0.0,0.0,0.0,0.0,0.0]
         
     def obj( x ):
@@ -152,14 +152,14 @@ def fitRigidFMin( data, target, t0=None, xtol=1e-3, maxfev=0, sample=None, verbo
     order
     """ 
 
-    if sample!=None:
+    if sample is not None:
         D = _sampleData(data,sample)
         T = _sampleData(target,sample)
     else:
         D = data
         T = target
 
-    if t0==None:
+    if t0 is None:
         t0 = [0.0,0.0,0.0,0.0,0.0,0.0]
         
     def obj( x ):
@@ -191,14 +191,14 @@ def fitRigidScale( data, target, t0=None, xtol=1e-3, maxfev=0, sample=None, verb
     order
     """
 
-    if sample!=None:
+    if sample is not None:
         D = _sampleData(data,sample)
         T = _sampleData(target,sample)
     else:
         D = data
         T = target
 
-    if t0==None:
+    if t0 is None:
         t0 = [0.0,0.0,0.0,0.0,0.0,0.0,1.0]
         
     def obj( x ):
@@ -232,14 +232,14 @@ def fitDataRigidEPDP( data, target, xtol=1e-5, maxfev=0, t0=None, sample=None, o
     in target
     """
 
-    if sample!=None:
+    if sample is not None:
         D = _sampleData(data,sample)
         T = _sampleData(target,sample)
     else:
         D = data
         T = target
 
-    if t0==None:
+    if t0 is None:
         t0 = scipy.array([0.0,0.0,0.0,0.0,0.0,0.0])
         
     TTree = cKDTree( T )
@@ -268,14 +268,14 @@ def fitDataTranslateEPDP( data, target, xtol=1e-5, maxfev=0, t0=None, sample=Non
     in target
     """
 
-    if sample!=None:
+    if sample is not None:
         D = _sampleData(data,sample)
         T = _sampleData(target,sample)
     else:
         D = data
         T = target
 
-    if t0==None:
+    if t0 is None:
         t0 = scipy.array([0.0,0.0,0.0])
         
     TTree = cKDTree( T )
@@ -303,14 +303,14 @@ def fitDataRigidDPEP( data, target, xtol=1e-5, maxfev=0, t0=None, sample=None, o
     in data
     """
 
-    if sample!=None:
+    if sample is not None:
         D = _sampleData(data,sample)
         T = _sampleData(target,sample)
     else:
         D = data
         T = target
 
-    if t0==None:
+    if t0 is None:
         t0 = scipy.array([0.0,0.0,0.0,0.0,0.0,0.0])
         
     D = scipy.array(D)
@@ -338,14 +338,14 @@ def fitDataRigidScaleEPDP( data, target, xtol=1e-5, maxfev=0, t0=None, sample=No
     in target
     """
 
-    if sample!=None:
+    if sample is not None:
         D = _sampleData(data,sample)
         T = _sampleData(target,sample)
     else:
         D = data
         T = target
 
-    if t0==None:
+    if t0 is None:
         t0 = scipy.array([0.0,0.0,0.0,0.0,0.0,0.0,1.0])
             
     TTree = cKDTree( T )
@@ -384,14 +384,14 @@ def fitDataRigidScaleDPEP( data, target, xtol=1e-5, maxfev=0, t0=None, sample=No
     in data
     """
 
-    if sample!=None:
+    if sample is not None:
         D = _sampleData(data,sample)
         T = _sampleData(target,sample)
     else:
         D = data
         T = target
 
-    if t0==None:
+    if t0 is None:
         t0 = scipy.array([0.0,0.0,0.0,0.0,0.0,0.0,1.0])
         
     D = scipy.array(D)
@@ -443,7 +443,7 @@ def combineObjs( obj1, obj2, w1, w2 ):
 def combObjGeomSobNormalStack( gObj, sobObj, nObj, sobW, nW, fixedNodeI=None, fixedNodeVal=None ):
     c = itertools.count(0)
     
-    if fixedNodeI==None:
+    if fixedNodeI is None:
         def obj(p):
             gErr = gObj(p)
             sobErr = sobObj(p) * sobW
@@ -476,7 +476,7 @@ def combObjGeomSobNormalStack( gObj, sobObj, nObj, sobW, nW, fixedNodeI=None, fi
 def combObjGeomSobNormalSum( gObj, sobObj, nObj, sobW, nW, fixedNodeI=None, fixedNodeVal=None ):
     c = itertools.count(0)
     
-    if fixedNodeI==None:
+    if fixedNodeI is None:
         def obj(p):
             gErr = gObj(p)
             sobErr = sobObj(p) * sobW

@@ -141,13 +141,13 @@ class MeshFitter(object):
         
         gfEP = self.templateGF.evaluate_geometric_field( self.alignEPD ).T
         
-        if initTranslation==None:
+        if initTranslation is None:
             gfEPCoM = self.templateGF.calc_CoM_2D( self.alignEPD )
             dataCoM = self.data.mean(0)
             initTranslation = dataCoM - gfEPCoM
-        if initRotation==None:
+        if initRotation is None:
             initRotation = [0.0,0.0,0.0]
-        if initScale==None:
+        if initScale is None:
             initScale = 1.0
             
         rigidScaleT0 = scipy.hstack( [initTranslation, initRotation, initScale] )
@@ -178,11 +178,11 @@ class MeshFitter(object):
         
         gfEP = self.templateGF.evaluate_geometric_field( self.alignEPD ).T
         
-        if initTranslation==None:
+        if initTranslation is None:
             gfEPCoM = self.templateGF.calc_CoM_2D( self.alignEPD )
             dataCoM = self.data.mean(0)
             initTranslation = dataCoM - gfEPCoM
-        if initRotation==None:
+        if initRotation is None:
             initRotation = [0.0,0.0,0.0]
             
         rigidT0 = scipy.hstack( [initTranslation, initRotation] )
@@ -338,11 +338,11 @@ class MeshFitter(object):
         """
         
         self.templateGF.set_field_parameters( pc.getMean().reshape((3,-1,1)) )
-        if self.PCFInitTrans == None:
+        if self.PCFInitTrans is None:
             gfCoM = self.templateGF.calc_CoM_2D( self.PCFEPD )
             dataCoM = self.data.mean(0)
             self.PCFInitTrans = dataCoM - gfCoM
-        if self.PCFInitRot == None:
+        if self.PCFInitRot is None:
             self.PCFInitRot = [0.0,0.0,0.0]
                 
         rigidMode0T0 = scipy.hstack( [self.PCFInitTrans, self.PCFInitRot] )
