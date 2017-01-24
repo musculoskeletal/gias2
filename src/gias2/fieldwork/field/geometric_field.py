@@ -699,7 +699,7 @@ class geometric_field:
                         'quad44': [3,2,1,0, 7,6,5,4, 11,10,9,8, 15,14,13,12],
                         'quad55': [4,3,2,1,0, 9,8,7,6,5, 14,13,12,11,10, 19,18,17,16,15, 24,23,22,21,20],
                         'quad54': [4,3,2,1,0, 9,8,7,6,5, 14,13,12,11,10, 19,18,17,16,15],
-                        'tri6': [2,1,0,4,3,5],
+                        'tri6': [2,1,0,5,4,3],
                         'tri10':[3,2,1,0,6,5,4,8,7,9],
                         'tri15':[4,3,2,1,0,8,7,6,5,11,10,9,13,12,14]
                     }
@@ -840,7 +840,13 @@ class geometric_field:
         # evaluate each coordinate in field
         if not derivs:
             for p in self.field_parameters:
-                V.append( scipy.hstack( [self.ensemble_field_function.evaluate_field_in_element( e, density, p, unpack=True ) for e in elements] ) )
+                V.append(
+                    scipy.hstack([
+                        self.ensemble_field_function.evaluate_field_in_element(
+                            e, density, p, unpack=True
+                            ) for e in elements
+                        ])
+                    )
             
             return scipy.array( V )
         else:
@@ -848,7 +854,9 @@ class geometric_field:
                 vv = []
                 dd = []
                 for e in elements:
-                    v, d = self.ensemble_field_function.evaluate_field_in_element( e, density, p, derivs )
+                    v, d = self.ensemble_field_function.evaluate_field_in_element(
+                            e, density, p, derivs
+                            )
                     vv.append( v )
                     dd.append( d )
                     
@@ -858,11 +866,29 @@ class geometric_field:
             return scipy.array(V), scipy.array(D)
                 
     #==================================================================#
-    def evaluate_geometric_field_at_element_points( self, element, XI ):
+    def evaluate_geometric_field_at_element_points( self, element, XI, derivs=None ):
+        """
+        inputs
+        ------
+        element : (int) the number of the element to evaluate
+        XI : (n*m array) a list of x XI coordinates to evaluate. m is the dimension of the element
+        derivs : (tuple|-1) field derivative to evaluate. If a tuple (1,0),
+                 evaluate the specified derivative. If -1, evaluate all derivatives.
+
+        returns
+        -------
+        X : (p*n) n evaluated coordinates, p is the dimension of the geometric field.
+            if derivs is defined, X is of shape (p,q,n) where q is the number of
+            derivatives + 1. (:,0,:) is always the field value.
+        """ 
         C = []
         # evaluate derivatives of coordinate fields
         for P in self.field_parameters:
-            C.append( self.ensemble_field_function.evaluate_field_at_element_point( element, XI, parameters=P ) )
+            C.append(
+                self.ensemble_field_function.evaluate_field_at_element_point(
+                    element, XI, parameters=P, derivs=derivs
+                    )
+                )
         
         return scipy.array(C)
     
@@ -879,14 +905,22 @@ class geometric_field:
         if self.ensemble_field_function.is_flat():
             # check for empty lists
             try:
-                X = scipy.hstack([self.evaluate_geometric_field_at_element_points( e, scipy.array(EP[e]) ) for e in elements if len(scipy.array(EP[e]))>0])
+                X = scipy.hstack([
+                        self.evaluate_geometric_field_at_element_points(
+                            e, scipy.array(EP[e])
+                            ) for e in elements if len(scipy.array(EP[e]))>0
+                        ])
             except TypeError:
                 print(EP[e])
                 raise TypeError('bad xi type')
         else:
             # check for empty lists
             #~ X = scipy.hstack([self.evaluate_geometric_field_at_element_points( e, EP[e] ) for e in elements])
-            X = scipy.hstack([self.evaluate_geometric_field_at_element_points( e, EP[e] ) for e in elements if len(EP[e])>0])
+            X = scipy.hstack([
+                    self.evaluate_geometric_field_at_element_points(
+                        e, EP[e]
+                        ) for e in elements if len(EP[e])>0
+                    ])
             
         return X
     
@@ -910,7 +944,9 @@ class geometric_field:
         
         # evaluate derivatives of coordinate fields
         for P in self.field_parameters:
-            v, d = self.ensemble_field_function.evaluate_field_in_mesh( density, parameters=P, derivs=-1 )
+            v, d = self.ensemble_field_function.evaluate_field_in_mesh(
+                        density, parameters=P, derivs=-1
+                        )
             D.append( d )
             V.append( v )
             #~ D.append( self.ensemble_field_function.evaluate_field_in_mesh( density, parameters=P, derivs=-1 )[1] )
@@ -935,7 +971,11 @@ class geometric_field:
         D = []
         # evaluate derivatives of coordinate fields
         for P in self.field_parameters:
-            D.append( self.ensemble_field_function.evaluate_field_at_element_point( element, XI, parameters=P, derivs=-1 )[1] )
+            D.append(
+                self.ensemble_field_function.evaluate_field_at_element_point(
+                    element, XI, parameters=P, derivs=-1
+                    )[1]
+                )
         
         return self._calculate_curvature( D )
 
@@ -954,8 +994,16 @@ class geometric_field:
             d10 = []
             d01 = []
             for p in self.field_parameters:
-                d10.append( self.ensemble_field_function.evaluate_derivatives_in_mesh( d, parameters=p, derivs=(1,0) , unpack=True ) )
-                d01.append( self.ensemble_field_function.evaluate_derivatives_in_mesh( d, parameters=p, derivs=(0,1) , unpack=True ) )
+                d10.append(
+                    self.ensemble_field_function.evaluate_derivatives_in_mesh(
+                        d, parameters=p, derivs=(1,0) , unpack=True
+                        )
+                    )
+                d01.append(
+                    self.ensemble_field_function.evaluate_derivatives_in_mesh(
+                        d, parameters=p, derivs=(0,1) , unpack=True
+                        )
+                    )
         else:
             d10 = []
             d01 = []
@@ -964,8 +1012,16 @@ class geometric_field:
                 d10i = []
                 d01i = []
                 for elemNumber in list(elemXi.keys()):
-                    d10i.append( self.ensemble_field_function.evaluate_field_at_element_point( elemNumber, elemXi[elemNumber], derivs=(1,0) )[1] )
-                    d01i.append( self.ensemble_field_function.evaluate_field_at_element_point( elemNumber, elemXi[elemNumber], derivs=(0,1) )[1] )
+                    d10i.append(
+                        self.ensemble_field_function.evaluate_field_at_element_point(
+                            elemNumber, elemXi[elemNumber], derivs=(1,0)
+                            )[1]
+                        )
+                    d01i.append(
+                        self.ensemble_field_function.evaluate_field_at_element_point(
+                            elemNumber, elemXi[elemNumber], derivs=(0,1)
+                            )[1]
+                        )
                 
                 d10.append( scipy.hstack( d10i ) )
                 d01.append( scipy.hstack( d01i ) )
@@ -990,8 +1046,12 @@ class geometric_field:
         d01 = scipy.zeros(3, dtype=float)
         for i, p in enumerate(self.field_parameters):
             self.ensemble_field_function.set_parameters( p )
-            d10[i] = self.ensemble_field_function.evaluate_field_at_element_point( elem, xi, derivs=(1,0) )[1]
-            d01[i] = self.ensemble_field_function.evaluate_field_at_element_point( elem, xi, derivs=(0,1) )[1]
+            d10[i] = self.ensemble_field_function.evaluate_field_at_element_point(
+                        elem, xi, derivs=(1,0)
+                        )[1]
+            d01[i] = self.ensemble_field_function.evaluate_field_at_element_point(
+                        elem, xi, derivs=(0,1)
+                        )[1]
 
         d10Norm = normaliseVector(d10)
         d01Norm = normaliseVector(d01)
@@ -1378,7 +1438,7 @@ class geometric_field:
         return f
     
     #==================================================================#
-    def _draw_curve( self, density, scene=None, **kwargs ):
+    def _draw_curve_old( self, density, scene=None, **kwargs ):
         E = self.evaluate_geometric_field( density )
         
         # remove every density points to avoid overlap
@@ -1397,6 +1457,23 @@ class geometric_field:
             line = scene.mlab.plot3d( points[0], points[1], points[2], **kwargs )
         #~ line = mlab.points3d( e[0], e[1], e[2], scale_factor=0.4, **kwargs )
         return line
+
+    def _draw_curve( self, density, scene=None, **kwargs ):
+        n_elems = self.ensemble_field_function.mesh.get_number_of_true_elements()
+        x = self.evaluate_geometric_field(density).T.reshape((n_elems,-1,3))
+
+        lines = []
+        if scene is None:
+            for epts in x:
+                lines.append(
+                    mlab.plot3d(epts[:,0], epts[:,1], epts[:,2], **kwargs)
+                    )
+        else:
+            for epts in x:
+                lines.append(
+                    scene.mlab.plot3d(epts[:,0], epts[:,1], epts[:,2], **kwargs)
+                    )
+        return lines
         
     #==================================================================#
     def _draw_surface( self, density, scalar=None, figure=None, name=None, lim=[None, None] ):
@@ -1461,14 +1538,31 @@ class geometric_field:
             # label all ensemble points with their index number
             if label == 'all':
                 labels = list(range( len( self.points )))
-                for i in range( len(labels ) ):
-                    l = mlab.text( p[i,0], p[i,1], str(labels[i]), z = p[i,2], line_width = 0.01, width = 0.005*len(str(labels[i]))**1.1, figure=figure )
+
+                labelSceneObjs = [
+                    mlab.text3d(
+                        p[i,0], p[i,1], p[i,2], str(labels[i]),
+                        scale=5.0, color=(1,1,1), figure=figure,
+                        ) for i in range(len(labels))
+                    ]
+
+                # for i in range( len(labels ) ):
+                #     l = mlab.text( p[i,0], p[i,1], str(labels[i]), z = p[i,2], line_width = 0.01, width = 0.005*len(str(labels[i]))**1.1, figure=figure )
             
             elif label == 'landmarks':
                 m = self.named_points_map
                 labels = list(m.keys())
-                for label in labels:
-                    l = mlab.text( p[m[label]][0], p[m[label]][1], label, z = p[m[label]][2], line_width = 0.01, width = 0.005*len( label )**1.1, figure=figure )
+
+                labelSceneObjs = [
+                    mlab.text3d(
+                        p[m[label]][0], p[m[label]][1], p[m[label]][2], label,
+                        scale=5.0, color=(1,1,1), figure=figure,
+                        ) for label in labels
+                    ]
+
+                # for label in labels:
+                #     l = mlab.text( p[m[label]][0], p[m[label]][1], label, z = p[m[label]][2], line_width = 0.01, width = 0.005*len( label )**1.1, figure=figure )
+            
             return points_plot
         else:
             return None
@@ -1526,6 +1620,33 @@ class geometric_field:
             
         return lineGF
         
+    #==================================================================#
+    def makeLineElementsFromPointSets( self, pointSets, elemTypes, elemBasisMap ):
+        """ returns a geometric field of line element(s) through the sets of
+        global points.
+
+        inputs
+        ------
+        pointSets : a list of lists of node numbers. Each nested list contains
+            the nodes of a line element.
+        elemTypes: a dictionary of the number of nodes per line segment mapping
+            to the element type name.
+        elemBasisMap : a dictionary of the line element types mapping to line 
+            basis functions, i.e. {elemtype:basistype}
+        """
+        
+        lineGF = geometric_field( 'line', 3, field_dimensions=1, field_basis=elemBasisMap )
+        params = self.field_parameters.copy()
+        
+        # assume only one type of elements and basis   
+        for elemPoints in pointSets:
+            e = element_types.create_element(elemTypes[len(elemPoints)])
+            lineGF.add_element_with_parameters(
+                e, params[:,elemPoints,:], tol=1e-3
+                )
+
+        return lineGF
+
     #==================================================================#
     def makeElementBoundaryCurve( self, elemNumber, nNodesElemTypeMap, elemBasisMap ):
         
@@ -2374,6 +2495,32 @@ def makeGeometricFieldDerivativesEvaluatorSparse( G, evalD, dim=3, epIndex=None,
         return D.T.reshape((dim,nDerivs,-1))
 
     return evaluator
+
+#=============================================================================#
+# arc length evaluation
+
+def makeArclengthEvalDisc(c, d):
+    """
+    Return a function for evaluating all element arclengths in geometric_field
+    c by discretisation of each element into d linear segments.
+    """
+
+    ceval = makeGeometricFieldEvaluatorSparse(c, [d,])
+    p = scipy.array(c.field_parameters)
+    n_elems = c.ensemble_field_function.mesh.get_number_of_true_elements()
+
+    def f(p):
+        x = ceval(p).T
+        
+        # separate x into element points per element
+        _x = x.reshape((n_elems,-1,3))
+        return scipy.sum(
+            scipy.sqrt(
+                ((_x[:,1:,:] - _x[:,:-1,:])**2.0).sum(2)
+                ), 1)
+
+    return f
+
 
 #=============================================================================#
 # serialisation

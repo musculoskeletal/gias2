@@ -16,7 +16,7 @@ from mayavi import mlab
 from tvtk.api import tvtk
 import scipy
 import sys
-from fieldwork.field.tools import meshing_tools
+from gias2.fieldwork.field.tools import meshing_tools
 
 class point_picker(object):
     """observers methods for a mayavi scene interactor. 

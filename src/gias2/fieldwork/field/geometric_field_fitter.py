@@ -1142,7 +1142,8 @@ class normalSmoother2(object):
         
         self.F = F
         self.en2el, self.el2en = self.F.get_mapping()   # ens2elem, elem2ens maps
-        self._procMap()
+        # self._procMap()
+        self._findCommonEdges()
     
     def _procMap( self ):
         """ find element points of shared nodes
@@ -1162,14 +1163,118 @@ class normalSmoother2(object):
         
         return
 
-    def _procEdge( self, D ):
+    def _findCommonEdges(self):
+        """
+        Create a list of tuples containing pairs of element edge instances that are overlapped
+        """
+
+        def _findCommonElem(c):
+            """Given a list contain lists of elemnum and elem node number connected to 
+            edge nodes, find the element that is connect to all edge points
+
+            e.g. c = [[(1,0),(2,1)], [(1,1)], [(1,2),(3,2)]] will return 1 since nodes
+            from elem 1 is connect in all cases.
+            """
+
+            # create sets of elements connects to each point
+            elemSets = []
+            for ci in c:
+                elemSets.append(set([t[0] for t in ci]))
+
+            if len(elemSets)==0:
+                return None, None
+                
+            # find the intersection of the sets
+            sCommon = elemSets[0]
+            for s in elemSets[1:]:
+                sCommon = sCommon.intersection(s)
+
+            if len(sCommon)==1:
+                # the only elem left is the one that is connected
+                connElemNum = sCommon.pop()
+
+                # get the connected element's edge points
+                connPoints = []
+                for ci in c:
+                    connPoints += [t[1] for t in ci if t[0]==connElemNum]
+                
+                return connElemNum, connPoints
+
+            if len(sCommon)==0:
+                return None, None
+
+            if len(sCommon)>1:
+                raise RuntimeError('Edge shared between more than 2 elements.')
+
+            
+
+        # list of shared edges
+        # each tuple contains (elem1, edge1, elem2, edge2, [1|-1]) where the
+        # last element is 1 if direction is align or -1 if direction is
+        # opposite 
+        self.commonEdges = []
+        doneEdges = set()
+
+        # loop through each element
+        for elemNum, elem in self.F.mesh.elements.items():
+            # loop through each set of edge points
+            for edgeInd, edgePoints in enumerate(elem.edge_points):
+                if (elemNum, edgeInd) not in doneEdges:
+                    edge = elem.edges[edgeInd]
+                    # get elem number and elem node number connected to each edge point
+                    connections = [self.F.mesh.connectivity[(elemNum, ep)] for ep in edgePoints]
+                    # find the element and its edge points that are connected to this edge
+                    connElemNum, connPoints = _findCommonElem(connections)
+
+                    if connElemNum is not None:
+                        # find the edge that overlaps with this edge
+                        connElem = self.F.mesh.elements[connElemNum]
+                        connEdge, direction = connElem.get_edge_by_edge_points(connPoints)
+
+                        self.commonEdges.append(
+                            (elemNum, edge, connElemNum, connEdge, direction)
+                            )
+                        doneEdges.add((elemNum, edgeInd))
+                        doneEdges.add((connElemNum, connEdge.edge_number))
+
+    def _procEdge(self, D):
         """ for each pair in edgePoints, find the element and edge shared
         and generate eval points along the shared edges
         """
         self.edgeEvalBasis = []
         self.edgeEvalPoints = []
         self.nPairs = 0 # number of pairs of edge points
-        doneEdges = [] # list of element edges that have been done
+        doneEdges = set() # list of element edges that have been done
+        # for each pair
+        for enum1, edge1, enum2, edge2, direction in self.commonEdges:
+            # get elements
+            e1 = self.F.mesh.elements[enum1]
+            e2 = self.F.mesh.elements[enum2]
+            
+            # check if element edges are reversed
+            if direction<0:
+                eval1 = edge1.get_elem_coord(linspace(0.0, 1.0, D))
+                eval2 = edge2.get_elem_coord(linspace(1.0, 0.0, D))
+            else:
+                eval1 = edge1.get_elem_coord(linspace(0.0, 1.0, D))
+                eval2 = edge2.get_elem_coord(linspace(0.0, 1.0, D))
+            
+            # get basis values for these
+            basis1 = [self.F.basis[e1.type].eval_derivatives(eval1.T, d).T for d in ((1,0),(0,1))]
+            basis2 = [self.F.basis[e2.type].eval_derivatives(eval2.T, d).T for d in ((1,0),(0,1))]
+            
+            self.edgeEvalPoints.append((enum1, eval1, enum2, eval2))    # ( element1, ep1, element2, ep2 )
+            self.edgeEvalBasis.append((enum1, basis1, enum2, basis2))   # ( element1, basis1, element2, basis2 )
+            self.nPairs += eval1.shape[0]
+
+    def _procEdgeOld( self, D ):
+        """ for each pair in edgePoints, find the element and edge shared
+        and generate eval points along the shared edges
+        """
+        self.edgeEvalBasis = []
+        self.edgeEvalPoints = []
+        self.nPairs = 0 # number of pairs of edge points
+        doneEdges = set() # list of element edges that have been done
         # for each pair
         for ep1, ep2 in self.edgePoints:
             # get elements
@@ -1184,6 +1289,7 @@ class normalSmoother2(object):
                 pass
             else:
                 try:
+                    # get edge number, point number (on edge), edge instance
                     (ei1,pi1,edge1) = edgeList1[0]
                     (ei2,pi2,edge2) = edgeList2[0]
                 except IndexError:
@@ -1194,6 +1300,8 @@ class normalSmoother2(object):
                 else:
                     # check if element edges are reversed
                     ### assumes no hanging nodes and same number of nodes per edge!!! ###
+
+                    # get next node along edge
                     if pi1 != pi2:
                         eval1 = edge1.get_elem_coord( linspace( 0.0, 1.0, D ) )
                         eval2 = edge2.get_elem_coord( linspace( 1.0, 0.0, D ) )
@@ -1207,8 +1315,8 @@ class normalSmoother2(object):
                     
                     self.edgeEvalPoints.append( (ep1[0], eval1, ep2[0], eval2) )    # ( element1, ep1, element2, ep2 )
                     self.edgeEvalBasis.append( (ep1[0], basis1, ep2[0], basis2) )   # ( element1, basis1, element2, basis2 )
-                    doneEdges.append( (ep1[0],ei1) )
-                    doneEdges.append( (ep2[0],ei2) )
+                    doneEdges.add( (ep1[0],ei1) )
+                    doneEdges.add( (ep2[0],ei2) )
                     self.nPairs += eval1.shape[0]
                     
         return
@@ -1264,7 +1372,7 @@ class normalSmoother2(object):
             d1dxi2 = sA1dxi2*P
             # cross product and normalise
             n1 = norm( cross( d1dxi1, d1dxi2 ) )
-            n10, n11, n12 = n1.T
+            # n10, n11, n12 = n1.T
             
             # evaluation normal of the other side
             # evaluate  dxi1
@@ -1273,10 +1381,11 @@ class normalSmoother2(object):
             d2dxi2 = sA2dxi2*P
             # cross product and normalise
             n2 = norm( cross( d2dxi1, d2dxi2 ) )
-            n20, n21, n22 = n2.T
+            # n20, n21, n22 = n2.T
             
             # dot product normals
             err = 1.0 - (n1[:,0]*n2[:,0] + n1[:,1]*n2[:,1] + n1[:,2]*n2[:,2])
+            # err = arccos(n1[:,0]*n2[:,0] + n1[:,1]*n2[:,1] + n1[:,2]*n2[:,2])
             # err = ne.evaluate( '1.0 - (n1[:,0]*n2[:,0] + n1[:,1]*n2[:,1] + n1[:,2]*n2[:,2])' )
             # err = ne.evaluate( '1.0 - (n10*n20 + n11*n21 + n12*n22)' )
             

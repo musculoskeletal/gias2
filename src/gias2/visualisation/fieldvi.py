@@ -588,7 +588,12 @@ class Fieldvi(HasTraits):
         
     def _GFVisible_changed( self ):
         try:
-            self.sceneObjectGF[self.GFList0].visible = self.GFVisible
+            scnObj = self.sceneObjectGF[self.GFList0]
+            if isinstance(scnObj, (list, tuple)):
+                for _scnObj in scnObj:
+                    _scnObj.visible = self.GFVisible
+            else:
+                self.sceneObjectGF[self.GFList0].visible = self.GFVisible
             if self.displayGFNodes:
                 self.sceneObjectGFPoints[self.GFList0].visible = self.GFVisible
         except KeyError:
@@ -861,6 +866,15 @@ class Fieldvi(HasTraits):
         ei, ex = g.get_element_numbers( coordinates=True )
         gElemLabels = [ self.scene.mlab.text3d( ex[i][0], ex[i][1], ex[i][2], str(ei[i]), color=textColor, scale=textScale ) for i in range(len(ei)) ]
         return gElemLabels
+
+    def drawGeometricFieldNodeNumbers(self, name, textScale=5.0, textColor=(0,0,1)):
+        P = self.geometricFields[name].get_all_point_positions()
+        nodeLabels = [
+            self.scene.mlab.text3d(
+                P[i,0], P[i,1], P[i,2], str(i), color=textColor, scale=textScale
+                ) for i in range(len(P))
+            ]
+        return nodeLabels
     
     def _modeIndex_changed(self):
         q = self.sceneObjectGF.get('popQuiver')

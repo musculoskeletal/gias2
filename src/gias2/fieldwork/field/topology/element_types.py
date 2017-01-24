@@ -110,6 +110,22 @@ class Element:
             except ValueError:
                 pass
         return ret
+
+    def get_edge_by_edge_points(self, p):
+        """Given a sequence of element node numbers, return the edge that the
+        nodes are on. Also return an integer i denoting the direction of the
+        edge that matches the sequence (1 if along, -1 if opposite). Returns
+        None, None if no match.
+        """
+        _p = tuple(p)
+        for edge_i, edge_points in enumerate(self.edge_points):
+            if _p==edge_points:
+                return self.edges[edge_i], 1
+            elif _p[::-1]==edge_points:
+                return self.edges[edge_i], -1
+
+        return None, None
+
 #======================================================================#
 class line( Element ):
     def is_interior( self, coords ):
@@ -379,7 +395,10 @@ element_node_coords =   { 'line3l' : array([0.0,0.5,1.0]),\
                           'line4l' : array([0.0,1./3,2./3,1.0]),\
 
                           'line5l' : array([0.0,0.25,0.5,0.75,1.0]),\
-                                
+                          
+                          'tri6' : array([(0.0,0.0),(0.5,0.0),(1.0,0.0),(0.5,0.5),(0.0,1.0),\
+                                             (0.0,0.5)]),\
+
                           'tri6_ql' : array([(0.0,0.0),(0.25,0.0),(0.5,0.0),(0.75,0.0),(1.0,0.0),\
                                              (0.0,1.0)]),\
                                 
@@ -623,7 +642,8 @@ element_edge_points = { 'line3l': ((0,),(2,)),
 element_edges = { 'line3l' : None,\
                   'line4l' : None,\
                   'line5l' : None,\
-                  'tri6':  ( edge( 2, (0.0,0.0), (1.0,0.0) ), edge( 0, (1.0,0.0), (0.0,1.0) ), edge( 1, (0.0,1.0), (0.0,0.0) ) ),
+                  # 'tri6':  ( edge( 2, (0.0,0.0), (1.0,0.0) ), edge( 0, (1.0,0.0), (0.0,1.0) ), edge( 1, (0.0,1.0), (0.0,0.0) ) ),
+                  'tri6':  ( edge( 0, (0.0,0.0), (1.0,0.0) ), edge( 1, (1.0,0.0), (0.0,1.0) ), edge( 2, (0.0,1.0), (0.0,0.0) ) ),
                   'tri6_ql':  ( edge( 0, (0.0,0.0), (1.0,0.0) ), edge( 1, (1.0,0.0), (0.0,1.0) ), edge( 2, (0.0,1.0), (0.0,0.0) ) ),
                   'tri10': ( edge( 0, (0.0,0.0), (1.0,0.0) ), edge( 1, (1.0,0.0), (0.0,1.0) ), edge( 2, (0.0,1.0), (0.0,0.0) ) ),
                   'tri15': ( edge( 0, (0.0,0.0), (1.0,0.0) ), edge( 1, (1.0,0.0), (0.0,1.0) ), edge( 2, (0.0,1.0), (0.0,0.0) ) ),

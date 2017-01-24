@@ -146,6 +146,7 @@ class Viewer(HasTraits):
         self._drawCurves()
         self._drawData()
         self.picker = point_picker_3( self, self.sceneObjectData, self._picking_done )
+        self.picker.pointScaleFactor = self.nodeScaleFactor
         self.scene.background = (0.0,0.0,0.0)
     
     def _drawCurvesButton_fired(self):
