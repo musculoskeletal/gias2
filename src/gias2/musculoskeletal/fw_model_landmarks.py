@@ -4,6 +4,26 @@ LAST MODIFIED: 24-12-2015
 DESCRIPTION: Functions for creating evaluator functions for anatomic landmarks
 on fieldwork models
 
+You can get a list of all landmarks by
+
+fw_model_landmarks.landmarkNames()
+
+To evaluate a landmark (e.g. femoral head centre), we first generate a function
+to evaluate that landmark:
+
+femur_HC_evaluator = fw_model_landmarks.makeLandmarkEvaluator('femur-HC', gf)
+
+where gf is the geometric_field of a femur. Then to evaluate the the landmark,
+we call the generated function with the gf parameters:
+
+femur_HC_coords = femur_HC_evaluator(gf.field_parameters)
+
+It is implemented this way so that landmark coordinates can be evaluated quickly
+during fitting optimisations by simpling providing the gf parameters. The
+femur_HC_evaluator function can now be called in your script with new gf
+parameters to get the new landmark coordinates if the parameters change (e.g.
+if the gf has been fitted or transformed).
+
 ===============================================================================
 This file is part of GIAS2. (https://bitbucket.org/jangle/gias2)
 
@@ -508,9 +528,26 @@ _landmarkEvaluators = {
 validLandmarks = sorted(_landmarkEvaluators.keys())
 
 def landmarkNames():
+    """Return a list of implemented landmarks
+    """
     return list(_landmarkEvaluators.keys())
 
 def makeLandmarkEvaluator(name, gf, **args):
+    """
+    Generate a function to evaluate the named landmark on the given
+    geometric_field. Call landmarkNames to get a list of possible landmark
+    names.
+
+    inputs
+    ------
+    name : str of landmark name.
+    gf : geometric_field instance on which to evaluate the landmark
+
+    returns
+    -------
+    func : function that evaluates the named landmark given the field
+        parameters of gf. e.g. ldmk_coords = func(gf.field_parameters)
+    """
     if args is None:
         args = {}
     try:
