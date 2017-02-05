@@ -1,5 +1,8 @@
 # GIAS2 Change log
 
+## 0.4.8
+- Fixed VTK6 compatibility with image array conversion and binary mask creation
+
 ## 0.4.7
 - Fixed quadratic simplex element basis functions
 - Fixed normalsmoother2 getting edge direction confused with quadratic elements. New method for finding shared edges and their relative directions.
