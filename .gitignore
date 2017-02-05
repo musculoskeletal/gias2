@@ -15,3 +15,5 @@ src/gias2/examples/outputs/*
 src/gias2/examples/fieldwork/fit_whole_pelvis_data/output/*
 *err.log
 *out.log
+*.sublime-project
+*.sublime-workspace

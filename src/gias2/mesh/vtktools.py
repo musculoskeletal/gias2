@@ -591,20 +591,30 @@ def array2vtkImage( arrayImage, dtype, flipDim=False, retImporter=False ):
     # import array image into vtk
     imageImporter = vtk.vtkImageImport()
     imageString = arrayImage.astype(dtype).tostring()
-    imageImporter.CopyImportVoidPointer( imageString, len( imageString ) )
+    imageImporter.CopyImportVoidPointer(imageString, len(imageString))
     if dtype==int16:
         imageImporter.SetDataScalarTypeToShort()
     elif dtype==uint8:
         imageImporter.SetDataScalarTypeToUnsignedChar()
+    else:
+        raise ValueError('Unsupported datatype {}'.format(dtype))
+
     imageImporter.SetNumberOfScalarComponents(1)
     # set imported image size
     s = arrayImage.shape
     if flipDim:
         imageImporter.SetWholeExtent(0, s[2]-1, 0, s[1]-1, 0, s[0]-1)
+        if vtk.VTK_MAJOR_VERSION>=6:
+            imageImporter.SetDataExtent(0, s[2]-1, 0, s[1]-1, 0, s[0]-1)
     else:
         imageImporter.SetWholeExtent(0, s[0]-1, 0, s[1]-1, 0, s[2]-1)
-    imageImporter.SetDataExtentToWholeExtent()  
-    
+        if vtk.VTK_MAJOR_VERSION>=6:
+            imageImporter.SetDataExtent(0, s[0]-1, 0, s[1]-1, 0, s[2]-1)
+
+    if vtk.VTK_MAJOR_VERSION<6:
+        imageImporter.SetDataExtentToWholeExtent()
+
+    imageImporter.Update()
     if retImporter:
         return imageImporter
     else:
@@ -804,7 +814,7 @@ def polygons2Tri(vertices, faces, clean=False, normals=False):
     # get triangulated vertices and faces
     return polyData2Tri(getPreviousOutput())
 
-class polydataFromImageParams   (object):
+class polydataFromImageParams(object):
     def __init__( self ):
         self.smoothImage = 1
         self.imgSmthSD = 2.0
@@ -954,7 +964,27 @@ def polydataFromImage( vtkImage, params, disp=0 ):
     
     return getPreviousOutput()
 
-def triSurface2BinaryMask(v, t, imageShape, outputOrigin=(0,0,0), outputSpacing=(1,1,1)):
+def triSurface2BinaryMask(v, t, imageShape, outputOrigin=None, outputSpacing=None):
+    """Create a binary image mask from a triangulated surface.
+
+    Inputs
+    ------
+    v : an nx3 array of vertex coordinates.
+    t : an mx3 array of the vertex indices of triangular faces
+    imageShape : a 3-tuple of the output binary image array shape
+    outputOrigin : 3D coordinates of the origin of the output image array
+    outputSpacing : Voxel spacing of the output image array
+
+    Returns
+    -------
+    maskImageArray : binary image array
+    gfPoly : vtkPolyData instance of the triangulated surface
+    """
+    
+    if outputOrigin is None:
+        outputOrigin = [0.0,0.0,0.0]
+    if outputSpacing is None:
+        outputSpacing = [1.0,1.0,1.0]
 
     imgDtype = int16
 
@@ -974,6 +1004,7 @@ def triSurface2BinaryMask(v, t, imageShape, outputOrigin=(0,0,0), outputSpacing=
     stencilMaker.SetOutputOrigin(outputOrigin)
     stencilMaker.SetOutputSpacing(outputSpacing)
     stencilMaker.SetOutputWholeExtent(maskVTKImage.GetExtent())
+    stencilMaker.Update() # needed in VTK 6
 
     stencil = vtk.vtkImageStencil()
     if vtk.VTK_MAJOR_VERSION<6:
@@ -1001,7 +1032,24 @@ def _makeImageSpaceGF(scan, GF, negSpacing=False, zShift=True):
     return newGF
 
 def gf2BinaryMask(gf, scan, xiD=None, negSpacing=False, zShift=True,
-                  outputOrigin=(0,0,0), outputSpacing=(1,1,1)):
+    outputOrigin=(0,0,0), outputSpacing=(1,1,1)):
+    """Create a binary image mask from a GeometricField instance.
+
+    Inputs
+    ------
+    gf : GeometricField instance
+    scan : a Scan instance of the image volume the mask should be created for
+    xiD : discretisation of gf, default is [10,10]
+    zShift : shift model in the Z axis by image volume height.
+    negSpacing : mirror the model in the Z axis
+    outputOrigin : 3D coordinates of the origin of the output image array
+    outputSpacing : Voxel spacing of the output image array
+
+    Returns
+    -------
+    maskImageArray : binary image array
+    gfPoly : vtkPolyData instance of the triangulated surface
+    """
     if xiD is None:
         xiD = [10,10]
     imgDtype = int16
@@ -1009,11 +1057,40 @@ def gf2BinaryMask(gf, scan, xiD=None, negSpacing=False, zShift=True,
     vertices, triangles = gfImage.triangulate(xiD, merge=True)
     return triSurface2BinaryMask(vertices, triangles, scan.I.shape, outputOrigin, outputSpacing)
 
-def simplemesh2BinaryMask(sm, scan, zShift=True, negSpacing=False, outputOrigin=(0,0,0), outputSpacing=(1,1,1)):
+def simplemesh2BinaryMask(sm, scan, zShift=True, negSpacing=False,
+        outputOrigin=(0,0,0), outputSpacing=(1,1,1)):
+    """Create a binary image mask from a SimpleMesh instance.
+
+    Inputs
+    ------
+    sm : SimpleMesh instance
+    scan : a Scan instance of the image volume the mask should be created for
+    zShift : shift model in the Z axis by image volume height.
+    negSpacing : mirror the model in the Z axis
+    outputOrigin : 3D coordinates of the origin of the output image array
+    outputSpacing : Voxel spacing of the output image array
+
+    Returns
+    -------
+    maskImageArray : binary image array
+    gfPoly : vtkPolyData instance of the triangulated surface
+    """
     vImage = scan.coord2Index(sm.v, zShift=zShift, negSpacing=negSpacing, roundInt=False)
     return triSurface2BinaryMask(vImage, sm.f, scan.I.shape, outputOrigin, outputSpacing)
 
 def image2Simplemesh(imageArray, index2Coord, isoValue, deciRatio=None, smoothIt=200, zShift=True):
+    """Convert an image array into a SimpleMesh surface.
+
+    inputs
+    ------
+    imageArray : binary image array
+    index2Coord : a function that given an array of image indices, returns the scanner coordinates
+    isoValue : the image value at which an isosurface will be created to generate the surface mesh
+    deciRatio : amount of decimation to apply to the surface, for vtkQuadricDecimation
+    smoothIt : number of smoothing iterations
+    zShift : shift surface in the Z axis by image volume height.
+
+    """
     IMGDTYPE = int16
     imageArray = imageArray.astype(IMGDTYPE)
     vtkImage = array2vtkImage(imageArray, IMGDTYPE, flipDim=True)
