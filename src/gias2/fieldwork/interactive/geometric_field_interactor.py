@@ -16,7 +16,7 @@ from mayavi import mlab
 from tvtk.api import tvtk
 import scipy
 import sys
-from gias2.fieldwork.field.tools import meshing_tools
+from gias2.fieldwork.field.tools import spline_tools
 
 class point_picker(object):
     """observers methods for a mayavi scene interactor. 
@@ -315,7 +315,7 @@ class element_adder_data( object ):
         else:
             if data != None:
                 self.data = data
-                self.crawler = meshing_tools.pointCrawlerData( self.data.T )
+                self.crawler = spline_tools.pointCrawlerData( self.data.T )
                 if data_scalar == None:
                     self.data_scalar = data_scalar
                     self.data_plot = mlab.points3d( data[0], data[1], data[2], mode='point', figure=self.figure, scalars=data_scalar )
@@ -421,8 +421,8 @@ class element_adder_data( object ):
                 p0 = scipy.array( [p0x,p0y,p0z] )[:,:,scipy.newaxis]
             
             # fit curve
-            #~ fittedNodes = meshing_tools.fitCurveEPDP( self.curve, pathPoints, p0, debug=1 )
-            fittedNodes = meshing_tools.fitCurveDPEP( self.curve, pathCloud, p0, debug=1 )
+            #~ fittedNodes = spline_tools.fitCurveEPDP( self.curve, pathPoints, p0, debug=1 )
+            fittedNodes = spline_tools.fitCurveDPEP( self.curve, pathCloud, p0, debug=1 )
             # plot curve
             ep = []
             for nI in fittedNodes:
