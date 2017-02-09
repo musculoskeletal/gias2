@@ -587,7 +587,7 @@ def renderPolyData( data ):
     renWin.Render()
     iren.Start()
 
-def array2vtkImage( arrayImage, dtype, flipDim=False, retImporter=False ):
+def array2vtkImage(arrayImage, dtype, flipDim=False, retImporter=False, extent=None):
     # import array image into vtk
     imageImporter = vtk.vtkImageImport()
     imageString = arrayImage.astype(dtype).tostring()
@@ -602,16 +602,16 @@ def array2vtkImage( arrayImage, dtype, flipDim=False, retImporter=False ):
     imageImporter.SetNumberOfScalarComponents(1)
     # set imported image size
     s = arrayImage.shape
-    if flipDim:
-        imageImporter.SetWholeExtent(0, s[2]-1, 0, s[1]-1, 0, s[0]-1)
-        if vtk.VTK_MAJOR_VERSION>=6:
-            imageImporter.SetDataExtent(0, s[2]-1, 0, s[1]-1, 0, s[0]-1)
-    else:
-        imageImporter.SetWholeExtent(0, s[0]-1, 0, s[1]-1, 0, s[2]-1)
-        if vtk.VTK_MAJOR_VERSION>=6:
-            imageImporter.SetDataExtent(0, s[0]-1, 0, s[1]-1, 0, s[2]-1)
+    if extent is None:
+        if flipDim:
+            extent = [0, s[2]-1, 0, s[1]-1, 0, s[0]-1]
+        else:
+            extent = [0, s[0]-1, 0, s[1]-1, 0, s[2]-1]
 
-    if vtk.VTK_MAJOR_VERSION<6:
+    imageImporter.SetWholeExtent(*extent)
+    if vtk.VTK_MAJOR_VERSION>=6:
+        imageImporter.SetDataExtent(*extent)
+    else:
         imageImporter.SetDataExtentToWholeExtent()
 
     imageImporter.Update()
@@ -964,7 +964,7 @@ def polydataFromImage( vtkImage, params, disp=0 ):
     
     return getPreviousOutput()
 
-def triSurface2BinaryMask(v, t, imageShape, outputOrigin=None, outputSpacing=None):
+def triSurface2BinaryMask(v, t, imageShape, outputOrigin=None, outputSpacing=None, extent=None):
     """Create a binary image mask from a triangulated surface.
 
     Inputs
@@ -993,7 +993,9 @@ def triSurface2BinaryMask(v, t, imageShape, outputOrigin=None, outputSpacing=Non
 
     # create mask vtkImage
     maskImageArray = ones(imageShape, dtype=imgDtype)
-    maskVTKImage = array2vtkImage(maskImageArray, imgDtype, flipDim=False)
+    maskVTKImage = array2vtkImage(
+        maskImageArray, imgDtype, flipDim=False, extent=extent
+        )
 
     # create stencil from polydata
     stencilMaker = vtk.vtkPolyDataToImageStencil()
@@ -1019,6 +1021,7 @@ def triSurface2BinaryMask(v, t, imageShape, outputOrigin=None, outputSpacing=Non
 
     maskImageArray = vtkImage2Array(stencil.GetOutput(), imgDtype, flipDim=True )
     return maskImageArray, gfPoly
+    # return maskImageArray, gfPoly, maskVTKImage
 
 def _makeImageSpaceGF(scan, GF, negSpacing=False, zShift=True):
     """
