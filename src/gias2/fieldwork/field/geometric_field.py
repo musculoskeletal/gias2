@@ -25,6 +25,7 @@ from scipy.optimize import fmin
 from scipy.spatial import KDTree, cKDTree
 from scipy import sparse
 
+from gias2.common import math
 import gias2.fieldwork.field.ensemble_field_function as EFF
 from gias2.fieldwork.field import template_fields
 from gias2.fieldwork.field.topology import element_types
@@ -40,11 +41,11 @@ except ImportError:
     print('Mayavi not imported, 3D visualisation will be disabled')
 
 # !!!!breaks ASM!!!!
-def normaliseVectors(x):
-    return x/scipy.sqrt((x**2.0).sum(1))[:,scipy.newaxis]
+# def normaliseVectors(x):
+#     return x/(scipy.sqrt((x**2.0).sum(1))[:,scipy.newaxis])
 
-def normaliseVector(x):
-    return x/scipy.sqrt((x**2.0).sum())
+# def normaliseVector(x):
+#     return x/scipy.sqrt((x**2.0).sum())
 
 class geometric_field:
     """ Class for an ensemble_field representing the geometry of an 
@@ -1027,10 +1028,9 @@ class geometric_field:
                 d01.append( scipy.hstack( d01i ) )
         
         #~ pdb.set_trace()        
-        d10Norm = normaliseVectors( scipy.array(d10).T )
-        d01Norm = normaliseVectors( scipy.array(d01).T )
-        
-        return scipy.cross( d10Norm, d01Norm ).T
+        # d10Norm = normaliseVectors( scipy.array(d10).T )
+        # d01Norm = normaliseVectors( scipy.array(d01).T )
+        # return scipy.cross( d10Norm, d01Norm ).T
         
         # !!! normaliseVectors BREAKS ASM !!!
         # CTM does its own normalistion, and works regardless of this.
@@ -1038,8 +1038,12 @@ class geometric_field:
         # it doesn't seem to matter whether this is on or not for training
         # as long as its off for segmentation
         
-        #~ N = normaliseVectors( scipy.cross( d10Norm, d01Norm ) ).T
-        #~ return N
+        N = math.norms(
+                scipy.cross(
+                    scipy.array(d10).T, scipy.array(d01).T
+                    )
+                ).T
+        return N
         
     def evaluate_normal_at_element_point(self, elem, xi):
         d10 = scipy.zeros(3, dtype=float)
@@ -1053,9 +1057,10 @@ class geometric_field:
                         elem, xi, derivs=(0,1)
                         )[1]
 
-        d10Norm = normaliseVector(d10)
-        d01Norm = normaliseVector(d01)
-        return scipy.cross( d10Norm, d01Norm )
+        # d10Norm = normaliseVector(d10)
+        # d01Norm = normaliseVector(d01)
+        # return scipy.cross( d10Norm, d01Norm )
+        return math.norm(scipy.cross(d10, d01))
 
 
 

@@ -19,6 +19,7 @@ from scipy.spatial import cKDTree as KDTree
 from scipy import *
 from scipy import sparse
 # from matplotlib import pyplot as plot
+from gias2.common import math
 from gias2.fieldwork.field.tools import curvature_tools as CT
 from gias2.fieldwork.field import ensemble_field_function as EFF
 from gias2.fieldwork.field import geometric_field
@@ -1371,7 +1372,7 @@ class normalSmoother2(object):
             # evaluate  dxi2
             d1dxi2 = sA1dxi2*P
             # cross product and normalise
-            n1 = norm( cross( d1dxi1, d1dxi2 ) )
+            n1 = math.norms(cross( d1dxi1, d1dxi2))
             # n10, n11, n12 = n1.T
             
             # evaluation normal of the other side
@@ -1380,7 +1381,7 @@ class normalSmoother2(object):
             # evaluate  dxi2
             d2dxi2 = sA2dxi2*P
             # cross product and normalise
-            n2 = norm( cross( d2dxi1, d2dxi2 ) )
+            n2 = math.norms( cross( d2dxi1, d2dxi2 ) )
             # n20, n21, n22 = n2.T
             
             # dot product normals
@@ -1538,7 +1539,7 @@ class tangentSmoother2(object):
             # evaluate  dxi2
             d1dxi2 = sA1dxi2*P
             # cross product and normalise
-            n1 = norm( cross( d1dxi1, d1dxi2 ) )
+            n1 = math.norms( cross( d1dxi1, d1dxi2 ) )
             n10, n11, n12 = n1.T
             
             # evaluation normal of the other side
@@ -1547,7 +1548,7 @@ class tangentSmoother2(object):
             # evaluate  dxi2
             d2dxi2 = sA2dxi2*P
             # cross product and normalise
-            n2 = norm( cross( d2dxi1, d2dxi2 ) )
+            n2 = math.norms( cross( d2dxi1, d2dxi2 ) )
             n20, n21, n22 = n2.T
             
             # dot product normals
@@ -1672,11 +1673,11 @@ class tangentSmoother(object):
             
             # evaluate tangent on one side
             # evaluate  dxi1
-            d1dxi1 = norm(sA1dxi1*P)
+            d1dxi1 = math.norms(sA1dxi1*P)
             
             # evaluation normal of the other side
             # evaluate  dxi1
-            d2dxi1 = norm(sA2dxi1*P)
+            d2dxi1 = math.norms(sA2dxi1*P)
             
             # dot product normals
             err = 1.0 - (d1dxi1*d2dxi1).sum(1)
@@ -1858,8 +1859,8 @@ class normalSmoother(object):
         
     def _calcNormal3( self, D1dx1, D1dx2, D2dx1, D2dx2):
         # calculate normals
-        N1 = norm( cross( D1dx1.T, D1dx2.T ) )
-        N2 = norm( cross( D2dx1.T, D2dx2.T ) )
+        N1 = math.norms( cross( D1dx1.T, D1dx2.T ) )
+        N2 = math.norms( cross( D2dx1.T, D2dx2.T ) )
         
         D = ( N1[:,0]*N2[:,0] + N1[:,1]*N2[:,1] + N1[:,2]*N2[:,2] ) - 1.0
         
@@ -1901,8 +1902,8 @@ class normalSmoother(object):
         D2dx2 = array(D2dx2)
         
         # calculate normals
-        N1 = norm( cross( D1dx1.T, D1dx2.T ) )
-        N2 = norm( cross( D2dx1.T, D2dx2.T ) )
+        N1 = math.norms( cross( D1dx1.T, D1dx2.T ) )
+        N2 = math.norms( cross( D2dx1.T, D2dx2.T ) )
         N = array((N1,N2)).swapaxes(0,1)
         
         # calc dot of normals
@@ -1922,7 +1923,7 @@ class normalSmoother(object):
                 D.append( dot( basis, e_params ) )
             
             D = array(D)
-            normals.append( norm(cross( D[:,0].T, D[:,1].T )) )
+            normals.append( math.norms(cross( D[:,0].T, D[:,1].T )) )
         
         #~ pdb.set_trace()
         #~ n = array(normals)   
@@ -1939,8 +1940,8 @@ class normalSmoother(object):
             
         return D**2.0
         
-def norm(x):
-    return x/sqrt((x**2.0).sum(1))[:,newaxis]
+# def norm(x):
+#     return x/(sqrt((x**2.0).sum(1))[:,newaxis])
     #~ return ne.evaluate('x/sqrt(sum(x*x, axis=1))')[:,newaxis]
     
 # penalty functions for meshing fitting obj
