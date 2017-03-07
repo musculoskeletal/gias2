@@ -1,5 +1,11 @@
 # GIAS2 Change log
 
+## 0.4.9
+Minor bug fixes.
+- tidied up use of common.math.norm in geometric_field
+- optional args for array2vtkimage
+- fixed spline_tools import
+
 ## 0.4.8
 - Fixed VTK6 compatibility with image array conversion and binary mask creation
 
