@@ -1,5 +1,8 @@
 # GIAS2 Change log
 
+## 0.4.10
+- fixed vector normalisation in fw_segmentation_tools
+
 ## 0.4.9
 Minor bug fixes.
 - tidied up use of common.math.norm in geometric_field
