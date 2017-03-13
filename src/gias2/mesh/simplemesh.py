@@ -378,8 +378,8 @@ class SimpleMesh( object ):
         aligned[self.f.min()] = True
         
         while front:
-            sys.stdout.write( '\rfront size: '+str(len(front))+' aligned size: '+str(aligned.sum()) )
-            sys.stdout.flush()
+            # sys.stdout.write( '\rfront size: '+str(len(front))+' aligned size: '+str(aligned.sum()) )
+            # sys.stdout.flush()
 
             v = front.pop()
             # get vertices immediately ahead of the front
