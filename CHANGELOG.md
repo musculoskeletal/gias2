@@ -1,5 +1,8 @@
 # GIAS2 Change log
 
+## 0.4.11
+- updated HJC regression functions to match ISB coordinate system
+
 ## 0.4.10
 - fixed vector normalisation in fw_segmentation_tools
 
