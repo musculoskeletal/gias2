@@ -103,7 +103,8 @@ class PelvisMeasurements( object ):
         m = list(self.measurements.keys())
         m.sort()
         for mi in m:
-            print(mi, ':', self.measurements[mi].value)
+            if self.measurements[mi] is not None:
+                print(mi, ':', self.measurements[mi].value)
     
     def _alignToAnatomicCS(self):
 
@@ -308,6 +309,18 @@ class PelvisMeasurements( object ):
 
         return LHJC, RHJC
         
+    def _calcACSHJCMesh(self):
+        """
+        Calculate HJC from sphere fit to mesh
+        """
+        lhjcEval = fml.makeLandmarkEvaluator('pelvis-LHJC', self.GFACS, radius=True)
+        lhjcCenter, lhjcRadius = lhjcEval(self.GFACS.field_parameters)
+
+        rhjcEval = fml.makeLandmarkEvaluator('pelvis-RHJC', self.GFACS, radius=True)
+        rhjcCenter, rhjcRadius = rhjcEval(self.GFACS.field_parameters)
+
+        return lhjcCenter, rhjcCenter
+
     def calcHJCPredictions(self, popClass):
 
         L = self.measurements['landmarks_ACS']
@@ -328,25 +341,32 @@ class PelvisMeasurements( object ):
                                                        L.value['RPSIS'],\
                                                        0.5*(L.value['LPS']+L.value['RPS']),\
                                                        popClass)
+        LHJC_H, RHJC_H, PW, PD = HJC.HJCHarrington(L.value['LASIS'],\
+                                                       L.value['RASIS'],\
+                                                       L.value['LPSIS'],\
+                                                       L.value['RPSIS'],\
+                                                       popClass)
         LHJC_mesh, RHJC_mesh = self._calcACSHJCMesh()
 
         self.measurements['left_HJC_Bell'] = Measurement('left_HJC_Bell', LHJC_B)
         self.measurements['left_HJC_Tylkowski'] = Measurement('left_HJC_Tylkowski', LHJC_T)
         self.measurements['left_HJC_Andriacchi'] = Measurement('left_HJC_Andriacchi', LHJC_A)
         self.measurements['left_HJC_Seidel'] = Measurement('left_HJC_Seidel', LHJC_D)
+        self.measurements['left_HJC_Harrington'] = Measurement('left_HJC_Harrington', LHJC_H)
         self.measurements['left_HJC_mesh'] = Measurement('left_HJC_mesh', LHJC_mesh)
 
         self.measurements['right_HJC_Bell'] = Measurement('right_HJC_Bell', RHJC_B)
         self.measurements['right_HJC_Tylkowski'] = Measurement('right_HJC_Tylkowski', RHJC_T)
         self.measurements['right_HJC_Andriacchi'] = Measurement('right_HJC_Andriacchi', RHJC_A)
         self.measurements['right_HJC_Seidel'] = Measurement('right_HJC_Seidel', RHJC_D)
+        self.measurements['right_HJC_Harrington'] = Measurement('right_HJC_Harrington', RHJC_H)
         self.measurements['right_HJC_mesh'] = Measurement('right_HJC_mesh', RHJC_mesh)
 
-        self.measurements['ASIS2ASIS'] = Measurement('ASIS2ASIS', ASIS2ASIS)
-        self.measurements['LO'] = Measurement('LO', LO)
-        self.measurements['RO'] = Measurement('RO', RO)
-        self.measurements['H'] = Measurement('H', H)
-        self.measurements['D'] = Measurement('D', D)
+        self.measurements['_ASIS2ASIS'] = Measurement('_ASIS2ASIS', ASIS2ASIS)
+        self.measurements['_LO'] = Measurement('_LO', LO)
+        self.measurements['_RO'] = Measurement('_RO', RO)
+        self.measurements['_H'] = Measurement('_H', H)
+        self.measurements['_D'] = Measurement('_D', D)
 
     def calcInterHJCDistance(self):
         """ Distance between LHJC and RHJC

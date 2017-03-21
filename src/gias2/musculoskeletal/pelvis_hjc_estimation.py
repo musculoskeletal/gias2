@@ -2,8 +2,13 @@
 FILE: pelvis_hjc_estimation.py
 LAST MODIFIED: 24-12-2015 
 DESCRIPTION: functions and classes for estimating hip joint centre. Contains
-predictive methods of Bell (1989) and Leardini (1999). All methods require hip
-models to be in the standard anatomic coordinate system.
+predictive methods of Bell (1989) and Leardini (1999).
+
+All methods require hip models to be in the standard ISB anatomic coordinate
+system:
+    - x: posterior to anterior
+    - y: inferior to superior
+    - z: left to right
 
 ===============================================================================
 This file is part of GIAS2. (https://bitbucket.org/jangle/gias2)
@@ -42,6 +47,10 @@ _literatureDataBell = {'Tylkowski': {
                             },
                     'Harrington':{
                                   'all': {'pdx':-0.24, 'cx':-9.9,
+                                          'pwy':-0.30, 'cy':-10.9,
+                                          'pwz':0.33, 'cz':7.3,
+                                          },
+                                  'adults': {'pdx':-0.24, 'cx':-9.9,
                                           'pwy':-0.30, 'cy':-10.9,
                                           'pwz':0.33, 'cz':7.3,
                                           },
@@ -84,8 +93,8 @@ def HJCTylkowski(LASIS, RASIS, popClass):
     rp = _literatureData['Tylkowski'][popClass]['rp']
 
     D = np.sqrt(((LASIS - RASIS)**2.0).sum())
-    LHJC = LASIS + [rp*D, rd*D,  rm*D]
-    RHJC = RASIS + [rp*D, rd*D, -rm*D]
+    LHJC = LASIS + [-rp*D, -rd*D,  rm*D]
+    RHJC = RASIS + [-rp*D, -rd*D, -rm*D]
 
     return LHJC, RHJC, D
 
@@ -111,8 +120,8 @@ def HJCAndriacchi(LASIS, RASIS, PS, popClass):
 
     LO = (LASIS + PS)/2.0
     RO = (RASIS + PS)/2.0
-    LHJC = LO + [0, dd, -dl]
-    RHJC = RO + [0, dd,  dl]
+    LHJC = LO + [0, -dd, -dl]
+    RHJC = RO + [0, -dd,  dl]
 
     return LHJC, RHJC, LO,RO
 
@@ -160,8 +169,8 @@ def HJCSeidel(LASIS, RASIS, LPSIS, RPSIS, PS, popClass):
     rm = _literatureData['Seidel'][popClass]['rm']
     rp = _literatureData['Seidel'][popClass]['rp']
 
-    LHJC = LASIS + [rp*D, rd*H,  rm*W]
-    RHJC = RASIS + [rp*D, rd*H, -rm*W]
+    LHJC = LASIS + [-rp*D, -rd*H,  rm*W]
+    RHJC = RASIS + [-rp*D, -rd*H, -rm*W]
 
     return LHJC, RHJC, W, H, D
 
