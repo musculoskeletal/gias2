@@ -13,6 +13,9 @@ from scipy.optimize import leastsq
 import cPickle
 import pdb
 
+#=============================================================================#
+# Basis functions
+#=============================================================================#
 def polyCubic3D( x, y, z ):
     
     X0 = sp.ones(x.shape[0])
@@ -73,7 +76,7 @@ def makeBasisGaussianNonUniformWidth( s, scaling ):
     """
     Gaussian basis function, normalised to integrate to 1
     """
-    print 'making gaussian non-uniform width RBF'
+    # print 'making gaussian non-uniform width RBF'
     S = s*scaling
     def b( r ):
         return sp.exp( -r*r/(S*S) )
@@ -84,7 +87,7 @@ def makeBasisNormalisedGaussianNonUniformWidth( s, scaling ):
     """
     Gaussian basis function, normalised to integrate to 1
     """
-    print 'making normalised gaussian non-uniform width RBF'
+    # print 'making normalised gaussian non-uniform width RBF'
     
     S = s*scaling
     def b( r ):
@@ -157,6 +160,9 @@ RBFBases = {'gaussian': makeBasisGaussian,
             'WC32NonUniformWidth': makeBasisWendlandsC32NonUniformWidth,
             }
 
+#=============================================================================#
+# Util functions
+#=============================================================================#
 def estimateNonUniformWidth( X, k=2 ):
     
     XTree = cKDTree( X )
@@ -176,15 +182,15 @@ def xDist1D( x, X ):
 
 def fitData( C, basis, dataX, dataU ):
     
-    print 'fitting '+str(len(C))+' knots to '+str(len(dataX))+' data points'
+    print('fitting {} knots to {} data points'.format(len(C), len(dataX)))
     # split distance matrix calculation in groups to save memory
     groupSize = 5000
     #~ pdb.set_trace()
     if len(dataX)>groupSize:
         A = sp.zeros((len(dataX), len(C)))
         for i in xrange( 0, len(dataX), groupSize ):
-            print str(i)+' - '+str(i+groupSize)
-            A[i:i+groupSize,:] = basis( cdist( dataX[i:i+groupSize,:], C ) )
+            # print(str(i)+' - '+str(i+groupSize))
+            A[i:i+groupSize,:] = basis(cdist(dataX[i:i+groupSize,:], C))
     else:
         A = basis( cdist( dataX, C ) )
     
@@ -197,14 +203,14 @@ def fitData( C, basis, dataX, dataU ):
 
 def fitDataPoly3D( C, basis, dataX, dataU, poly ):
     
-    print 'fitting '+str(len(C))+' knots to '+str(len(dataX))+' data points'
+    print('fitting {} knots to {} data points'.format(len(C), len(dataX)))
     # split distance matrix calculation in groups to save memory
     groupSize = 5000
     #~ pdb.set_trace()
     if len(dataX)>groupSize:
         A = sp.zeros((len(dataX), len(C)))
         for i in xrange( 0, len(dataX), groupSize ):
-            print str(i)+' - '+str(i+groupSize)
+            # print(str(i)+' - '+str(i+groupSize))
             A[i:i+groupSize,:] = basis( cdist( dataX[i:i+groupSize,:], C ) )
     else:
         A = basis( cdist( dataX, C ) )
@@ -231,14 +237,14 @@ def fitDataPoly3D( C, basis, dataX, dataU, poly ):
 
 def fitDataQR( C, basis, dataX, dataU ):
     
-    print 'fitting '+str(len(C))+' knots to '+str(len(dataX))+' data points'
+    print('fitting {} knots to {} data points'.format(len(C), len(dataX)))
     # split distance matrix calculation in groups to save memory
     groupSize = 5000
     #~ pdb.set_trace()
     if len(dataX)>groupSize:
         A = sp.zeros((len(dataX), len(C)))
         for i in xrange( 0, len(dataX), groupSize ):
-            print str(i)+' - '+str(i+groupSize)
+            # print str(i)+' - '+str(i+groupSize)
             A[i:i+groupSize,:] = basis( cdist( dataX[i:i+groupSize,:], C ) )
     else:
         A = basis( cdist( dataX, C ) )
@@ -320,7 +326,10 @@ polynomials = {0:polyConst3D,
                1:polyLinear3D,
                3:polyCubic3D,
                }
-    
+
+#=============================================================================#
+# Main RBF Classes
+#=============================================================================#
 class RBFField( object ):
     
     usePoly = -1
@@ -721,7 +730,7 @@ class RBFComponentsField( object ):
             raise ValueError, 'incorrect number of components in data'
             
         else:
-            print 'fitting data...'
+            # print 'fitting data...'
             self.W, extraInfo = fitData( self.C, self.basis, dataX, dataU )
             if fullOutput:
                 return self.W, extraInfo
@@ -738,7 +747,7 @@ class RBFComponentsField( object ):
             raise ValueError, 'incorrect number of components in data'
             
         else:
-            print 'fitting data poly...'
+            # print 'fitting data poly...'
             self.W, self.polyCoeffs, extraInfo = fitDataPoly3D( self.C, self.basis, dataX, dataU, self.poly )
             #~ self.W, extraInfo = fitDataQR( self.C, self.basis, dataX, dataU )
             if fullOutput:
@@ -746,27 +755,3 @@ class RBFComponentsField( object ):
             else:
                 return self.W, self.polyCoeffs  
 
-class RBFCoordField( RBFComponentsField ):
-    """
-    RBF field for interpolating a coordinates field with 3 component
-    """
-    
-    def setLandmarks( self, X, setValues=True ):
-        """
-        set points on which the coordinate field will be defined. X is a
-        list of points
-        """
-        self.setCentres( X )
-        if setValues:
-            self.setCentreValues( X.T )
-
-    def updateLandmarks( self, Y ):
-        self.setCentreValues( Y.T )
-        self.calcWeights()
-        
-    def evalY( self, y ):
-        RY = RBF.cdist( y, self.Y ) 
-        MY = self.basis( RY )
-        H = scipy.dot(MY, self.MXInv)
-        evalY = scipy.dot( H, self.C ).T
-        return evalY

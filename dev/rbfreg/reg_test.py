@@ -120,12 +120,16 @@ def generateBBoxPointsGrid(points, spacing, padding=None):
 #=============================================================================#
 # Completely different target
 # source points for registration
-source_points_file = 'data/2007_5028_l.wrl'
-source_points = vtktools.loadpoly(source_points_file).v
+# source_points_file = 'data/2007_5028_l.wrl'
+source_points_file = 'data/2008_0051_pelvis.wrl'
+source_surf = vtktools.loadpoly(source_points_file)
+source_points = source_surf.v
 
 # target points for registration
-target_points_file = 'data/2008_0006_l.wrl'
-target_points = vtktools.loadpoly(target_points_file).v
+# target_points_file = 'data/2008_0006_l.wrl'
+target_points_file = 'data/2008_0058_pelvis.wrl'
+target_surf = vtktools.loadpoly(target_points_file)
+target_points = target_surf.v
 
 #=============================================================#
 # rigidly register source points to target points
@@ -179,7 +183,7 @@ reg2_T, source_points_reg2, reg2_errors = af.fitDataRigidScaleDPEP(
 #=============================================================#
 # Iterative fit, adding knots in each iteration
 
-def check_termination(it, rms1, rms0, nknots, xtol, max_it, max_knots):
+def check_termination(it, cost1, cost0, nknots, xtol, max_it, max_knots):
 
     if it>max_it:
         print('terminating because max iterations reached')
@@ -189,8 +193,8 @@ def check_termination(it, rms1, rms0, nknots, xtol, max_it, max_knots):
         print('terminating because max knots reached')
         return True
 
-    if (abs(rms1-rms0)/rms0)<xtol:
-        print(abs(rms1-rms0)/rms0)
+    if (abs(cost1-cost0)/cost0)<xtol:
+        print(abs(cost1-cost0)/cost0)
         print('terminating because xtol reached')
         return True
 
@@ -200,16 +204,16 @@ basis_type = 'gaussianNonUniformWidth'
 basis_args =  {'s':10.0, 'scaling':50.0}
 xtol = 1e-3  # relative change in error for termination
 min_knot_dist = 5.0  # minimum distance between knots
-max_it = 10  # max number of iterations
+max_it = 20  # max number of iterations
 max_knots = 1000  # max number of knots
 max_knots_to_add_per_it = 20  # max number of knots to add per iteration
 
-knots = generateBBoxPointsGrid(source_points_reg2, [50,50,50], [10,10,10])
+knots = generateBBoxPointsGrid(source_points_reg2, [50,50,50], [5,5,5])
 
 terminate = False
 it = 0
 source_points_current = source_points_reg2
-rms_current = np.inf
+ssdist_current = np.inf
 while not terminate:
 
     # perform fit
@@ -219,17 +223,19 @@ while not terminate:
                                     target_points,
                                     basis_type,
                                     basis_args,
-                                    'st'
+                                    'st', # 'ts' doesnt currently work
                                     )
+    ssdist_new = (dist*dist).sum()
 
     # check if should terminate
     terminate = check_termination(
-                    it, rms_new, rms_current, knots.shape[0], 
+                    it, ssdist_new, ssdist_current, knots.shape[0], 
                     xtol, max_it, max_knots,
                     )
 
     # add knot
     if not terminate:
+        print('\niteration {}'.format(it))
         # find source locations with highest errors
         source_tree = cKDTree(source_points_new)
         ts_dist, ts_inds = source_tree.query(target_points, k=1)
@@ -254,19 +260,21 @@ while not terminate:
             print('terminating because no new knots can be added')
 
     source_points_current = source_points_new
-    rms_current = rms_new
+    ssdist_current = ssdist_new
     it += 1
 
 source_points_reg3 = source_points_current
 source_points_reg4 = source_points_new
 knots1 = knots
 knots2 = knots
-
+source_surf.v = source_points_reg4
 #=============================================================#
 # view
 if has_mayavi:
     v = fieldvi.Fieldvi()
     v.addData('target points', target_points, renderArgs={'mode':'point', 'color':(1,0,0)})
+    v.addTri('target', target_surf, renderArgs={'color':(1,0,0)})
+    v.addTri('source morphed', source_surf, renderArgs={'color':(0,1,0)})
     v.addData('source points', source_points, renderArgs={'mode':'point'})
     v.addData('source points reg 1', source_points_reg1, renderArgs={'mode':'point'})
     v.addData('source points reg 2', source_points_reg2, renderArgs={'mode':'point'})
