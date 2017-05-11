@@ -17,6 +17,7 @@ import numpy as np
 import sys
 import itertools
 import copy
+import time
 
 from scipy.spatial import cKDTree
 
@@ -120,16 +121,18 @@ def generateBBoxPointsGrid(points, spacing, padding=None):
 #=============================================================================#
 # Completely different target
 # source points for registration
-# source_points_file = 'data/2007_5028_l.wrl'
-source_points_file = 'data/2008_0051_pelvis.wrl'
+source_points_file = 'data/2007_5028_l.wrl'
+# source_points_file = 'data/2008_0051_pelvis.wrl'
 source_surf = vtktools.loadpoly(source_points_file)
 source_points = source_surf.v
 
 # target points for registration
-# target_points_file = 'data/2008_0006_l.wrl'
-target_points_file = 'data/2008_0058_pelvis.wrl'
+target_points_file = 'data/2008_0006_l.wrl'
+# target_points_file = 'data/2008_0058_pelvis.wrl'
 target_surf = vtktools.loadpoly(target_points_file)
 target_points = target_surf.v
+
+t0 = time.time()
 
 #=============================================================#
 # rigidly register source points to target points
@@ -151,6 +154,8 @@ reg2_T, source_points_reg2, reg2_errors = af.fitDataRigidScaleDPEP(
                                             t0=np.hstack([reg1_T, 1.0]),
                                             outputErrors=1
                                             )
+
+t1 = time.time()
 
 #=============================================================#
 # do 1st fit
@@ -268,6 +273,9 @@ source_points_reg4 = source_points_new
 knots1 = knots
 knots2 = knots
 source_surf.v = source_points_reg4
+
+t2 = time.time()
+
 #=============================================================#
 # view
 if has_mayavi:
@@ -284,4 +292,12 @@ if has_mayavi:
     v.addData('knots 2', knots2, renderArgs={'mode':'sphere', 'color':(0,1.0,0), 'scale_factor':5.0})
     v.scene.background=(0,0,0)
     v.configure_traits()
-    
+    v._drawTriSurface('target')
+    v._drawTriSurface('source morphed')
+
+#=============================================================#
+print('Fitting done')
+print('Final RMS error: {:6.2f}'.format(rms_new))
+print('Total time: {:6.2f} s'.format(t2-t0))
+print('Rigid registration time: {:6.2f} s'.format(t1-t0))
+print('RBF registration time: {:6.2f} s'.format(t2-t1))

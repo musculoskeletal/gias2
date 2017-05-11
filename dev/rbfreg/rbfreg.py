@@ -61,13 +61,14 @@ def rbfreg(knots, source, target, basistype, basisargs, disttype):
     # find correspondence
     if disttype=='st':
         # find closest target point to each source point
-        
+        # print('using ts')
         targetTree = cKDTree(target)
         closestInds = targetTree.query(source)[1]
         X = source
         Y = target[closestInds]
     elif disttype=='ts':
         # find closest source point to each target point
+        # print('using ts')
         sourceTree = cKDTree(source)
         closestInds = sourceTree.query(target)[1]
         X = source[closestInds]
@@ -106,7 +107,7 @@ def _checkTermination(it, cost1, cost0, nknots, xtol, max_it, max_knots):
 
     return False
 
-def rbfRegIterative(source, target, knots=None,
+def rbfRegIterative(source, target, distmode='ts', knots=None,
     basisType='gaussianNonUniformWidth', basisArgs=None, xtol=1e-3,
     minKnotDist=5.0, maxIt=50, maxKnots=500, maxKnotsPerIt=20):
 
@@ -114,15 +115,30 @@ def rbfRegIterative(source, target, knots=None,
 
     inputs
     ------
-    source: list of source point coordinates
-    target: list of target point coordinates
-    knots: list of knot coordinates
-    basisType: Radial basis type
-    basisArgs: dictionary of arguments fro the basis type
-    xtol: relative change in error for termination
-    maxIt: max number of iterations
-    minKnotDist: minimum distance between knots
-    maxKnotsPerIt: max number of knots to add per iteration
+    source: list of source point coordinates.
+    target: list of target point coordinates.
+    distmode: how source to target distance is calculated.
+        'st': source to target - between each source point and closest target
+              point.
+        'ts': target to source - between each target point and closest source
+              point.
+    knots: list of knot coordinates.
+    basisType: Radial basis type.
+    basisArgs: dictionary of arguments fro the basis type.
+    xtol: relative change in error for termination.
+    maxIt: max number of iterations.
+    minKnotDist: minimum distance between knots.
+    maxKnotsPerIt: max number of knots to add per iteration.
+
+    returns
+    -------
+    sourceCurrent: final morphed source point coordinates.
+    rms: final RMS distance between morphed source and target points.
+    rcf: final RBF deformation field.
+    history: fitting results from each iteration. Dict containing
+        'rms': rms error at each iteration,
+        'ssdist': sum of squared distance at each iteration,
+        'nknots': number knots at each iteration.
     """
 
     if basisArgs is None:
@@ -149,7 +165,7 @@ def rbfRegIterative(source, target, knots=None,
                                         target,
                                         basisType,
                                         basisArgs,
-                                        'st', # 'ts' doesnt currently work
+                                        'ts', # 'ts' doesnt currently work
                                         )
         ssdistNew = (dist*dist).sum()
 
@@ -231,7 +247,8 @@ if __name__=='__main__':
     #=============================================================#
 
     source_points_reg3, regRms, regRcf, regHist = rbfRegIterative(
-        source_points_reg2, target_points
+        source_points_reg2, target_points, distmode='ts',
+        basisType='gaussianNonUniformWidth',
         )
 
     knots = regRcf.C
