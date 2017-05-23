@@ -25,10 +25,14 @@ from gias2.registration import alignment_fitting as af
 from gias2.registration import RBF
 from gias2.mesh import vtktools
 
-def register(source, target, init_rot, out=None, view=False, **rbfregargs):
+def register(source, target, init_rot, pts_only=False, out=None, view=False, **rbfregargs):
     
-    source_points = source.v
-    target_points = target.v
+    if pts_only:
+        source_points = source
+        target_points = target
+    else:
+        source_points = source.v
+        target_points = target.v
 
     #=============================================================#
     # rigidly register source points to target points
@@ -63,12 +67,24 @@ def register(source, target, init_rot, out=None, view=False, **rbfregargs):
 
     #=============================================================#
     # create regstered mesh
-    reg = copy.deepcopy(source)
-    reg.v = source_points_reg3
+    if pts_only:
+        reg = source_points_reg3
+    else:
+        reg = copy.deepcopy(source)
+        reg.v = source_points_reg3
 
     if out:
-        writer = vtktools.Writer(v=reg.v, f=reg.f)
-        writer.write(args.out)
+        if pts_only:
+            n = np.arange(1,len(reg))
+            _out = np.hstack([n[:,np.newaxis], reg])
+            np.savetxt(
+                args.out, _out, delimiter=',',
+                fmt=['%6d', '%10.6f', '%10.6f', '%10.6f'],
+                header='# rigid-body registered points'
+                )
+        else:
+            writer = vtktools.Writer(v=reg.v, f=reg.f)
+            writer.write(args.out)
 
     #=============================================================#
     # view
@@ -81,14 +97,16 @@ def register(source, target, init_rot, out=None, view=False, **rbfregargs):
 
         if has_mayavi:
             v = fieldvi.Fieldvi()
-            # v.addData('target points', target_points, renderArgs={'mode':'point', 'color':(1,0,0)})
-            v.addTri('target', target, renderArgs={'color':(1,0,0)})
-            v.addTri('source', source, renderArgs={'color':(0,1,0)})
-            v.addTri('source morphed', reg, renderArgs={'color':(0.3,0.3,1)})
-            # v.addData('source points', source_points, renderArgs={'mode':'point'})
-            # v.addData('source points reg 1', source_points_reg1, renderArgs={'mode':'point'})
+            if pts_only:
+                v.addData('target', target, renderArgs={'color':(1,0,0)})
+                v.addData('source', source, renderArgs={'color':(0,1,0)})
+                v.addData('source morphed', reg, renderArgs={'color':(0.3,0.3,1)})
+            else:
+                v.addTri('target', target, renderArgs={'color':(1,0,0)})
+                v.addTri('source', source, renderArgs={'color':(0,1,0)})
+                v.addTri('registered', reg, renderArgs={'color':(0.3,0.3,1)})
+            
             v.addData('source points reg 2', source_points_reg2, renderArgs={'mode':'point'})
-            # v.addData('source points reg 3', source_points_reg3, renderArgs={'mode':'point', 'color':(0.5,0.5,1.0)})
             v.addData('knots', knots, renderArgs={'mode':'sphere', 'color':(0,1.0,0), 'scale_factor':2.0})
             v.scene.background=(0,0,0)
             v.configure_traits()
@@ -98,11 +116,16 @@ def register(source, target, init_rot, out=None, view=False, **rbfregargs):
     return reg, regRms
 
 def main_2_pass(args):
-    source_points_file = args.source
-    source_surf = vtktools.loadpoly(source_points_file)
+    print('{} to {}'.format(args.source,args.target))
+    if args.points_only:
+        source = np.loadtxt(args.source, skiprows=1, use_cols=(1,2,3))
+    else:
+        source = vtktools.loadpoly(args.source)
     
-    target_points_file = args.target
-    target_surf = vtktools.loadpoly(target_points_file)
+    if args.points_only:
+        target = np.loadtxt(args.target, skiprows=1, use_cols=(1,2,3))
+    else:
+        target = vtktools.loadpoly(args.target)
     
     init_rot = np.deg2rad((0,0,0))
 
@@ -115,8 +138,8 @@ def main_2_pass(args):
         'maxKnots': 500,
         'minKnotDist': 10.0,
     }
-    reg_1_surf, rms1 = register(source_surf, target_surf, init_rot, out=False,
-        view=False, **rbfargs1
+    reg_1, rms1 = register(source, target, init_rot, pts_only=args.points_only,
+        out=False, view=False, **rbfargs1
         )
 
     rbfargs2 = {
@@ -128,8 +151,8 @@ def main_2_pass(args):
         'maxKnots': 1000,
         'minKnotDist': 2.5,
     }
-    reg_2_surf, rms2 = register(reg_1_surf, target_surf, init_rot, out=args.out,
-        view=args.view, **rbfargs2
+    reg_2, rms2 = register(reg_1, target, init_rot, pts_only=args.points_only,
+        out=args.out, view=args.view, **rbfargs2
         )
 
     logging.info('{}, rms: {}'.format(path.split(args.target)[1], rms2))
@@ -150,12 +173,22 @@ if __name__=='__main__':
         help='file path of the output registered model.'
         )
     parser.add_argument(
+        '-p', '--points-only',
+        help='''Model are point clouds only. Expected file format is 1 header 
+line, then n,x,y,z on each line after. UNTESTED'''
+        )
+    parser.add_argument(
         '-b', '--batch',
         help='file path of a list of model paths to fit. 1st model on list will be the source.'
         )
     parser.add_argument(
         '-d', '--outdir',
         help='direcotry path of the output registered models when using batch mode.'
+        )
+    parser.add_argument(
+        '--outext',
+        choices=('.obj', '.wrl', '.stl', '.ply', '.vtp'),
+        help='output file extension. Ignored if --out is given, useful in batch mode.'
         )
     parser.add_argument(
         '-v', '--view',
@@ -191,11 +224,7 @@ if __name__=='__main__':
         for i, mp in enumerate(model_paths[1:]):
             args.target = mp
             _p, _ext = path.splitext(path.split(mp)[1])
-            args.out = path.join(out_dir, _p+'_fitted'+_ext)
+            if args.outext is not None:
+                _ext = args.outext
+            args.out = path.join(out_dir, _p+'_rbfreg'+_ext)
             main_2_pass(args)
-
-
-
-                
-
-
