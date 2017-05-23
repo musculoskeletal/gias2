@@ -632,7 +632,7 @@ class RBFComponentsField( object ):
         if self.basisArgs!=None:
             self.setBasis( RBFBases[self.basisType](**self.basisArgs) )
         else:
-            self.setBasis( RBF.RBFBases[self.basisType]() )
+            self.setBasis( RBFBases[self.basisType]() )
 
     def calcWeights( self ):
         #~ print 'solving system...'
