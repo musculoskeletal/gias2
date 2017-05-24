@@ -1,5 +1,12 @@
 # GIAS2 Change log
 
+## 0.4.12
+- RBF module added the registration subpackage for non-rigid registration.
+- Added 3 scripts to the new applications folder
+	- rigidreg.py: rigid body registration between point clouds or surface meshes
+	- rbfreg.py: RBF-based non-rigid registration between point clouds or surface meshes
+	- trainpcashapemodel.py: train a pca-based shape model using a set of correspondent point clouds or surface meshes
+
 ## 0.4.11
 - updated HJC regression functions to match ISB coordinate system
 
