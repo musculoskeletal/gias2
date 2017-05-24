@@ -666,7 +666,7 @@ class Fieldvi(HasTraits):
             V = coords
         renderArgs =self.triRenderArgs.get( name )
         scalar = self.triScalarData.get(name).get(self.triScalarList0)
-        print('scalar:', scalar)
+        # print('scalar:', scalar)
         try:
             if scalar is None:
                 if 'color' not in renderArgs:
