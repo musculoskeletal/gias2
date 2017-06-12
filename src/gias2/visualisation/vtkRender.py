@@ -15,6 +15,8 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 from scipy import *
 import vtk
 
+raise DeprecationWarning('Use classes in gias2.mesh.vtktools')
+
 class Colours:
     def __init__( self ):
         self.colours = dict()

@@ -13,13 +13,15 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 """
 
 from os import path
-from scipy import zeros, array, uint8, int16, ones, newaxis
+from scipy import zeros, array, uint8, int16, uint16, ones, newaxis
 import pickle
 import vtk
 import copy
 from xml.etree import ElementTree as ET
 import xml
 from gias2.mesh import simplemesh
+import copy
+import warnings
 
 class Writer(object):
     """Class for writing polygons to file formats supported by VTK.
@@ -590,8 +592,15 @@ def renderPolyData( data ):
 def array2vtkImage(arrayImage, dtype, flipDim=False, retImporter=False, extent=None):
     # import array image into vtk
     imageImporter = vtk.vtkImageImport()
-    imageString = arrayImage.astype(dtype).tostring()
-    imageImporter.CopyImportVoidPointer(imageString, len(imageString))
+
+    # just to be sure
+    arr = array(arrayImage, dtype=dtype)
+    
+    if vtk.VTK_MAJOR_VERSION>=6:
+        imageImporter.CopyImportVoidPointer(arr, arr.nbytes)
+    else:
+        imageString = arr.tostring()
+        imageImporter.CopyImportVoidPointer(imageString, len(imageString))
     if dtype==int16:
         imageImporter.SetDataScalarTypeToShort()
     elif dtype==uint8:
@@ -608,16 +617,20 @@ def array2vtkImage(arrayImage, dtype, flipDim=False, retImporter=False, extent=N
         else:
             extent = [0, s[0]-1, 0, s[1]-1, 0, s[2]-1]
 
-    imageImporter.SetWholeExtent(*extent)
-    if vtk.VTK_MAJOR_VERSION>=6:
-        imageImporter.SetDataExtent(*extent)
-    else:
-        imageImporter.SetDataExtentToWholeExtent()
-
+    imageImporter.SetDataExtent(extent)
+    imageImporter.SetWholeExtent(extent)
     imageImporter.Update()
+
+    # in VTK 6+, not returning the importer results in erroneous image array values
+    # in the vtkImage
     if retImporter:
         return imageImporter
     else:
+        if vtk.VTK_MAJOR_VERSION>=6:
+            warnings.warn(
+                'You should return the importer (retImporter=True) in VTK6 and above. Otherwise, values in the vtkimage will likely be garbage.',
+                UserWarning
+                )
         return imageImporter.GetOutput()
 
 def vtkImage2Array(vtkImage, dtype, flipDim=False):
@@ -986,16 +999,18 @@ def triSurface2BinaryMask(v, t, imageShape, outputOrigin=None, outputSpacing=Non
     if outputSpacing is None:
         outputSpacing = [1.0,1.0,1.0]
 
-    imgDtype = int16
+    imgDtype = uint8
 
     # make into vtkPolydata
     gfPoly = tri2Polydata(v, t)
 
     # create mask vtkImage
     maskImageArray = ones(imageShape, dtype=imgDtype)
-    maskVTKImage = array2vtkImage(
-        maskImageArray, imgDtype, flipDim=False, extent=extent
+    maskVTKImageImporter = array2vtkImage(
+        maskImageArray, imgDtype, flipDim=False, extent=extent,
+        retImporter=True
         )
+    maskVTKImage = maskVTKImageImporter.GetOutput()
 
     # create stencil from polydata
     stencilMaker = vtk.vtkPolyDataToImageStencil()
@@ -1019,9 +1034,9 @@ def triSurface2BinaryMask(v, t, imageShape, outputOrigin=None, outputSpacing=Non
     stencil.ReverseStencilOff()
     stencil.Update()
 
-    maskImageArray = vtkImage2Array(stencil.GetOutput(), imgDtype, flipDim=True )
+    maskImageArray2 = vtkImage2Array(stencil.GetOutput(), imgDtype, flipDim=True)
     return maskImageArray, gfPoly
-    # return maskImageArray, gfPoly, maskVTKImage
+    # return maskImageArray2, gfPoly, maskVTKImage
 
 def _makeImageSpaceGF(scan, GF, negSpacing=False, zShift=True):
     """
@@ -1212,7 +1227,7 @@ def optimiseMesh(sm, deciratio, clean=False):
                 )
 
     if clean:
-        print "cleaning..."
+        print("cleaning...")
         cleaner = vtk.vtkCleanPolyData()
         if vtk.VTK_MAJOR_VERSION<6:
             cleaner.SetInput(poly)
@@ -1227,7 +1242,7 @@ def optimiseMesh(sm, deciratio, clean=False):
         getPreviousOutput = cleaner.GetOutput
 
     # decimate polydata
-    print "decimating using quadric..."
+    print("decimating using quadric...")
     decimator = vtk.vtkQuadricDecimation()
     if vtk.VTK_MAJOR_VERSION<6:
         if not clean:
@@ -1563,6 +1578,24 @@ class VtkImageVolumeRenderer:
         #~ self.volumeList.append( volume )
                     
         self._render( volumeList = [volume] )
+
+    def renderPoly(self, poly):
+        # render polydata
+        
+        # self.polydata.append(poly)
+
+        mapper = vtk.vtkPolyDataMapper()
+        if vtk.VTK_MAJOR_VERSION<6:
+            mapper.SetInput(poly)
+        else:
+            mapper.SetInputDataObject(poly)
+        actor = vtk.vtkActor()
+        actor.SetMapper(mapper)
+        actor.GetProperty().SetColor(0.9, 0.9, 0.7)
+
+        #~ self.actorList.append( actor )
+        
+        self._render(actorList=[actor]) 
         
 
     def renderContour( self, contourValueList ):
