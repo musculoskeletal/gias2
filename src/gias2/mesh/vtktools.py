@@ -1035,7 +1035,7 @@ def triSurface2BinaryMask(v, t, imageShape, outputOrigin=None, outputSpacing=Non
     stencil.Update()
 
     maskImageArray2 = vtkImage2Array(stencil.GetOutput(), imgDtype, flipDim=True)
-    return maskImageArray, gfPoly
+    return maskImageArray2, gfPoly
     # return maskImageArray2, gfPoly, maskVTKImage
 
 def _makeImageSpaceGF(scan, GF, negSpacing=False, zShift=True):
