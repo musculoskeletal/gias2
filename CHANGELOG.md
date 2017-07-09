@@ -1,5 +1,8 @@
 # GIAS2 Change log
 
+## 0.4.13
+- application scripts
+
 ## 0.4.12
 - RBF module added the registration subpackage for non-rigid registration.
 - Added 3 scripts to the new applications folder
