@@ -47,9 +47,9 @@ classifiers = [
      'Topic :: Scientific/Engineering :: Medical Science Apps.'
 ]
 scripts = [
-     'src/gias2/applications/gias-rigidreg'
-     'src/gias2/applications/gias-rbfreg'
-     'src/gias2/applications/gias-trainpcashapemodel'
+     'src/gias2/applications/gias-rigidreg',
+     'src/gias2/applications/gias-rbfreg',
+     'src/gias2/applications/gias-trainpcashapemodel',
 ]
 
 #=============================================================================#
