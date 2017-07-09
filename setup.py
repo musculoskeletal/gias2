@@ -46,6 +46,11 @@ classifiers = [
      'Programming Language :: Python :: 3.5',
      'Topic :: Scientific/Engineering :: Medical Science Apps.'
 ]
+scripts = [
+     'src/gias2/applications/gias-rigidreg'
+     'src/gias2/applications/gias-rbfreg'
+     'src/gias2/applications/gias-trainpcashapemodel'
+]
 
 #=============================================================================#
 if __name__ == '__main__':
@@ -63,5 +68,6 @@ if __name__ == '__main__':
           url=url,
           install_requires=install_requires,
           keywords=keywords,
-          license=license,  
+          license=license,
+          scripts=scripts,
      )
