@@ -51,6 +51,13 @@ scripts = [
      'src/gias2/applications/gias-rbfreg',
      'src/gias2/applications/gias-trainpcashapemodel',
 ]
+entry_points = {
+     'console_scripts': [
+          'gias-rbfreg=gias2.applications.giasrbfreg:main',
+          'gias-rigidreg=gias2.applications.giasrigidreg:main',
+          'gias-trainpcashapemodel=gias2.applications.giastrainpcashapemodel:main',
+     ]
+}
 
 #=============================================================================#
 if __name__ == '__main__':
@@ -69,5 +76,6 @@ if __name__ == '__main__':
           install_requires=install_requires,
           keywords=keywords,
           license=license,
-          scripts=scripts,
+          # scripts=scripts,
+          entry_points = entry_points,
      )
