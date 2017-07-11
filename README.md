@@ -36,3 +36,7 @@ and 3-D visualisation using Mayavi.
 
 ## Examples
 Example of some the capabilities of GIAS2 can be found in the gias2/examples/ directory. We are working to add more examples.
+
+## Tutorials
+- [Using GIAS2 with MAP Client for lower limb model generation](http://map-client-fai-workshop.readthedocs.io/en/latest/)
+- [Using GIAS2 for statistical shape modelling](http://gias2-shape-modelling-tutorial.readthedocs.io/en/latest/)
