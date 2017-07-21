@@ -882,6 +882,7 @@ def polydataFromImage( vtkImage, params, disp=0 ):
     getPreviousOutput = contourExtractor.GetOutput
     
     # triangle filter
+    print("filtering triangles...")
     triFilter = vtk.vtkTriangleFilter()
     if vtk.VTK_MAJOR_VERSION<6:
         triFilter.SetInput( getPreviousOutput() )
@@ -1111,7 +1112,10 @@ def image2Simplemesh(imageArray, index2Coord, isoValue, deciRatio=None, smoothIt
     """
     IMGDTYPE = int16
     imageArray = imageArray.astype(IMGDTYPE)
-    vtkImage = array2vtkImage(imageArray, IMGDTYPE, flipDim=True)
+    if vtk.VTK_MAJOR_VERSION<6:
+        vtkImage = array2vtkImage(imageArray, IMGDTYPE, flipDim=True, retImporter=False)
+    else:
+        vtkImage = array2vtkImage(imageArray, IMGDTYPE, flipDim=True, retImporter=True).GetOutput()
 
     params = polydataFromImageParams()
     params.smoothImage = False
