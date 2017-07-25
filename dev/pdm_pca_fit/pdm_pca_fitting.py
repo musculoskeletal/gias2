@@ -13,17 +13,31 @@ from scipy.spatial import cKDTree
 from scipy.optimize import leastsq
 from gias2.common import transform3D
 from gias2.mesh import vtktools
+from gias2.registration import alignment_fitting as af
 from gias2.learning import PCA
 from gias2.learning import PCA_fitting
 
-def recon2coords(x_recon):
+def r2c13(x_recon):
 	return x_recon.reshape((-1,3))
 
 def mahalanobis( x ):
     return np.sqrt(np.multiply(x,x).sum()) 
 
+def _sampleData(data, N):
+    """
+    Pick N evenly spaced points from data
+    """
+
+    if N<1:
+        raise ValueError('N must be > 1')
+    elif N>len(data):
+        return data
+    else:
+        i = np.linspace(0,len(data)-1,N).astype(int)
+        return data[i,:]
+
 def fitSSMTo3DPoints(data, ssm, fit_comps, fit_mode, fit_inds=None, mw=0.0,
-    init_t=None, fit_scale=False, xtol=1e-6,
+    init_t=None, fit_scale=False, xtol=1e-6, sample=None,
     ldmk_targs=None, ldmk_evaluator=None, ldmk_weights=None,
     recon2coords=None, verbose=False
     ):
@@ -78,16 +92,19 @@ def fitSSMTo3DPoints(data, ssm, fit_comps, fit_mode, fit_inds=None, mw=0.0,
     	assert(len(init_t)==6)
 
     # fit has to be done on a subset of recon data is projection is on a subset of variables
-    if fit_inds!=None:
-        fit_inds = np.array(fit_inds, dtype=int)
-        mean_data = recon2coords(ssm.getMean())[fit_inds,:]
-    else:
-        mean_data = recon2coords(ssm.getMean())
+    # if fit_inds!=None:
+    #     fit_inds = np.array(fit_inds, dtype=int)
+    #     mean_data = recon2coords(ssm.getMean())[fit_inds,:]
+    # else:
+    #     mean_data = recon2coords(ssm.getMean())
     
     if fit_inds is None:
         print('fit_inds shape: None')
     else:
         print('fit_inds shape:', fit_inds.shape)
+
+    if sample is not None:
+        data = _sampleData(data, sample)
 
     #-------------------------------------------------------------------------#
     # define reconstruction functions
@@ -119,7 +136,9 @@ def fitSSMTo3DPoints(data, ssm, fit_comps, fit_mode, fit_inds=None, mw=0.0,
     else:
         _recon = _recon_no_scale
 
+    #-------------------------------------------------------------------------#
     # define distance error functions
+    #-------------------------------------------------------------------------#
     targ_tree = cKDTree(data)
     def _dist_sptp(recon_pts, m):
         return targ_tree.query(recon_pts)[0] + mw*m
@@ -175,6 +194,7 @@ def fitSSMTo3DPoints(data, ssm, fit_comps, fit_mode, fit_inds=None, mw=0.0,
         _obj = _obj_no_ldmks
     else:
         _obj = _obj_ldmks
+        
     #-------------------------------------------------------------------------#
     # fit
     #-------------------------------------------------------------------------#
@@ -192,7 +212,7 @@ def fitSSMTo3DPoints(data, ssm, fit_comps, fit_mode, fit_inds=None, mw=0.0,
     return x_opt, recon_data_opt, (err_opt, dist_opt_rms, mdist_opt)
 
 #=============================================================================#
-targ_data_path = 'data/2008_0010_l_rbfreg_rigidreg.ply'
+targ_data_path = 'data/2008_0010_l.wrl'
 mean_mesh_path = 'data/femur_mean.ply'
 fitted_mesh_corr_path = 'data/pca_fitted_corr.ply'
 fitted_mesh_nocorr_path = 'data/pca_fitted_nocorr.ply'
@@ -207,19 +227,24 @@ fitted_mesh = vtktools.loadpoly(mean_mesh_path)
 # Correspondent fitting
 #=============================================================================#
 print('## CORR FITTING ##')
-xopt, recon_t, data_t, fitted_data = PCA_fitting.fitSSMTo3DPoints(
-	targ_data, ssm, [0,1,2], mWeight=1.0, recon2coords=recon2coords, verbose=True
-    )
+# xopt, recon_t, data_t, fitted_data = PCA_fitting.fitSSMTo3DPoints(
+# 	targ_data, ssm, [0,1,2], mWeight=1.0, recon2coords=recon2coords, verbose=True
+#     )
 
-fitted_mesh.v = fitted_data
-vtktools.savepoly(fitted_mesh, fitted_mesh_corr_path)
+# fitted_mesh.v = fitted_data
+# vtktools.savepoly(fitted_mesh, fitted_mesh_corr_path)
 
 #=============================================================================#
 # non correspondent
 #=============================================================================#
 print('## NON-CORR FITTING ##')
-xopt, fitted_pts, fit_errs = fitSSMTo3DPoints(
-    targ_data, ssm, [0,1,2], 'sptp', mw=1.0, xtol=1e-3, verbose=True
+
+t0, src_data_aligned = af.fitDataRigidDPEP(
+    mean_mesh.v, targ_data, xtol=1e-3, sample=5000
     )
-fitted_mesh.v = fitted_data
+xopt, fitted_pts, fit_errs = fitSSMTo3DPoints(
+    targ_data, ssm, [0,1,2,3,4], 'sptp', init_t=t0, mw=1.0, xtol=1e-6, sample=10000,
+    recon2coords=r2c13, verbose=True
+    )
+fitted_mesh.v = fitted_pts
 vtktools.savepoly(fitted_mesh, fitted_mesh_nocorr_path)
