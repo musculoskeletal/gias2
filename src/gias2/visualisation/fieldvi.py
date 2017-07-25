@@ -175,7 +175,7 @@ class Fieldvi(HasTraits):
                             Item('modeIndex', style='custom', springy=True),
                             Item('mode1', show_label=False, label='Mode 1', springy=True),
                             Item('modeQuiver', show_label=False, label='mode vectors', springy=False),
-                            label='statisical shape model'
+                            label='statistical shape model'
                         ),
                     
                         VGroup(
