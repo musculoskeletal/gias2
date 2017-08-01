@@ -1,5 +1,9 @@
 # GIAS2 Change log
 
+## 0.4.15
+- Tri-surface pc registration module and application.
+- Colour options for pctraining application.
+
 ## 0.4.13
 - application scripts
 

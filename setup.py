@@ -55,6 +55,7 @@ entry_points = {
      'console_scripts': [
           'gias-rbfreg=gias2.applications.giasrbfreg:main',
           'gias-rigidreg=gias2.applications.giasrigidreg:main',
+          'gias-pcreg=gias2.applications.giaspcreg:main',
           'gias-trainpcashapemodel=gias2.applications.giastrainpcashapemodel:main',
      ]
 }
