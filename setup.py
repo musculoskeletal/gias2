@@ -57,6 +57,7 @@ entry_points = {
           'gias-rigidreg=gias2.applications.giasrigidreg:main',
           'gias-pcreg=gias2.applications.giaspcreg:main',
           'gias-trainpcashapemodel=gias2.applications.giastrainpcashapemodel:main',
+          'gias-surfacedistance=gias2.applications.giassurfacedistance:main',
      ]
 }
 
