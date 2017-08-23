@@ -35,6 +35,8 @@ class Mesh(object):
         self.elems = None
         self.elemNumbers = None
         self.elemType = None
+        self.elsets = {}
+        self.surfaces = {}
 
     def getName(self):
         return name
@@ -98,6 +100,41 @@ class Mesh(object):
         """
         return len(self.elems)
 
+    def setElset(self, name, option, val):
+        """
+        Define an element set.
+
+        inputs:
+        name: [str] name of the elset
+        option: [None or str] an optional keyword for the type of elset
+        val: [list] list of values for the elset
+        """
+
+        valid_options = set([None,'GENERATE','INSTANCE','INTERNAL','UNSORTED'])
+        if option not in valid_options:
+            raise ValueError('Invalid option value {}'.format(option))
+
+        self.elsets[name] = {
+            'option': option,
+            'value': val
+            }
+
+    def getElset(self, name):
+        """
+        Returns the element numbers of the named elset
+        """
+        if name in self.elsets:
+            elset = self.elsets[name]
+            if elset['option'] is None:
+                return [int(x) for x in elset['value'].split(',')]
+            elif elset['option']=='GENERATE':
+                e0, e1, estep = [int(x) for x in elset['value'].split(',')]
+                return np.arange(e0, e1+1, estep)
+            else:
+                raise NotImplementedError('{} elset not implemented'.format(elset['option']))
+
+    def setSurface(self, elsetname, **kwargs):
+        self.surfaces[elsetname] = kwargs
 
 class InpReader(object):
     """INP reading class
