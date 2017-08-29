@@ -14,6 +14,8 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
 
+import numpy as np
+
 COMMENTCHARS = '**'
 ELEMNODES = {'C3D8R': 8,
              'R3D3': 3,
@@ -35,6 +37,8 @@ class Mesh(object):
         self.elems = None
         self.elemNumbers = None
         self.elemType = None
+        self.elsets = {}
+        self.surfaces = {}
 
     def getName(self):
         return name
@@ -48,17 +52,29 @@ class Mesh(object):
         """
         self.nodes = nodes
         self.nodeNumbers = nodeNumbers
+        self._nodesDict = dict(zip(self.nodeNumbers, self.nodes))
 
     def getNode(self, nodeNumber):
         """Returns the coordinates of the node with node number
         nodeNumber
         """
-        return self.nodes[self.nodeNumbers.index(nodeNumber)]
+        return self._nodesDict[nodeNumber]
+        # return self.nodes[self.nodeNumbers.index(nodeNumber)]
 
     def getNodes(self):
         """Returns a list of all node coordinates
         """
         return self.nodes
+
+    def getMeshNodes(self):
+        """
+        Return the list of nodes and node numbers that are actually
+        referenced by the mesh elements
+        """
+
+        meshNodeNums = np.unique(np.hstack(self.elems))
+        meshNodeCoords = np.array([self._nodesDict[i] for i in meshNodeNums])
+        return meshNodeNums, meshNodeCoords
 
     def getNumberOfNodes(self):
         """Returns the total number of nodes
@@ -98,6 +114,41 @@ class Mesh(object):
         """
         return len(self.elems)
 
+    def setElset(self, name, option, val):
+        """
+        Define an element set.
+
+        inputs:
+        name: [str] name of the elset
+        option: [None or str] an optional keyword for the type of elset
+        val: [list] list of values for the elset
+        """
+
+        valid_options = set([None,'GENERATE','INSTANCE','INTERNAL','UNSORTED'])
+        if option not in valid_options:
+            raise ValueError('Invalid option value {}'.format(option))
+
+        self.elsets[name] = {
+            'option': option,
+            'value': val
+            }
+
+    def getElset(self, name):
+        """
+        Returns the element numbers of the named elset
+        """
+        if name in self.elsets:
+            elset = self.elsets[name]
+            if elset['option'] is None:
+                return [int(x) for x in elset['value'].split(',')]
+            elif elset['option']=='GENERATE':
+                e0, e1, estep = [int(x) for x in elset['value'].split(',')]
+                return np.arange(e0, e1+1, estep)
+            else:
+                raise NotImplementedError('{} elset not implemented'.format(elset['option']))
+
+    def setSurface(self, elsetname, **kwargs):
+        self.surfaces[elsetname] = kwargs
 
 class InpReader(object):
     """INP reading class
@@ -150,19 +201,9 @@ class InpReader(object):
         self.meshNames = list(meshNames)
         return self.meshNames
 
-    def readMesh(self, meshName):
-        """Reads and returns the mesh with name meshName.
-        Arguments:
-        meshName: string matching an NSET/ELSET name in the file
-        Returns:
-        mesh: a Mesh instance with the read-in mesh parameters
-        """
+    def readNodes(self):
         nodeNumbers = []
         nodes = []
-
-        elemType = None
-        elemNumbers = []
-        elems = []
 
         # read nodes
         with open(self.filename, 'r') as f:
@@ -189,6 +230,50 @@ class InpReader(object):
 
             print(('loaded %d nodes'%(len(nodes))))
 
+        return nodeNumbers, nodes
+
+
+    def readMesh(self, meshName):
+        """Reads and returns the mesh with name meshName.
+        Arguments:
+        meshName: string matching an NSET/ELSET name in the file
+        Returns:
+        mesh: a Mesh instance with the read-in mesh parameters
+        """
+        nodeNumbers = []
+        nodes = []
+
+        elemType = None
+        elemNumbers = []
+        elems = []
+
+        # read nodes
+        # with open(self.filename, 'r') as f:
+        #     doScan = 1
+        #     while doScan:
+        #         try:
+        #             l = next(f)
+        #         except StopIteration:
+        #             raise IOError('No NSET named '+meshName)
+        #         else:
+        #             # if ('NSET='+meshName) in l:
+        #             if (self.nodeStartString) in l:
+        #                 doScan = 0
+
+        #     doScan = 1
+        #     while doScan:
+        #         l = next(f).strip()
+        #         if '*' not in l:
+        #             terms = l.split(',')
+        #             nodeNumbers.append(int(terms[0]))
+        #             nodes.append([float(t) for t in terms[1:]])
+        #         else:
+        #             doScan = 0
+
+        #     print(('loaded %d nodes'%(len(nodes))))
+
+        nodeNumbers, nodes = self.readNodes()
+
         # read elements
         with open(self.filename, 'r') as f:
             doScan = 1
@@ -208,17 +293,6 @@ class InpReader(object):
                 en = ELEMNODES[elemType]
             except KeyError:
                 raise RuntimeError('Unsupported element type: '+elemType)
-
-            # doScan = 1
-            # while doScan:
-            #   l = f.next().strip()
-            #   if '*' not in l:
-            #       terms = l.split(',')
-            #       print terms
-            #       elemNumbers.append(int(terms[0]))
-            #       elems.append([int(t) for t in terms[1:]])
-            #   else:
-            #       doScan = 0
 
             doScan = 1
             nCount = -1
@@ -255,8 +329,13 @@ class InpReader(object):
 
             print(('loaded %s %s elements'%(len(elems), elemType)))
 
+        # get only nodes of the mesh
+        _nodesDict = dict(zip(nodeNumbers, nodes))
+        meshNodeNums = np.unique(np.hstack(elems))
+        meshNodeCoords = [_nodesDict[i] for i in meshNodeNums]
+
         mesh = Mesh(meshName)
-        mesh.setNodes(nodes, nodeNumbers)
+        mesh.setNodes(meshNodeCoords, meshNodeNums)
         mesh.setElems(elems, elemNumbers, elemType)
 
         return mesh

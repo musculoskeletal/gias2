@@ -1,5 +1,5 @@
 """
-surface_to_surface_distance.py
+giassurfacedistance.py
 ==============================
 Author: Ju Zhang
 Last Modified: 2017-08-02

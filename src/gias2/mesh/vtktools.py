@@ -227,7 +227,7 @@ class Reader( object ):
         elif fileExt=='.vtp':
             self.readVTP()
         else:
-            raise ValueError('unknown file extension')
+            raise ValueError('unknown file extension in {}'.format(self.filename))
         
     def readVRML(self, filename=None, actor=0):
         if filename is not None:
@@ -713,7 +713,7 @@ def polyData2Tri(p):
         for i in range(s):
             N[i] = polydataNormals.GetValue(i)
 
-        N = N.reshape((s/3,3))
+        N = N.reshape((int(s/3),3))
     else:
         N = None
 
