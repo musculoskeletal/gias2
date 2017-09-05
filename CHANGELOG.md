@@ -1,5 +1,10 @@
 # GIAS2 Change log
 
+## 0.4.16
+- Updates the RBF registration
+- surface distance application
+- INP file reading only reads nodes referenced by ELSET
+
 ## 0.4.15
 - Tri-surface pc registration module and application.
 - Colour options for pctraining application.
