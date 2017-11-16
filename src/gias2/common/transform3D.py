@@ -24,15 +24,15 @@ def calcAffineMatrix( scale=None, trans=None, shear=None, rot=None ):
                      [0.0, 0.0, 1.0, 0.0],\
                      [0.0, 0.0, 0.0, 1.0]])
     
-    if scale!=None:
+    if scale is not None:
         T[0,0] = scale[0]
         T[1,1] = scale[1]
         T[2,2] = scale[2]
                
-    if trans!=None:
+    if trans is not None:
         T[:3,3] = trans
         
-    if shear!=None:
+    if shear is not None:
         T[0,1] = shear[0]   # xy
         T[0,2] = shear[1]   # xz
         T[1,0] = shear[2]   # yx
@@ -40,7 +40,7 @@ def calcAffineMatrix( scale=None, trans=None, shear=None, rot=None ):
         T[2,0] = shear[4]   # zx
         T[2,1] = shear[5]   # zy
     
-    if rot!=None:        
+    if rot is not None:        
         Rx = scipy.array( [[1.0, 0.0, 0.0],\
                            [0.0, scipy.cos(rot[0]), -scipy.sin(rot[0])],\
                            [0.0, scipy.sin(rot[0]),  scipy.cos(rot[0])]] )
