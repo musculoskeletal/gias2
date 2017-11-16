@@ -76,6 +76,12 @@ def preprocess_pelvis(marker_radius, skin_pad, LASIS, RASIS, LPSIS, RPSIS, sacra
 
 def preprocess_femur(marker_radius, skin_pad, LEC, MEC):
 
+    if LEC is None:
+        raise(InsufficientLandmarksError, 'LEC must be defined')
+
+    if MEC is None:
+        raise(InsufficientLandmarksError, 'MEC must be defined')
+
     # calculate epicondylar axis
     ML = math.norm(LEC-MEC)
 
@@ -88,6 +94,12 @@ def preprocess_femur(marker_radius, skin_pad, LEC, MEC):
     return LEC2, MEC2
 
 def preprocess_tibiafibula(marker_radius, skin_pad, LM, MM):
+
+    if LM is None:
+        raise(InsufficientLandmarksError, 'LM must be defined')
+
+    if MM is None:
+        raise(InsufficientLandmarksError, 'MM must be defined')
 
     # calculate epimalleolus axis
     ML = math.norm(LM-MM)
