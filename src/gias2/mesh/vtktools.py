@@ -876,9 +876,10 @@ def polydataFromImage( vtkImage, params, disp=0 ):
         contourExtractor.SetInput( getPreviousOutput() )
     else:
         contourExtractor.SetInputDataObject( getPreviousOutput() )
+        # contourExtractor.SetInputDataObject( vtkImage )
     contourExtractor.ComputeNormalsOn()
     contourExtractor.SetValue( 0, params.isoValue )
-    contourExtractor.Update()
+    contourExtractor.Update()  ### SEG FAULT
     getPreviousOutput = contourExtractor.GetOutput
     
     # triangle filter
@@ -1100,6 +1101,8 @@ def simplemesh2BinaryMask(sm, scan, zShift=True, negSpacing=False,
 def image2Simplemesh(imageArray, index2Coord, isoValue, deciRatio=None, smoothIt=200, zShift=True):
     """Convert an image array into a SimpleMesh surface.
 
+    imageArray must be uint8.
+
     inputs
     ------
     imageArray : binary image array
@@ -1110,8 +1113,12 @@ def image2Simplemesh(imageArray, index2Coord, isoValue, deciRatio=None, smoothIt
     zShift : shift surface in the Z axis by image volume height.
 
     """
-    IMGDTYPE = int16
-    imageArray = imageArray.astype(IMGDTYPE)
+    
+
+    IMGDTYPE = uint8
+    if imageArray.dtype!=IMGDTYPE:
+        raise ValueError('imageArray must be {}.'.format(IMGDTYPE))
+
     if vtk.VTK_MAJOR_VERSION<6:
         vtkImage = array2vtkImage(imageArray, IMGDTYPE, flipDim=True, retImporter=False)
     else:
