@@ -1,5 +1,12 @@
 # GIAS2 Change log
 
+## 0.4.17
+- updated install_requires list to include vtk, skimage, and cython
+- added downscale method for image_tools.Scan
+- fixed missing marker bug when parsing lower limb markers
+- fixed image2surf conversion in vtk 6+ due to datatype bug
+- pretty stable on python 3.5
+
 ## 0.4.16
 - Updates the RBF registration
 - surface distance application
