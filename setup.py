@@ -10,6 +10,11 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #!/usr/bin/env python
 from setuptools import setup, find_packages
+
+import sys
+from os import path
+SELF_DIR = path.split(__file__)[0]
+sys.path.append(path.join(SELF_DIR, 'src'))
 from gias2.version import __version__
 
 def readme():
