@@ -1,5 +1,8 @@
 # GIAS2 Change log
 
+## 0.4.18
+- removed version requirement for VTK
+
 ## 0.4.17
 - updated install_requires list to include vtk, skimage, and cython
 - added downscale method for image_tools.Scan
