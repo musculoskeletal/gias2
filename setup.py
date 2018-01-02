@@ -29,7 +29,7 @@ install_requires = [
      'scipy >= 0.9',
      'scikit-learn >= 0.15',
      'scikit-image >= 0.13.0',
-     'vtk >= 8.0.0.dev20170717',
+     'vtk',
      'cython >= 0.27.0'
 ]
 package_data = {
