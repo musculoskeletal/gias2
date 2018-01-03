@@ -687,10 +687,14 @@ def tri2Polydata(V, T, normals=True, featureangle=60.0):
      
     return polydata
 
+class NoPolyDataError(Exception):
+    pass
+
 def polyData2Tri(p):
 
     if p.GetNumberOfPoints()==0:
-        raise ValueError('no points in polydata')
+        # raise ValueError('no points in polydata')
+        raise NoPolyDataError('no points in polydata')
 
     # get vertices
     V = array([p.GetPoint(i) for i in range(p.GetNumberOfPoints())])
