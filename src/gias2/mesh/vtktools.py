@@ -875,7 +875,9 @@ def polydataFromImage( vtkImage, params, disp=0 ):
     # triangulate image to create mesh  
     print("extracting contour...")
     # contourExtractor = vtk.vtkContourFilter()
-    contourExtractor = vtk.vtkMarchingCubes()
+    # contourExtractor.GenerateTrianglesOn()
+    contourExtractor = vtk.vtkMarchingCubes()  # causes artefact faces in the corner of the volume
+    # contourExtractor = vtk.vtkImageMarchingCubes()  # causes artefact faces in the corner of the volume
     if vtk.VTK_MAJOR_VERSION<6:
         contourExtractor.SetInput( getPreviousOutput() )
     else:
@@ -1150,6 +1152,9 @@ def image2Simplemesh(imageArray, index2Coord, isoValue, deciRatio=None, smoothIt
     SMImg = simplemesh.SimpleMesh(v=V, f=T)
     SM = simplemesh.SimpleMesh(v=index2Coord(V, zShift=zShift), f=T)
     SM.data = {'vertexnormal':N}
+    print('image 2 sm done')
+    print('vertices: {}'.format(SM.v.shape[0]))
+    print('faces: {}'.format(SM.f.shape[0]))
     return SM, SMImg, polydata
 
 def smoothMeshVTK(mesh, it, smoothboundary=False, smoothfeatures=False, relaxfactor=1.0, usewsinc=True):
