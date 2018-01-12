@@ -114,6 +114,12 @@ def remove_small_regions(sm):
     """
     Return a mesh of the largest connected region in sm
     """
+    
+    if not hasattr(sm, 'faces1Ring'):
+        sm.set1Ring()
+
+    if not hasattr(sm, 'faces1RingFaces'):
+        set_1ring_faces(sm)
 
     # partition mesh by connected regions
     region_faces, face_labels = partition_regions(sm, np.inf)
@@ -132,6 +138,32 @@ def remove_small_regions(sm):
     # create new mesh with just the largest region
     largest_region_mesh = make_sub_mesh(sm, region_faces[largest_reg])
     return largest_region_mesh
+
+def remove_small_regions_2(sm, k):
+    """
+    Removes regions with less than k faces
+    """
+    if not hasattr(sm, 'faces1Ring'):
+        sm.set1Ring()
+
+    if not hasattr(sm, 'faces1RingFaces'):
+        set_1ring_faces(sm)
+
+    # partition mesh by connected regions
+    region_faces, face_labels = partition_regions(sm, np.inf)
+    print('found {} regions'.format(len(region_faces)))
+    
+    # find regions to keep
+    keep_faces = []
+    for rn, rf in region_faces.items():
+        if len(rf)>k:
+            keep_faces += rf
+
+    # create mesh with kept regions
+    new_mesh = make_sub_mesh(sm, keep_faces)
+    print('keeping {} faces'.format(len(keep_faces)))
+    
+    return new_mesh
 
 def partition_mesh(sm, maxfaces, minfaces):
     """
