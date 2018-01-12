@@ -595,7 +595,7 @@ def array2vtkImage(arrayImage, dtype, flipDim=False, retImporter=False, extent=N
 
     # just to be sure
     arr = array(arrayImage, dtype=dtype)
-    
+
     if vtk.VTK_MAJOR_VERSION>=6:
         imageImporter.CopyImportVoidPointer(arr, arr.nbytes)
     else:
@@ -884,6 +884,7 @@ def polydataFromImage( vtkImage, params, disp=0 ):
         contourExtractor.SetInputDataObject( getPreviousOutput() )
         # contourExtractor.SetInputDataObject( vtkImage )
     contourExtractor.ComputeNormalsOn()
+    contourExtractor.ComputeScalarsOn()
     contourExtractor.SetValue( 0, params.isoValue )
     contourExtractor.Update()  ### SEG FAULT
     getPreviousOutput = contourExtractor.GetOutput
