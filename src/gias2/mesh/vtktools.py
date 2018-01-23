@@ -764,7 +764,10 @@ def polygons2Polydata(vertices, faces, vcolours=None, fcolours=None, normals=Non
         colors.SetNumberOfComponents(3)
         colors.SetName("colours")
         for c in vcolours:
-            colors.InsertNextTupleValue(c)
+            if vtk.VTK_MAJOR_VERSION<6:
+                colors.InsertNextTupleValue(c)
+            else:
+                colors.InsertNextTuple3(*c)
 
         P.GetPointData().SetScalars(colors)
 
