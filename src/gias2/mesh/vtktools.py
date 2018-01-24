@@ -589,21 +589,20 @@ def renderPolyData( data ):
     renWin.Render()
     iren.Start()
 
-def array2vtkImage(arrayImage, dtype, flipDim=False, retImporter=False, extent=None):
+def array2vtkImage(arrayImage, dtype, flipDim=False, retImporter=False, extent=None, pipeline=False):
     # import array image into vtk
     imageImporter = vtk.vtkImageImport()
 
     # just to be sure
-    arr = array(arrayImage, dtype=dtype)
+    # arr = array(arrayImage, dtype=dtype)
+    arr = array(arrayImage, dtype=dtype, order='C')
 
-    if vtk.VTK_MAJOR_VERSION>=6:
-        imageImporter.CopyImportVoidPointer(arr, arr.nbytes)
-    else:
-        imageString = arr.tostring()
-        imageImporter.CopyImportVoidPointer(imageString, len(imageString))
+    
     if dtype==int16:
+        # print('setting data scalar to int16')
         imageImporter.SetDataScalarTypeToShort()
     elif dtype==uint8:
+        # print('setting data scalar to uint8')
         imageImporter.SetDataScalarTypeToUnsignedChar()
     else:
         raise ValueError('Unsupported datatype {}'.format(dtype))
@@ -619,11 +618,19 @@ def array2vtkImage(arrayImage, dtype, flipDim=False, retImporter=False, extent=N
 
     imageImporter.SetDataExtent(extent)
     imageImporter.SetWholeExtent(extent)
+
+    if vtk.VTK_MAJOR_VERSION>=6:
+        imageImporter.CopyImportVoidPointer(arr, arr.nbytes)
+        # imageImporter.SetImportVoidPointer(arr, 1)
+    else:
+        imageString = arr.tostring()
+        imageImporter.CopyImportVoidPointer(imageString, len(imageString))
+    
     imageImporter.Update()
 
     # in VTK 6+, not returning the importer results in erroneous image array values
     # in the vtkImage
-    if retImporter:
+    if retImporter or pipeline:
         return imageImporter
     else:
         if vtk.VTK_MAJOR_VERSION>=6:
@@ -690,7 +697,10 @@ def tri2Polydata(V, T, normals=True, featureangle=60.0):
 class NoPolyDataError(Exception):
     pass
 
-def polyData2Tri(p):
+def polyData2Tri(p, pipeline=False):
+
+    if pipeline:
+        p = p.GetOutput()
 
     if p.GetNumberOfPoints()==0:
         # raise ValueError('no points in polydata')
@@ -855,25 +865,41 @@ class polydataFromImageParams(object):
         pickle.dump( self, f )
         f.close()
         
-    
-def polydataFromImage( vtkImage, params, disp=0 ):
-    
-    def _init():
-        return vtkImage
 
-    getPreviousOutput = _init
+class DummyFilter(object):
+
+    def __init__(outputDataObject):
+        self.dataObject
+
+    def getOutputDataObject():
+        return dataObject
+
+    def getOutput():
+        return dataObject
+
+def polydataFromImage( vtkImage, params, disp=0, pipeline=False ):
+    
+    if pipeline:
+        previousFilter = vtkImage
+    else:
+        previousFilter = DummyFilter(vtkImage)
     
     # testing - gaussian smoothing to binary image
     if params.smoothImage:
         print('smoothing image...')
         imageSmoother = vtk.vtkImageGaussianSmooth()
-        if vtk.VTK_MAJOR_VERSION<6:
-            imageSmoother.SetInput( getPreviousOutput() )
-        else:
-            imageSmoother.SetInputDataObject( getPreviousOutput() )
         imageSmoother.SetStandardDeviation( params.imgSmthSD )
         imageSmoother.SetRadiusFactor( params.imgSmthRadius )
-        getPreviousOutput = imageSmoother.GetOutput
+        
+        if vtk.VTK_MAJOR_VERSION<6:
+            imageSmoother.SetInput( previousFilter.getOutput() )
+        else:
+            if pipeline:
+                imageSmoother.SetInputConnection(previousFilter.GetOutputPort())
+            else:
+                imageSmoother.SetInputDataObject(previousFilter.getOutputDataObject())
+        
+        previousFilter = imageSmoother
     
     # triangulate image to create mesh  
     print("extracting contour...")
@@ -881,39 +907,59 @@ def polydataFromImage( vtkImage, params, disp=0 ):
     # contourExtractor.GenerateTrianglesOn()
     contourExtractor = vtk.vtkMarchingCubes()  # causes artefact faces in the corner of the volume
     # contourExtractor = vtk.vtkImageMarchingCubes()  # causes artefact faces in the corner of the volume
-    if vtk.VTK_MAJOR_VERSION<6:
-        contourExtractor.SetInput( getPreviousOutput() )
-    else:
-        contourExtractor.SetInputDataObject( getPreviousOutput() )
-        # contourExtractor.SetInputDataObject( vtkImage )
     contourExtractor.ComputeNormalsOn()
     contourExtractor.ComputeScalarsOn()
     contourExtractor.SetValue( 0, params.isoValue )
-    contourExtractor.Update()  ### SEG FAULT
-    getPreviousOutput = contourExtractor.GetOutput
+    
+    if vtk.VTK_MAJOR_VERSION<6:
+        contourExtractor.SetInput( previousFilter.getOutput() )
+    else:
+        if pipeline:
+            contourExtractor.SetInputConnection(previousFilter.GetOutputPort())
+        else:
+            contourExtractor.SetInputDataObject(previousFilter.getOutputDataObject())
+            contourExtractor.Update()
+    
+    previousFilter = contourExtractor
     
     # triangle filter
     print("filtering triangles...")
     triFilter = vtk.vtkTriangleFilter()
+
     if vtk.VTK_MAJOR_VERSION<6:
-        triFilter.SetInput( getPreviousOutput() )
+        triFilter.SetInput( previousFilter.getOutput() )
     else:
-        triFilter.SetInputDataObject( getPreviousOutput() )
-    triFilter.Update()
-    getPreviousOutput = triFilter.GetOutput
+        if pipeline:
+            triFilter.SetInputConnection(previousFilter.GetOutputPort())
+        else:
+            triFilter.SetInputDataObject(previousFilter.getOutputDataObject())
+            triFilter.Update()
+    
+    previousFilter = triFilter
+
+    if disp:
+        RenderPolyData( triFilter.GetOutput() )
     
     # smooth polydata
     if params.smoothIt:
         print("smoothing...")
         smoother = vtk.vtkSmoothPolyDataFilter()
-        if vtk.VTK_MAJOR_VERSION<6:
-            smoother.SetInput( getPreviousOutput() )
-        else:
-            smoother.SetInputDataObject( getPreviousOutput() )
         smoother.SetNumberOfIterations( params.smoothIt )
         smoother.SetFeatureEdgeSmoothing( params.smoothFeatureEdge )
-        smoother.Update()
-        getPreviousOutput = smoother.GetOutput
+        
+        if vtk.VTK_MAJOR_VERSION<6:
+            smoother.SetInput( previousFilter.getOutput() )
+        else:
+            if pipeline:
+                smoother.SetInputConnection(previousFilter.GetOutputPort())
+            else:
+                smoother.SetInputDataObject(previousFilter.getOutputDataObject())
+                smoother.Update()
+    
+        previousFilter = smoother
+
+        if disp:
+            RenderPolyData( smoother.GetOutput() )
         
     # decimate polydata
     if params.deciRatio:
@@ -930,15 +976,19 @@ def polydataFromImage( vtkImage, params, disp=0 ):
 
         print("decimating using quadric...")
         decimator = vtk.vtkQuadricDecimation()
-        if vtk.VTK_MAJOR_VERSION<6:
-            decimator.SetInput( getPreviousOutput() )
-        else:
-            decimator.SetInputDataObject( getPreviousOutput() )
         decimator.SetTargetReduction( params.deciRatio )
-        # decimator.SetPreserveTopology( params.deciPerserveTopology )
-        # decimator.SplittingOn()
-        decimator.Update()
-        getPreviousOutput = decimator.GetOutput
+
+        if vtk.VTK_MAJOR_VERSION<6:
+            decimator.SetInput( previousFilter.getOutput() )
+        else:
+            if pipeline:
+                decimator.SetInputConnection(previousFilter.GetOutputPort())
+            else:
+                decimator.SetInputDataObject(previousFilter.getOutputDataObject())
+                decimator.Update()
+        
+        previousFilter = decimator
+
         if disp:
             RenderPolyData( decimator.GetOutput() )
     
@@ -946,31 +996,42 @@ def polydataFromImage( vtkImage, params, disp=0 ):
     if params.clean:
         print("cleaning...")
         cleaner = vtk.vtkCleanPolyData()
-        if vtk.VTK_MAJOR_VERSION<6:
-            cleaner.SetInput( getPreviousOutput() )
-        else:
-            cleaner.SetInputDataObject( getPreviousOutput() )
         cleaner.SetConvertLinesToPoints(1)
         cleaner.SetConvertStripsToPolys(1)
         cleaner.SetConvertPolysToLines(1)
         cleaner.SetPointMerging( params.cleanPointMerging )
         cleaner.SetTolerance( params.cleanTolerance )
-        cleaner.Update()
-        getPreviousOutput = cleaner.GetOutput
+
+        if vtk.VTK_MAJOR_VERSION<6:
+            cleaner.SetInput( previousFilter.getOutput() )
+        else:
+            if pipeline:
+                cleaner.SetInputConnection(previousFilter.GetOutputPort())
+            else:
+                cleaner.SetInputDataObject(previousFilter.getOutputDataObject())
+                cleaner.Update()
+        
+        previousFilter = cleaner
 
     # filter normals
     if params.filterNormal:
         print("filtering normals...")
         normal = vtk.vtkPolyDataNormals()
-        if vtk.VTK_MAJOR_VERSION<6:
-            normal.SetInput( getPreviousOutput() )
-        else:
-            normal.SetInputDataObject( getPreviousOutput() )
         normal.SetAutoOrientNormals(1)
         normal.SetComputePointNormals(1)
         normal.SetConsistency(1)
-        normal.Update()
-        getPreviousOutput = normal.GetOutput
+
+        if vtk.VTK_MAJOR_VERSION<6:
+            normal.SetInput( previousFilter.getOutput() )
+        else:
+            if pipeline:
+                normal.SetInputConnection(previousFilter.GetOutputPort())
+            else:
+                normal.SetInputDataObject(previousFilter.getOutputDataObject())
+                normal.Update()
+        
+        previousFilter = normal
+
         if disp:
             RenderPolyData( normal.GetOutput() )
     
@@ -978,16 +1039,27 @@ def polydataFromImage( vtkImage, params, disp=0 ):
         print("calculating curvature...")
         curvature = vtk.vtkCurvatures()
         curvature.SetCurvatureTypeToMean()
+
         if vtk.VTK_MAJOR_VERSION<6:
-            curvature.SetInput( getPreviousOutput() )
+            curvature.SetInput( previousFilter.getOutput() )
         else:
-            curvature.SetInputDataObject( getPreviousOutput() )
-        curvature.Update()
-        getPreviousOutput = curvature.GetOutput
+            if pipeline:
+                curvature.SetInputConnection(previousFilter.GetOutputPort())
+            else:
+                curvature.SetInputDataObject(previousFilter.getOutputDataObject())
+                curvature.Update()
+        
+        previousFilter = curvature
+
         if disp:
             RenderPolyData( curvature.GetOutput() )
+
+    previousFilter.Update()
     
-    return getPreviousOutput()
+    if pipeline:
+        return previousFilter
+    else:
+        return previousFilter.getOutputDataObject()
 
 def triSurface2BinaryMask(v, t, imageShape, outputOrigin=None, outputSpacing=None, extent=None):
     """Create a binary image mask from a triangulated surface.
@@ -1132,7 +1204,8 @@ def image2Simplemesh(imageArray, index2Coord, isoValue, deciRatio=None, smoothIt
     if vtk.VTK_MAJOR_VERSION<6:
         vtkImage = array2vtkImage(imageArray, IMGDTYPE, flipDim=True, retImporter=False)
     else:
-        vtkImage = array2vtkImage(imageArray, IMGDTYPE, flipDim=True, retImporter=True).GetOutput()
+        vtkImage = array2vtkImage(imageArray, IMGDTYPE, flipDim=True, retImporter=True, pipeline=True)
+        # vtkImage = array2vtkImage(imageArray, IMGDTYPE, flipDim=True, retImporter=True).GetOutput()
 
     params = polydataFromImageParams()
     params.smoothImage = False
@@ -1148,11 +1221,14 @@ def image2Simplemesh(imageArray, index2Coord, isoValue, deciRatio=None, smoothIt
     params.cleanTolerance = 1e-9
     params.filterNormal = 1
     params.calcCurvature = 0
-    polydata = polydataFromImage(vtkImage, params)
-
-    V, T, N = polyData2Tri(polydata)
+    if vtk.VTK_MAJOR_VERSION<6:
+        polydata = polydataFromImage(vtkImage, params, pipeline=False)
+        V, T, N = polyData2Tri(polydata, pipeline=False)
+    else:
+        polydata = polydataFromImage(vtkImage, params, pipeline=True)
+        V, T, N = polyData2Tri(polydata, pipeline=True)
+    
     V = V[:,::-1] + [0.0,0.0,1.0]
-
     SMImg = simplemesh.SimpleMesh(v=V, f=T)
     SM = simplemesh.SimpleMesh(v=index2Coord(V, zShift=zShift), f=T)
     SM.data = {'vertexnormal':N}
