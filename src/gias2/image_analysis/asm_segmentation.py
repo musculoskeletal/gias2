@@ -97,9 +97,13 @@ def weightMDist( m, upper ):
     return W
 
 if usePyxScan:
+    import numpy
     import pyximport
     # reload(pyximport)
-    pyximport.install()
+    pyximport.install(
+        setup_args={"include_dirs":numpy.get_include()},
+        reload_support=True
+        )
     from gias2.image_analysis import asm_search_c
     # reload(asm_search_c)
     scanProfile = asm_search_c.scanProfile
