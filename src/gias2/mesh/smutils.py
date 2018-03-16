@@ -13,6 +13,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 """
 
 import numpy as np
+import copy
 from gias2.mesh import simplemesh
 
 def make_sub_mesh(sm, faceinds):
@@ -176,3 +177,12 @@ def partition_mesh(sm, maxfaces, minfaces):
     print('making {} region meshes'.format(len(region_faces)))
     region_sms = make_region_meshes(sm, region_faces)
     return region_sms
+
+def merge_sms(sms):
+    new_sm = copy.deepcopy(sms[0])
+    for sm in sms[1:]:
+        v_offset = new_sm.v.shape[0]
+        new_sm.v = np.vstack([new_sm.v, sm.v])
+        new_sm.f = np.vstack([new_sm.f, np.array(sm.f)+v_offset])
+
+    return new_sm
