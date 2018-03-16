@@ -54,11 +54,6 @@ classifiers = [
      'Programming Language :: Python :: 3.5',
      'Topic :: Scientific/Engineering :: Medical Science Apps.'
 ]
-scripts = [
-     'src/gias2/applications/gias-rigidreg',
-     'src/gias2/applications/gias-rbfreg',
-     'src/gias2/applications/gias-trainpcashapemodel',
-]
 entry_points = {
      'console_scripts': [
           'gias-rbfreg=gias2.applications.giasrbfreg:main',
@@ -66,6 +61,7 @@ entry_points = {
           'gias-pcreg=gias2.applications.giaspcreg:main',
           'gias-trainpcashapemodel=gias2.applications.giastrainpcashapemodel:main',
           'gias-surfacedistance=gias2.applications.giassurfacedistance:main',
+          'gias-hmfinp2surf=gias2.applications.giashmfinp2surf:main',
      ]
 }
 

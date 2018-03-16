@@ -1,6 +1,18 @@
+#!/usr/bin/env python
 """
+FILE: pcreg.py
+LAST MODIFIED: 17/03/18
+DESCRIPTION:
 Host-mesh fitting to register a source surface to a target surface and apply
 the transformation the source volumetric INP mesh.
+
+===============================================================================
+This file is part of GIAS2. (https://bitbucket.org/jangle/gias2)
+
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
+===============================================================================
 
 The source surface and INP mesh will be embedded in a host mesh that will
 deform to minimise the distance between the source surface and the target surface.
@@ -27,10 +39,6 @@ python hmf_inp_2_surf.py data/tibia_volume.inp data/tibia_surface.stl data/tibia
     registration
 - "--orig-position" will return the registered mesh to its original position
 - "-v" will activate a window to visualise the results at the end
-
-
-Created by: Ju Zhang
-Last Modified: 17-03-2018
 """
 
 import os
