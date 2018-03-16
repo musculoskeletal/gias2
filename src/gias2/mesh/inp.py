@@ -50,8 +50,8 @@ class Mesh(object):
         nodeNumbers : a list of node numbers corresponding to their
                       coordinate.
         """
-        self.nodes = nodes
-        self.nodeNumbers = nodeNumbers
+        self.nodes = np.array(nodes)
+        self.nodeNumbers = np.array(nodeNumbers)
         self._nodesDict = dict(zip(self.nodeNumbers, self.nodes))
 
     def getNode(self, nodeNumber):
@@ -215,7 +215,7 @@ class InpReader(object):
                     raise IOError('No NSET named '+meshName)
                 else:
                     # if ('NSET='+meshName) in l:
-                    if (self.nodeStartString) in l:
+                    if (self.nodeStartString) in l.upper():
                         doScan = 0
 
             doScan = 1
