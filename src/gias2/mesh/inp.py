@@ -150,6 +150,15 @@ class Mesh(object):
     def setSurface(self, elsetname, **kwargs):
         self.surfaces[elsetname] = kwargs
 
+    def calcElemCentroids(self):
+        node_mapping = dict(zip(self.nodeNumbers, self.nodes))
+        elem_shape = np.array(self.elems).shape
+        elem_nodes_flat = np.hstack(self.elems)
+        elem_node_coords_flat = np.array([node_mapping[i] for i in elem_nodes_flat])
+        elem_node_coords = elem_node_coords_flat.reshape([elem_shape[0], elem_shape[1], 3])
+        elem_centroids = elem_node_coords.mean(1)
+        return elem_centroids
+
 class InpReader(object):
     """INP reading class
     """
