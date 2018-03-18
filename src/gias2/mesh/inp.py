@@ -395,6 +395,12 @@ class InpWriter(object):
 
         self._meshes.append(mesh)
 
+    def addSection(self):
+        raise NotImplementedError()
+
+    def addMaterial(self):
+        raise NotImplementedError()
+
     def _autoFormat(self):
         maxNodes = max([max(mesh.nodeNumbers) for mesh in self._meshes])
         nodeCounterCharLength = len(str(maxNodes)) + 1
