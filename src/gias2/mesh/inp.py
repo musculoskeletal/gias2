@@ -164,6 +164,8 @@ class InpReader(object):
     """
 
     nodeStartString = '*NODE'
+    elementStartString = '*ELEMENT'
+    elsetStartString = '*ELSET'
 
     def __init__(self, filename):
         self.filename = filename
@@ -242,7 +244,7 @@ class InpReader(object):
         return nodeNumbers, nodes
 
 
-    def readMesh(self, meshName):
+    def readMeshOld(self, meshName):
         """Reads and returns the mesh with name meshName.
         Arguments:
         meshName: string matching an NSET/ELSET name in the file
@@ -255,31 +257,6 @@ class InpReader(object):
         elemType = None
         elemNumbers = []
         elems = []
-
-        # read nodes
-        # with open(self.filename, 'r') as f:
-        #     doScan = 1
-        #     while doScan:
-        #         try:
-        #             l = next(f)
-        #         except StopIteration:
-        #             raise IOError('No NSET named '+meshName)
-        #         else:
-        #             # if ('NSET='+meshName) in l:
-        #             if (self.nodeStartString) in l:
-        #                 doScan = 0
-
-        #     doScan = 1
-        #     while doScan:
-        #         l = next(f).strip()
-        #         if '*' not in l:
-        #             terms = l.split(',')
-        #             nodeNumbers.append(int(terms[0]))
-        #             nodes.append([float(t) for t in terms[1:]])
-        #         else:
-        #             doScan = 0
-
-        #     print(('loaded %d nodes'%(len(nodes))))
 
         nodeNumbers, nodes = self.readNodes()
 
@@ -349,6 +326,30 @@ class InpReader(object):
 
         return mesh
 
+    def readMesh(self, meshName=None):
+        """
+        Reads and returns the mesh with name meshName.
+        Arguments:
+        meshName: string matching an NSET/ELSET name in the file. If none,
+            reads Element section with no ELSET name.
+        Returns:
+        mesh: a Mesh instance with the read-in mesh parameters
+        """
+        nodeNumbers, nodes = self.readNodes()
+        elemNumbers, elems, elemType = self.readElements(elset=meshName)
+
+        # get only nodes of the mesh
+        _nodesDict = dict(zip(nodeNumbers, nodes))
+        meshNodeNums = np.unique(np.hstack(elems))
+        meshNodeCoords = [_nodesDict[i] for i in meshNodeNums]
+
+        mesh = Mesh(meshName)
+        mesh.setNodes(meshNodeCoords, meshNodeNums)
+        mesh.setElems(elems, elemNumbers, elemType)
+
+        return mesh
+
+
     def readAllMeshes(self):
         """Read in all meshes in the file.
         Returns a dictionary in which keys are mesh names and values are the
@@ -361,6 +362,105 @@ class InpReader(object):
 
         return meshes
 
+    def readElements(self, elset=None):
+        """
+        read elements section
+        """
+        elemType = None
+        elems = []
+        elemNumbers = []
+
+        with open(self.filename, 'r') as f:
+            doScan = 1
+            while doScan:
+                try:
+                    l = next(f)
+                except StopIteration:
+                    raise IOError('No Elements')
+                else:
+                    if (self.elementStartString) in l.upper():
+                        if elset is not None:
+                            # check if these are the right elset
+                            if ('ELSET='+elset).upper() in l.upper():
+                                doScan = 0
+                        else:
+                            # dont care about elset, we found elements
+                            doScan = 0
+
+                        for term in l.split(','):
+                            if 'TYPE' in term.upper():
+                                elemType = term.split('=')[1].strip()
+            
+            try:
+                en = ELEMNODES[elemType]
+            except KeyError:
+                raise RuntimeError('Unsupported element type: '+elemType)
+
+            doScan = 1
+            nCount = -1
+            elem = []
+            while doScan:
+                try:
+                    l = next(f).strip()
+                except StopIteration:
+                    doScan = 0
+                else:
+                    if '*' not in l:
+                        terms = [int(i) for i in l.split(',') if i]
+                        if len(terms)==0:
+                            terms = [int(l.strip())]
+                        for t in terms:
+                            if nCount==-1:
+                                elemNumbers.append(t)
+                                nCount += 1
+                            elif nCount<en:
+                                elem.append(t)
+                                nCount += 1
+                                if nCount==en:
+                                    elems.append(elem)
+                                    elem = []
+                                    nCount = -1
+                            else:
+                                # should be here something bad happened
+                                raise RuntimeError
+
+                        # elemNumbers.append(int(terms[0]))
+                        # elems.append([int(t) for t in terms[1:]])
+                    else:
+                        doScan = 0
+
+            print(('loaded %s %s elements'%(len(elems), elemType)))
+
+        return elemNumbers, elems, elemType
+
+    def readElset(self, name):
+        # read elset
+        elset = []
+
+        with open(self.filename, 'r') as f:
+            doScan = 1
+            while doScan:
+                try:
+                    l = next(f)
+                except StopIteration:
+                    raise IOError('No ELSET named '+name)
+                else:
+                    if (self.elsetStartString) in l.upper():
+                        if ('ELSET='+name).upper() in l.upper():
+                                doScan = 0
+
+            doScan = 1
+            while doScan:
+                l = next(f).strip()
+                if '*' not in l:
+                    terms = l.split(',')
+                    elset += [int(t) for t in terms]
+                else:
+                    doScan = 0
+
+            print('loaded {} elements in elset {}'.format(len(elset), name))
+
+        return elset     
 
 class InpWriter(object):
 
@@ -450,6 +550,12 @@ class InpWriter(object):
                         f.write(self._getElemLine(mesh.elemNumbers[ei], e))
 
                     f.write(COMMENTCHARS+'\n')
+
+                # elsets - TODO
+
+                # sections - TODO
+
+                # materials - TODO
 
     def _getNodeLine(self, i, node):
         words = [self._nodeCounterFormat.format(i),] +\
