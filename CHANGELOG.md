@@ -1,5 +1,14 @@
 # GIAS2 Change log
 
+## 0.4.20-RC1
+- inp_sample_dicom.py and hmf_inp_2_surf.py examples
+- giashmfinp2surf application
+- Scan optionally uses transformation matrix for index2Coord and coord2Index
+- inp module handles elsets and other under the hood improvements
+- fixed gias2trainpcashapemodel plotting bug
+- fixed vtk image to surface pipelining
+- merge sm function
+
 ## 0.4.18
 - removed version requirement for VTK
 
