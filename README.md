@@ -40,3 +40,6 @@ Example of some the capabilities of GIAS2 can be found in the gias2/examples/ di
 ## Tutorials
 - [Using GIAS2 with MAP Client for lower limb model generation](http://map-client-fai-workshop.readthedocs.io/en/latest/)
 - [Using GIAS2 for statistical shape modelling](http://gias2-shape-modelling-tutorial.readthedocs.io/en/latest/)
+
+## License
+GIAS2 is under the [Mozilla Public license 2.0](https://www.mozilla.org/en-US/MPL/2.0/).
