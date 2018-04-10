@@ -30,7 +30,8 @@ install_requires = [
      'scikit-learn >= 0.15',
      'scikit-image >= 0.13.0',
      # 'vtk',
-     'cython >= 0.27.0'
+     'cython >= 0.27.0',
+     'configparser',
 ]
 package_data = {
      'gias2': [
