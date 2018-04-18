@@ -29,10 +29,14 @@ install_requires = [
      'scipy >= 0.9',
      'scikit-learn >= 0.15',
      'scikit-image >= 0.13.0',
-     # 'vtk',
+     'vtk',
      'cython >= 0.27.0',
-     'configparser',
 ]
+if sys.version_info.major==2:
+     install_requires.append('ConfigParser')
+else:
+     install_requires.append('configparser')
+
 package_data = {
      'gias2': [
           'src/gias2/examples/data/*',
