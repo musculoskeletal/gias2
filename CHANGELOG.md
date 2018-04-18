@@ -1,5 +1,9 @@
 # GIAS2 Change log
 
+## 0.4.21
+- rbfreg now reads in a config file (in examples) to control fitting and allows arbitrary number of iterations
+- vtk included in requirements
+
 ## 0.4.20-RC1
 - inp_sample_dicom.py and hmf_inp_2_surf.py examples
 - giashmfinp2surf application
