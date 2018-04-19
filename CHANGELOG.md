@@ -1,5 +1,8 @@
 # GIAS2 Change log
 
+## 0.4.22
+- added gias-inpsampledicom app
+
 ## 0.4.21
 - rbfreg now reads in a config file (in examples) to control fitting and allows arbitrary number of iterations
 - vtk included in requirements
