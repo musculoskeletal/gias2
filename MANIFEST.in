@@ -3,6 +3,7 @@ global-include *.pyx
 recursive-include tests *.py
 recursive-include docs *.rst
 recursive-include docs *.py
+include src/gias2/examples/*.ini
 recursive-include src/gias2/examples/data *.*
 recursive-exclude src/gias2/examples/data/dicom *.*
 recursive-include src/gias2/examples/outputs *.md

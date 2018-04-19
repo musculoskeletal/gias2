@@ -29,8 +29,9 @@ install_requires = [
      'scipy >= 0.9',
      'scikit-learn >= 0.15',
      'scikit-image >= 0.13.0',
-     'vtk',
+     # 'vtk',
      'cython >= 0.27.0',
+     'matplotlib',
 ]
 if sys.version_info.major==2:
      install_requires.append('ConfigParser')
@@ -67,6 +68,7 @@ entry_points = {
           'gias-trainpcashapemodel=gias2.applications.giastrainpcashapemodel:main',
           'gias-surfacedistance=gias2.applications.giassurfacedistance:main',
           'gias-hmfinp2surf=gias2.applications.giashmfinp2surf:main',
+          'gias-inpsampledicom=gias2.applications.giasinpsampledicom:main'
      ]
 }
 
