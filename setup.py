@@ -31,7 +31,7 @@ install_requires = [
      'scikit-image >= 0.13.0',
      # 'vtk',
      'cython >= 0.27.0',
-     'matplotlib',
+     # 'matplotlib',
 ]
 if sys.version_info.major==2:
      install_requires.append('ConfigParser')

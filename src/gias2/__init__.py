@@ -8,7 +8,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
 
-from gias2 import version
+from gias2.version import *
 from gias2.common import transform3D, geoprimitives
 from gias2.fieldwork.field import geometric_field
 from gias2.learning import PCA, PCA_fitting

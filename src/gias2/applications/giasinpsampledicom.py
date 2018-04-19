@@ -27,8 +27,6 @@ if sys.version_info.major==2:
 else:
     import configparser
 
-os.environ['ETS_TOOLKIT'] = 'qt4'
-
 import numpy as np
 from gias2.image_analysis.image_tools import Scan
 from gias2.mesh import simplemesh
@@ -234,13 +232,6 @@ def main():
     binned_elsets = []
     for bi, bin_inds in enumerate(E_bin_inds):
         binned_elsets.append([inp_mesh.elemNumbers[i] for i in bin_inds])
-
-    # create a new INP "mesh" for each bin
-    # binned_meshes = []
-    # for bi, bin_inds in enumerate(E_bin_inds):
-    #     m = inp.Mesh('BONE{:03d}'.format(bi))
-    #     m.setElems()
-
 
     #======================================================================#
     ELSET_HEADER = '*Elset, elset=BONE{:03d}\n'
