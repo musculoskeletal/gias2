@@ -10,6 +10,8 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #!/usr/bin/env python
 from setuptools import setup, find_packages
+# from setuptools.command.install import install as _install
+# import subprocess
 
 import sys
 from os import path
@@ -21,6 +23,13 @@ def readme():
      with open('README.md', 'r') as f:
           return f.read()
 
+# installs things in requirements.txt
+# class InstallCmd(_install):
+
+#     def run(self):
+#         subprocess.call(['pip', 'install', '-r', path.join(SELF_DIR, 'requirements.txt')])
+#         _install.run(self)
+        
 #=============================================================================#
 name = 'gias2'
 version = __version__
@@ -32,7 +41,6 @@ install_requires = [
      # 'vtk',
      'cython >= 0.27.0',
      'matplotlib',
-     'https://github.com/juzhang/pydicom/archive/sys-fix.zip'
 ]
 if sys.version_info.major==2:
      install_requires.append('ConfigParser')
@@ -88,6 +96,7 @@ if __name__ == '__main__':
           author=author,
           url=url,
           install_requires=install_requires,
+          # cmdClass={'install':InstallCmd},
           keywords=keywords,
           license=license,
           # scripts=scripts,
