@@ -269,6 +269,9 @@ class Fieldvi(HasTraits):
         # image plane widget attributes
         self._ipw_picked_obj = None
         self._ipw_picked_points = []
+
+    def start(self):
+        self.edit_traits()
     
     def addOnCloseCallback(self, callback):
         self.onCloseCallback = callback
