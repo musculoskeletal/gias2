@@ -44,6 +44,7 @@ class ACSCartesian(object):
         self.z = None
         self.unit_array = None
         self.local_transform = None # affine matrix that transfrom from global to local frame
+        self.inv_local_transform = None # affine matrix that transfrom from local to global frame
         self.update(o, x, y, z)
 
     def update(self, o, x, y, z):
@@ -66,6 +67,7 @@ class ACSCartesian(object):
                                     self.unit_array,
                                     self.global_cs
                                     )
+        self.inv_local_transform = inv(self.local_transform)
 
     def get_unit_array(self):
         return self.unit_array
@@ -87,7 +89,7 @@ class ACSCartesian(object):
         """Calculate the global coordinates of points in x with local
         coordinates.
         """
-        return transform3D.transformAffine(x, inv(self.local_transform))
+        return transform3D.transformAffine(x, self.inv_local_transform)
 
 def make_source_landmark_getter(landmark_names, side=None):
     """ Creates a function to return the coordinates of landmarks

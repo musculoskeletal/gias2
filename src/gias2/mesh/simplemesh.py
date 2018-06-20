@@ -278,7 +278,7 @@ class SimpleMesh( object ):
         self.faceAreas = 0.5*mag2( v1v2 )
         self.faceBarycenters = (faceVertices[:,0,:] + (faceVertices[:,1,:] + faceVertices[:,2,:]) )/3.0
     
-    def calcVertexNormals(self, sigma, nsize=1):
+    def calcVertexNormals(self, sigma, nsize=1, normalsout=True):
         """ calculate the normal at each vertex using normal voting. Considers
         all neighbouring vertices up to nsize edges away.
         """
@@ -364,6 +364,15 @@ class SimpleMesh( object ):
 
         self.filterVertexNormals()
         self.hasVertexNormals = 1
+
+        # make sure normals point out
+        if normalsout:
+            if not normals_is_out(self.v, self.vertexNormals):
+                self.vertexNormals*=-1.0
+
+            if not normals_is_out(self.faceBarycenters, self.faceNormals):
+                self.faceNormals*=-1.0
+
         return
 
     def filterVertexNormals(self):
