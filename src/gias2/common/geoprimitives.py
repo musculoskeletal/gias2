@@ -503,16 +503,6 @@ class Plane( object ):
                                    [-l2, l2],
                                    [ l2, l2]])
         p3D = self.plane2Dto3D(planeCorners2D)
-        arrow = mscene.mlab.quiver3d([self.O[0]],
-                                    [self.O[1]],
-                                    [self.O[2]],
-                                    [self.N[0]],
-                                    [self.N[1]],
-                                    [self.N[2]],
-                                    mode='arrow',
-                                    scale_factor=ascale,
-                                    color=acolor)
-
         square = mscene.mlab.mesh([[p3D[0,0], p3D[1,0]],
                                   [p3D[2,0], p3D[3,0]]],
                                  [[p3D[0,1], p3D[1,1]],
@@ -521,6 +511,28 @@ class Plane( object ):
                                   [p3D[2,2], p3D[3,2]]],
                                   color=scolor,
                                   opacity=sopacity)
+        if self.X is None:
+            arrow = mscene.mlab.quiver3d(
+                [self.O[0]],
+                [self.O[1]],
+                [self.O[2]],
+                [self.N[0]],
+                [self.N[1]],
+                [self.N[2]],
+                mode='arrow',
+                scale_factor=ascale,
+                color=acolor)
+        else:
+            arrow = mscene.mlab.quiver3d(
+                [self.O[0], self.O[0], self.O[0]],
+                [self.O[1], self.O[1], self.O[1]],
+                [self.O[2], self.O[2], self.O[2]],
+                [self.X[0], self.Y[0], self.N[0],],
+                [self.X[1], self.Y[1], self.N[1],],
+                [self.X[2], self.Y[2], self.N[2],],
+                mode='arrow',
+                scale_factor=ascale,
+                color=acolor)
 
         return arrow, square
             
