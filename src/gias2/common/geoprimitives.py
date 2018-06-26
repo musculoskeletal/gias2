@@ -406,8 +406,12 @@ class Plane( object ):
         
         self.O = scipy.array(origin, dtype=float)
         self.N = norm(normal)
-        self.X = scipy.array(x, dtype=float)
-        self.Y = scipy.array(y, dtype=float)
+        self.X = None
+        self.Y = None
+        if x is not None:
+            self.X = scipy.array(x, dtype=float)
+        if y is not None:
+            self.Y = scipy.array(y, dtype=float)
     
     def calcDistanceToPlane( self, P ):
         d = ((P - self.O) * self.N ).sum(-1)
@@ -426,6 +430,9 @@ class Plane( object ):
         returns the closest points to P on the plane, in 2D in-plane
         coordinates
         """
+        if (self.X is None) or (self.Y is None):
+            raise ValueError('plane X and Y vectors not set')
+
         u = ((P - self.O) * self.X).sum(-1)
         v = ((P - self.O) * self.Y).sum(-1)
         return scipy.array([u,v]).T
@@ -434,6 +441,9 @@ class Plane( object ):
         """
         return 3D coordinates of from 2D in-plane coordinates
         """
+        if (self.X is None) or (self.Y is None):
+            raise ValueError('plane X and Y vectors not set')
+
         p = P[:,0,scipy.newaxis]*self.X + P[:,1,scipy.newaxis]*self.Y + self.O
         return p
 
@@ -467,18 +477,10 @@ class Plane( object ):
                         self.N
                         )
                     )
-        self.X = norm(
-                    scipy.dot(
-                        t[:3,:3],
-                        self.X
-                        )
-                    )
-        self.Y = norm(
-                    scipy.dot(
-                        t[:3,:3],
-                        self.Y
-                        )
-                    )
+        if self.X is not None:
+            self.X = norm(scipy.dot(t[:3,:3], self.X))
+        if self.Y is not None:
+            self.Y = norm(scipy.dot(t[:3,:3], self.Y))
 
     def drawPlane(self, mscene, l=100, acolor=(1,0,0), ascale=10.0, scolor=(0,1,0), sopacity=0.5):
         """ Draw the plane in a mayavi scene as a square and a normal vector arrow.
