@@ -1189,6 +1189,15 @@ class Fieldvi(HasTraits):
     def get_ipw_picked_points(self):
         return list(self._ipw_picked_points)
 
+    def addText3D(self, name, text, origin, offset, charWidth=0.01, lineWidth=0.2):
+        """
+        Adds text with a line to a point
+        """
+        textOrigin = scipy.array(origin)+scipy.array(offset)
+        textLine = scipy.array([origin, textOrigin]).T
+        self.scene.mlab.text(textOrigin[0], textOrigin[1], text, z=textOrigin[2], width=len(text)*charWidth, name='text_'+name)
+        self.scene.mlab.plot3d(textLine[0], textLine[1], textLine[2], tube_radius=lineWidth, name='textline_'+name)
+
 def find_shaft_frame_gen( V, nFrames, direction='up', shaftMode='reveal' ):
     
     if direction=='up':
