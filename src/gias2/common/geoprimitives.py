@@ -534,6 +534,8 @@ class Plane( object ):
                 [self.X[2], self.Y[2], self.N[2],],
                 mode='arrow',
                 scale_factor=ascale,
+                scalars=[1,2,3],
+                scale_mode='scalar',
                 color=acolor)
 
         return arrow, square

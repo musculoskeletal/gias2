@@ -85,11 +85,23 @@ class ACSCartesian(object):
         """
         return transform3D.transformAffine(x, self.local_transform)
 
+    def rotate_local(self, x):
+        """
+        rotate a 3-vector in global space to the local space
+        """
+        return np.dot(self.local_transform[:3,:3], x)
+
     def map_global(self, x):
         """Calculate the global coordinates of points in x with local
         coordinates.
         """
         return transform3D.transformAffine(x, self.inv_local_transform)
+
+    def rotate_global(self, x):
+        """
+        rotate a 3-vector in the local space to the global space
+        """
+        return np.dot(self.inv_local_transform[:3,:3], x)
 
 def make_source_landmark_getter(landmark_names, side=None):
     """ Creates a function to return the coordinates of landmarks
