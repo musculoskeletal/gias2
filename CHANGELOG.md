@@ -1,5 +1,11 @@
 # GIAS2 Change log
 
+## 0.4.23
+- improvements to cartesian coordinates system class
+- improvements to 3D plane visualisation
+- fixed api misused in fieldvi
+- RBF multipass reg added to registration
+
 ## 0.4.22
 - added gias-inpsampledicom app
 
