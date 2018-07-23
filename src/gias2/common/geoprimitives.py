@@ -76,6 +76,14 @@ class Line3D( object ):
         else:
             return euclidean( p, pLine )
 
+    def project_coordinate(self, x, dim):
+        """
+        Calculate the parameter coordinate along the line that gives a point
+        with a coordinate of x in dimension dim
+        """
+        t = (x-self.b[dim])/self.a[dim]
+        return t
+
     def checkParallel(self, l):
         """
         check if self is parallel to l
