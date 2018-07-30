@@ -1,5 +1,10 @@
 # GIAS2 Change log
 
+## 0.4.24
+- added keyboard input wait after visualisation in application scripts
+- added Line3D method for projecting a coordinate
+- control rbf registration verbosity
+
 ## 0.4.23
 - improvements to cartesian coordinates system class
 - improvements to 3D plane visualisation
