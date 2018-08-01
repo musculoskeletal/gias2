@@ -1,5 +1,8 @@
 # GIAS2 Change log
 
+## 0.4.25
+- dicom affine tested against itksnap, however flip z need to be flipped manually
+
 ## 0.4.24
 - added keyboard input wait after visualisation in application scripts
 - added Line3D method for projecting a coordinate
