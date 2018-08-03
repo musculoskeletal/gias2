@@ -1,5 +1,8 @@
 # GIAS2 Change log
 
+## 0.4.27
+- bug fixes with scan zoom method
+
 ## 0.4.26
 - improved handling of dicom handling, now longer require z-flipping
 - dicom affine updated in cropping, zoom, and downscaling.
