@@ -1,5 +1,9 @@
 # GIAS2 Change log
 
+## 0.4.26
+- improved handling of dicom handling, now longer require z-flipping
+- dicom affine updated in cropping, zoom, and downscaling.
+
 ## 0.4.25
 - dicom affine tested against itksnap, however flip z need to be flipped manually
 
