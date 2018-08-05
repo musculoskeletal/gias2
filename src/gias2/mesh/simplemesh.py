@@ -119,6 +119,7 @@ class SimpleMesh( object ):
         self.faces1Ring = None
         self.vertices1Ring = None
         self.boundaryVertexInd = None
+        self.vertexNormals = None
         self.hasVertexNormals = False
         
     def load( self, filename ):

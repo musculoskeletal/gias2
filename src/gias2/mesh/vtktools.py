@@ -16,12 +16,15 @@ from os import path
 from scipy import zeros, array, uint8, int16, uint16, ones, newaxis
 import pickle
 import vtk
+from vtk.util import numpy_support
 import copy
 from xml.etree import ElementTree as ET
 import xml
-from gias2.mesh import simplemesh
 import copy
 import warnings
+
+from gias2.mesh import simplemesh
+from gias2.mesh import plywriter
 
 class Writer(object):
     """Class for writing polygons to file formats supported by VTK.
@@ -33,6 +36,7 @@ class Writer(object):
         polydata: vtkPolydata instance
         v: array of vertices coordinates
         f: list of faces composed of lists of vertex indices
+        vn: array of vertex normals
         rw: vtkRenderWindow instance
         colour: 3-tuple of colour (only works for ply)
         vcolour: 3-tuple of colour for each vertex
@@ -45,6 +49,7 @@ class Writer(object):
         self._polydata = kwargs.get('polydata')
         self._vertices = kwargs.get('v')
         self._faces = kwargs.get('f')
+        self._vertex_normals = kwargs.get('vn')
         self._render_window = kwargs.get('rw')
         self._colour = kwargs.get('colour')
         self._vertex_colour = kwargs.get('vcolour')
@@ -66,6 +71,7 @@ class Writer(object):
                             self._faces,
                             vcolours=self._vertex_colour,
                             fcolours=self._face_colour,
+                            vnormals=self._vertex_normals,
                             )
 
     def _make_render_window(self):
@@ -117,6 +123,22 @@ class Writer(object):
     def writePLY(self, filename=None, ascenc=True):
         if filename is not None:
             self.filename = filename
+
+        # if there are vnormals, have to use the gias2 writer since the vtk
+        # writer does not write normals
+        if self._vertex_normals is not None:
+            if not ascenc:
+                warnings.warn(
+                    'Using GIAS2 PLYWriter, binary encoding not supported.',
+                    UserWarning
+                    )
+            w = plywriter.PLYWriter(
+                v=self._vertices, f=self._faces, filename=self.filename,
+                vn=self._vertex_normals, vcolours=self._vertex_colour
+                )
+            w.write()
+            return
+
         if self._polydata is None:
             self._make_polydata()
 
@@ -202,8 +224,10 @@ class Reader( object ):
         self.filename = kwargs.get('filename')
         self._points = None
         self._triangles = None
+        self._vertexNormals = None
         self._nPoints = None
         self._nFaces = None
+        self._nVertexNormals = None
         self._dimensions = None
         self.polydata = None
         
@@ -247,8 +271,7 @@ class Reader( object ):
         if self.polydata.GetPoints()==None:
             raise IOError('file not loaded {}'.format(self.filename))
         else:
-            self._loadPoints()
-            self._loadTriangles()
+            self._load()
 
     def readOBJ(self, filename=None):
         if filename is not None:
@@ -262,8 +285,7 @@ class Reader( object ):
         if self.polydata.GetPoints()==None:
             raise IOError('file not loaded {}'.format(self.filename))
         else:
-            self._loadPoints()
-            self._loadTriangles()
+            self._load()
 
     def readPLY(self, filename=None):
         if filename is not None:
@@ -277,8 +299,7 @@ class Reader( object ):
         if self.polydata.GetPoints()==None:
             raise IOError('file not loaded {}'.format(self.filename))
         else:
-            self._loadPoints()
-            self._loadTriangles()
+            self._load()
     
     def readSTL(self, filename=None):
         if filename is not None:
@@ -292,8 +313,7 @@ class Reader( object ):
         if self.polydata.GetPoints()==None:
             raise IOError('file not loaded {}'.format(self.filename))
         else:
-            self._loadPoints()
-            self._loadTriangles()
+            self._load()
 
     def readVTP(self, filename=None):
         if filename is not None:
@@ -310,8 +330,7 @@ class Reader( object ):
         if self.polydata.GetPoints()==None:
             raise IOError('file not loaded {}'.format(self.filename))
         else:
-            self._loadPoints()
-            self._loadTriangles()
+            self._load()
 
     def _isXML(self, f):
         """Check if file is an xml file
@@ -324,27 +343,35 @@ class Reader( object ):
         else:
             return False 
 
+    def _load(self):
+        self._loadPoints()
+        self._loadTriangles()
+        self._loadVertexNormals()
+
     def _loadPoints( self ):
         P = self.polydata.GetPoints().GetData()
         self._dimensions = P.GetNumberOfComponents()
         self._nPoints = P.GetNumberOfTuples()
-        
+
         print('loading %(np)i points in %(d)i dimensions'%{'np':self._nPoints, 'd':self._dimensions})
+
+        self._points = numpy_support.vtk_to_numpy(P)
         
-        if self._dimensions==1:
-            self._points = array([P.GetTuple1(i) for i in range(self._nPoints)])
-        elif self._dimensions==2:
-            self._points = array([P.GetTuple2(i) for i in range(self._nPoints)])
-        elif self._dimensions==3:
-            self._points = array([P.GetTuple3(i) for i in range(self._nPoints)])
-        elif self._dimensions==4:
-            self._points = array([P.GetTuple4(i) for i in range(self._nPoints)])
-        elif self._dimensions==9:
-            self._points = array([P.GetTuple9(i) for i in range(self._nPoints)])
+        # if self._dimensions==1:
+        #     self._points = array([P.GetTuple1(i) for i in range(self._nPoints)])
+        # elif self._dimensions==2:
+        #     self._points = array([P.GetTuple2(i) for i in range(self._nPoints)])
+        # elif self._dimensions==3:
+        #     self._points = array([P.GetTuple3(i) for i in range(self._nPoints)])
+        # elif self._dimensions==4:
+        #     self._points = array([P.GetTuple4(i) for i in range(self._nPoints)])
+        # elif self._dimensions==9:
+        #     self._points = array([P.GetTuple9(i) for i in range(self._nPoints)])
         
     def _loadTriangles( self ):
         polyData = self.polydata.GetPolys().GetData()
-        X = [int(polyData.GetTuple1(i)) for i in range(polyData.GetNumberOfTuples())]
+        # X = [int(polyData.GetTuple1(i)) for i in range(polyData.GetNumberOfTuples())]
+        X = numpy_support.vtk_to_numpy(polyData)
         
         # assumes that faces are triangular
         X = array(X).reshape((-1,4))
@@ -353,13 +380,29 @@ class Reader( object ):
         
         print('loaded %(f)i faces'%{'f':self._nFaces})
 
+    def _loadVertexNormals(self):
+        ptsNormals = self.polydata.GetPointData().GetNormals()
+        if ptsNormals is not None:
+            self._vertexNormals = numpy_support.vtk_to_numpy(ptsNormals)
+            self._nVertexNormals = self._vertexNormals.shape[0]
+        else:
+            self._nVertexNormals = 0
+            self._vertexNormals = None
+
+        print('loaded %(f)i vertex normals'%{'f':self._nVertexNormals})
+
     def getSimplemesh( self ):
         S = simplemesh.SimpleMesh(self._points, self._triangles)
         # S.calcFaceProperties()
+
+        if self._vertexNormals is not None:
+            S.vertexNormals = array(self._vertexNormals)
+            S.hasVertexNormals = True
+
         return S
 
 def savepoly(sm, filename, ascenc=True):
-    w = Writer(v=sm.v, f=sm.f)
+    w = Writer(v=sm.v, f=sm.f, vn=sm.vertexNormals)
     w.write(filename, ascenc=ascenc)
 
 def loadpoly(filename):
@@ -733,9 +776,9 @@ def polyData2Tri(p, pipeline=False):
 
     return V, T, N
 
-def polygons2Polydata(vertices, faces, vcolours=None, fcolours=None, normals=None):
+def polygons2Polydata(vertices, faces, vcolours=None, fcolours=None, vnormals=None):
     """
-    Uses create a vtkPolyData instance from a set of vertices and
+    Create a vtkPolyData instance from a set of vertices and
     faces.
 
     Inputs:
@@ -744,15 +787,16 @@ def polygons2Polydata(vertices, faces, vcolours=None, fcolours=None, normals=Non
     vcolour : list of 3-tuple, vertex colours. Assigned to a vtkPointData
         array named "colours".
     fcolour : list of 3-tuple, face colours [Not implemented]
-    normals: vertex normals [Not Implemented]
+    normals: vertex normals
 
     Returns:
     P: vtkPolyData instance
     """
     # define points
     points = vtk.vtkPoints()
-    for x, y, z in vertices:
-        points.InsertNextPoint(x, y, z)
+    points.SetData(numpy_support.numpy_to_vtk(vertices))
+    # for x, y, z in vertices:
+    #     points.InsertNextPoint(x, y, z)
 
     # create polygons
     polygons = vtk.vtkCellArray()
@@ -780,7 +824,17 @@ def polygons2Polydata(vertices, faces, vcolours=None, fcolours=None, normals=Non
                 colors.InsertNextTuple3(*c)
 
         P.GetPointData().SetScalars(colors)
+        P.Modified()
 
+    # assign normals to points
+    if vnormals is not None:
+        if vnormals.shape!=vertices.shape:
+            raise ValueError('vnormals must have same shape as vertices')
+
+        vtk_vnormals = numpy_support.numpy_to_vtk(vnormals)
+        P.GetPointData().SetNormals(vtk_vnormals)
+        P.Modified()
+        print('normals set')
 
     return P
 
