@@ -1,6 +1,6 @@
 """
 FILE: vtktool.py
-LAST MODIFIED: 24-12-2015 
+LAST MODIFIED: 05-08-2018
 DESCRIPTION: Classes and functions for working with vtkpolydata
 
 ===============================================================================
