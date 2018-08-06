@@ -1,5 +1,8 @@
 # GIAS2 Change log
 
+## 0.4.28
+- fallback ply writer for including vertex normals
+
 ## 0.4.27
 - bug fixes with scan zoom method
 
