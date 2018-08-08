@@ -17,6 +17,7 @@ import vtk
 import scipy
 from scipy.linalg import svd, eigh
 import sys
+from gias2.common import transform3D
 from gias2.registration import alignment_analytic as alignment
 from gias2.mesh import inp
 
@@ -471,8 +472,14 @@ class SimpleMesh( object ):
         """ transform mesh vertices by an affine
         transformation matrix T (shape = (3,4))
         """
-        newV = scipy.dot( t, scipy.vstack( (self.v.T, scipy.ones(self.v.shape[0])) ) )[:3,:].T 
-        self.v = newV
+        # newV = scipy.dot( t, scipy.vstack( (self.v.T, scipy.ones(self.v.shape[0])) ) )[:3,:].T 
+        # self.v = newV
+
+        self.v = transform3D.transformAffine(self.v, t)
+        if self.vertexNormals is not None:
+            self.vertexNormals = scipy.dot(t[:3,:3], self.vertexNormals.T).T
+        if self.faceNormals is not None:
+            self.faceNormals = scipy.dot(t[:3,:3], self.faceNormals.T).T
 
     def getBoundaryVertices( self ):
         """ 
