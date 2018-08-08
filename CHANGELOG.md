@@ -1,5 +1,9 @@
 # GIAS2 Change log
 
+## 0.4.29
+- simplemesh affine also transforms normals
+- set methods for scan i2c and c2i matrices
+
 ## 0.4.28
 - fallback ply writer for including vertex normals
 
