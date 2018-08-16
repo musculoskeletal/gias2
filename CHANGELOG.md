@@ -1,5 +1,8 @@
 # GIAS2 Change log
 
+## 0.5.1
+- fixes for app in points-only mode
+
 ## 0.5.0
 - upgrade to depending on pydicom 1.1. May not work with pydicom <1.0.
 - added dicom_series module
