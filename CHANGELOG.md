@@ -1,5 +1,9 @@
 # GIAS2 Change log
 
+## 0.5.0
+- upgrade to depending on pydicom 1.1. May not work with pydicom <1.0.
+- added dicom_series module
+
 ## 0.4.29
 - simplemesh affine also transforms normals
 - set methods for scan i2c and c2i matrices
