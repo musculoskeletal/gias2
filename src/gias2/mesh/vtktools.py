@@ -13,7 +13,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 """
 
 from os import path
-from scipy import zeros, array, uint8, int16, uint16, ones, newaxis
+from scipy import zeros, array, uint8, int16, uint16, ones, newaxis, ascontiguousarray
 import pickle
 import vtk
 from vtk.util import numpy_support
@@ -794,7 +794,9 @@ def polygons2Polydata(vertices, faces, vcolours=None, fcolours=None, vnormals=No
     """
     # define points
     points = vtk.vtkPoints()
-    points.SetData(numpy_support.numpy_to_vtk(vertices))
+    points.SetData(numpy_support.numpy_to_vtk(
+        ascontiguousarray(array(vertices))
+        ))
     # for x, y, z in vertices:
     #     points.InsertNextPoint(x, y, z)
 
@@ -831,7 +833,9 @@ def polygons2Polydata(vertices, faces, vcolours=None, fcolours=None, vnormals=No
         if vnormals.shape!=vertices.shape:
             raise ValueError('vnormals must have same shape as vertices')
 
-        vtk_vnormals = numpy_support.numpy_to_vtk(vnormals)
+        vtk_vnormals = numpy_support.numpy_to_vtk(
+            ascontiguousarray(array(vnormals))
+            )
         P.GetPointData().SetNormals(vtk_vnormals)
         P.Modified()
         print('normals set')
