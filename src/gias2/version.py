@@ -8,5 +8,5 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
 
-__version__='0.5.1'
-__version_info__ = (0, 5, 1)
+__version__='0.5.2'
+__version_info__ = (0, 5, 2)

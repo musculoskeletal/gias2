@@ -1,5 +1,8 @@
 # GIAS2 Change log
 
+## 0.5.2
+- for arrays for be contiguous when passed to VTK
+
 ## 0.5.1
 - fixes for app in points-only mode
 
