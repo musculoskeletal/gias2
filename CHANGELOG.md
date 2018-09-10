@@ -1,5 +1,8 @@
 # GIAS2 Change log
 
+## 0.5.3
+- optionally use least_squares for point-cloud shapemodel fitting
+
 ## 0.5.2
 - for arrays for be contiguous when passed to VTK
 
