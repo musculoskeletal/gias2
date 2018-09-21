@@ -14,7 +14,17 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import math
 import numpy as np
-from csg.core import CSG
+
+try:
+    from _cython_csg import CSG
+    HAS_CYTHON_CSG = True
+except ImportError:
+    try:
+        from csg.core import CSG
+    except ImportError:
+        raise ImportError('Unable to import csg or cython-csg')
+    HAS_CYTHON_CSG = False
+
 from csg import geom
 from gias2.mesh import vtktools, simplemesh
 from gias2.common import math as gmath
