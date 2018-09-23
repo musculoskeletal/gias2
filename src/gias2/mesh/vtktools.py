@@ -222,6 +222,7 @@ class Reader( object ):
     
     def __init__(self, **kwargs):
         self.filename = kwargs.get('filename')
+        self.verbose = kwargs.get('verbose', True)
         self._points = None
         self._triangles = None
         self._vertexNormals = None
@@ -353,7 +354,8 @@ class Reader( object ):
         self._dimensions = P.GetNumberOfComponents()
         self._nPoints = P.GetNumberOfTuples()
 
-        print('loading %(np)i points in %(d)i dimensions'%{'np':self._nPoints, 'd':self._dimensions})
+        if self.verbose:
+            print('loading %(np)i points in %(d)i dimensions'%{'np':self._nPoints, 'd':self._dimensions})
 
         self._points = numpy_support.vtk_to_numpy(P)
         
@@ -378,7 +380,8 @@ class Reader( object ):
         self._nFaces = X.shape[0]
         self._triangles = X[:,1:].copy()
         
-        print('loaded %(f)i faces'%{'f':self._nFaces})
+        if self.verbose:
+            print('loaded %(f)i faces'%{'f':self._nFaces})
 
     def _loadVertexNormals(self):
         ptsNormals = self.polydata.GetPointData().GetNormals()
@@ -389,7 +392,8 @@ class Reader( object ):
             self._nVertexNormals = 0
             self._vertexNormals = None
 
-        print('loaded %(f)i vertex normals'%{'f':self._nVertexNormals})
+        if self.verbose:
+            print('loaded %(f)i vertex normals'%{'f':self._nVertexNormals})
 
     def getSimplemesh( self ):
         S = simplemesh.SimpleMesh(self._points, self._triangles)
@@ -405,8 +409,8 @@ def savepoly(sm, filename, ascenc=True):
     w = Writer(v=sm.v, f=sm.f, vn=sm.vertexNormals)
     w.write(filename, ascenc=ascenc)
 
-def loadpoly(filename):
-    r = Reader()
+def loadpoly(filename, verbose=False):
+    r = Reader(verbose=verbose)
     r.read(filename)
     return r.getSimplemesh()
 
