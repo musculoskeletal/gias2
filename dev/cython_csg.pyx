@@ -4,11 +4,17 @@ import math
 import operator
 from functools import reduce
 
+from cpython cimport array
+import array
+
 cimport cython
 cimport numpy as np
 
 # increase the max number of recursive calls
 # sys.setrecursionlimit(10000)  # my default is 1000, increasing too much may cause a seg fault
+
+cdef array.array int_array_template = array.array('i', [])
+
 
 @cython.nonecheck(False)
 cdef class Vector(object):
@@ -27,9 +33,7 @@ cdef class Vector(object):
     cdef public double y
     cdef public double z
 
-    __slots__ = ('x',
-                 'y',
-                 'z')
+    cdef tuple __slots__ = ('x','y','z')
 
     def __init__(self, double x, double y, double z):
         self.x = x
@@ -52,89 +56,89 @@ cdef class Vector(object):
         #         self.y = a[1]
         #         self.z = a[2]
 
-    def __repr__(self):
+    cpdef str __repr__(self):
         return '({0}, {1}, {2})'.format(self.x, self.y, self.z)
 
-    def clone(self):
+    cpdef Vector clone(self):
         """ Clone. """
         return Vector(self.x, self.y, self.z)
 
-    def negated(self):
+    cpdef Vector negated(self):
         """ Negated. """
         return Vector(-self.x, -self.y, -self.z)
 
-    def __neg__(self):
+    cpdef Vector __neg__(self):
         return self.negated()
 
-    def plus(self, Vector a):
+    cpdef Vector plus(self, Vector a):
         """ Add. """
         return Vector(self.x + a.x, self.y + a.y, self.z + a.z)
 
-    def __add__(self, Vector a):
+    cpdef Vector __add__(self, Vector a):
         return self.plus(a)
 
-    def minus(self, Vector a):
+    cpdef Vector minus(self, Vector a):
         """ Subtract. """
         return Vector(self.x - a.x, self.y - a.y, self.z - a.z)
 
-    def __sub__(self, Vector a):
+    cpdef Vector __sub__(self, Vector a):
         return self.minus(a)
 
-    def times(self, double a):
+    cpdef Vector times(self, double a):
         """ Multiply. """
         return Vector(self.x * a, self.y * a, self.z * a)
 
-    def __mul__(self, double a):
+    cpdef Vector __mul__(self, double a):
         return self.times(a)
 
-    def dividedBy(self, double a):
+    cpdef Vector dividedBy(self, double a):
         """ Divide. """
         return Vector(self.x / a, self.y / a, self.z / a)
 
-    def __truediv__(self, double a):
+    cpdef Vector __truediv__(self, double a):
         return self.dividedBy(float(a))
 
-    def __div__(self, double a):
+    cpdef Vector __div__(self, double a):
         return self.dividedBy(a)
 
-    def dot(self, Vector a):
+    cpdef double dot(self, Vector a):
         """ Dot. """
         return self.x * a.x + self.y * a.y + self.z * a.z
 
-    def lerp(self, Vector a, double t):
+    cpdef Vector lerp(self, Vector a, double t):
         """ Lerp. Linear interpolation from self to a"""
         return self.plus(a.minus(self).times(t));
 
-    def length(self):
+    cpdef double length(self):
         """ Length. """
         return np.sqrt(self.dot(self))
 
-    def unit(self):
+    cpdef Vector unit(self):
         """ Normalize. """
         return self.dividedBy(self.length())
 
-    def cross(self, Vector a):
+    cpdef Vector cross(self, Vector a):
         """ Cross. """
         return Vector(
             self.y * a.z - self.z * a.y,
             self.z * a.x - self.x * a.z,
             self.x * a.y - self.y * a.x)
 
-    def __getitem__(self, int key):
+    cpdef double __getitem__(self, int key):
         return (self.x, self.y, self.z)[key]
 
-    def __setitem__(self, int key, double value):
+    cpdef None __setitem__(self, int key, double value):
         l = [self.x, self.y, self.z]
         l[key] = value
         self.x, self.y, self.z = l
 
-    def __len__(self):
+    cpdef int __len__(self):
         return 3
 
     def __iter__(self):
         return iter((self.x, self.y, self.z))
 
-    def __repr__(self):
+    cpdef str __repr__(self):
         return 'Vector(%.2f, %.2f, %0.2f)' % (self.x, self.y, self.z)
 
 
@@ -158,17 +162,17 @@ cdef class Vertex(object):
         self.pos = pos
         self.normal = normal
 
-    def clone(self):
+    cpdef Vertex clone(self):
         return Vertex(self.pos.clone(), self.normal.clone())
 
-    def flip(self):
+    cpdef None flip(self):
         """
         Invert all orientation-specific data (e.g. vertex normal). Called when the
         orientation of a polygon is flipped.
         """
         self.normal = self.normal.negated()
 
-    def interpolate(self, Vertex other, double t):
+    cpdef Vertex interpolate(self, Vertex other, double t):
         """
         Create a new vertex between this vertex and `other` by linearly
         interpolating all properties using a parameter of `t`. Subclasses should
@@ -177,7 +181,7 @@ cdef class Vertex(object):
         return Vertex(self.pos.lerp(other.pos, t),
                       self.normal.lerp(other.normal, t))
 
-    def __repr__(self):
+    cpdef str __repr__(self):
         return repr(self.pos)
 
 
@@ -192,8 +196,7 @@ cdef class Plane(object):
     `Plane.EPSILON` is the tolerance used by `splitPolygon()` to decide if a
     point is on the plane.
     """
-    __slots__ = ('normal',
-                 'w')
+    cdef tuple __slots__ = ('normal', 'w')
 
 
     cdef public double EPSILON = 1.e-5
@@ -206,21 +209,22 @@ cdef class Plane(object):
         self.w = w
 
     @classmethod
-    def fromPoints(Plane cls, Vector a, Vector b, Vector c):
+    cpdef Plane fromPoints(Plane cls, Vector a, Vector b, Vector c):
         n = b.minus(a).cross(c.minus(a)).unit()
         return Plane(n, n.dot(a))
 
-    def clone(self):
+    cpdef Plane clone(self):
         return Plane(self.normal.clone(), self.w)
 
-    def flip(self):
+    cpdef None flip(self):
         self.normal = self.normal.negated()
         self.w = -self.w
 
-    def __repr__(self):
+    cpdef str __repr__(self):
         return 'normal: {0} w: {1}'.format(self.normal, self.w)
 
-    def splitPolygon(self, Polygon polygon, coplanarFront, coplanarBack, front, back):
+    cpdef None splitPolygon(self, Polygon polygon, list coplanarFront,
+        list coplanarBack, list front, list back):
         """
         Split `polygon` by this plane if needed, then put the polygon or polygon
         fragments in the appropriate lists. Coplanar polygons go into either
@@ -242,9 +246,9 @@ cdef class Plane(object):
         # Classify each point as well as the entire polygon into one of the above
         # four classes.
         cdef int polygonType = 0
-        vertexLocs = []  # list of ints
-        f = []  # list of vertices
-        b = []  # list of vertices
+        cdef list vertexLocs = []  # list of ints
+        cdef list f = []  # list of vertices
+        cdef list b = []  # list of vertices
         
         for i in range(numVertices):
             t = self.normal.dot(polygon.vertices[i].pos) - self.w
@@ -312,33 +316,36 @@ cdef class Polygon(object):
     This can be used to define per-polygon properties (such as surface color).
     """
 
+    cdef public list vertices
     cdef public bool shared
 
-    __slots__ = ('vertices',
-                 'shared',
-                 'plane')
+    cdef tuple __slots__ = (
+        'vertices',
+        'shared',
+        'plane'
+        )
 
-    def __init__(self, int n_verts, vertices, bool shared):
+    def __init__(self, list vertices, bool shared):
         self.vertices = vertices
         self.shared = shared
         self.plane = Plane.fromPoints(vertices[0].pos, vertices[1].pos, vertices[2].pos)
 
-    def clone(self):
+    cpdef Polygon clone(self):
         vertices = list(map(lambda v: v.clone(), self.vertices))
         return Polygon(vertices, self.shared)
 
-    def flip(self):
+    cpdef None flip(self):
         self.vertices.reverse()
         map(lambda v: v.flip(), self.vertices)
         self.plane.flip()
 
-    def __repr__(self):
+    cpdef str __repr__(self):
         return reduce(lambda x, y: x + y,
                       ['Polygon(['] + [repr(v) + ', ' \
                                        for v in self.vertices] + ['])'], '')
 
 
-class BSPNode(object):
+cdef class BSPNode(object):
     """
     class BSPNode
 
@@ -354,7 +361,12 @@ class BSPNode(object):
                  'back',
                  'polygons')
 
-    def __init__(self, polygons=None):
+    cdef public Plane plane
+    cdef public BSPNode front
+    cdef public BSPNode back
+    cdef list polygons
+
+    def __init__(self, list polygons=None):
         self.plane = None  # Plane instance
         self.front = None  # BSPNode
         self.back = None  # BSPNode
@@ -362,8 +374,8 @@ class BSPNode(object):
         if polygons:
             self.build(polygons)
 
-    def clone(self):
-        node = BSPNode()
+    cpdef BSPNode clone(self):
+        cdef BSPNode node = BSPNode()
         if self.plane:
             node.plane = self.plane.clone()
         if self.front:
@@ -373,14 +385,17 @@ class BSPNode(object):
         node.polygons = list(map(lambda p: p.clone(), self.polygons))
         return node
 
-    def invert(self):
+    cpdef None invert(self):
         """
         Convert solid space to empty space and empty space to solid space.
         """
         # Polygon([Vector(-14.00, 0.00, 37.00), Vector(-14.00, 796.87, 37.00), Vector(-16.00, 0.00, 37.00), ])
+        cdef Polygon poly
+        cdef BSPNode temp
+
         for poly in self.polygons:
             poly.flip()
-            x = 100
+            # x = 100
         self.plane.flip()
         if self.front:
             self.front.invert()
@@ -390,16 +405,18 @@ class BSPNode(object):
         self.front = self.back
         self.back = temp
 
-    def clipPolygons(self, polygons):
+    cpdef list clipPolygons(self, list polygons):
         """
         Recursively remove all polygons in `polygons` that are inside this BSP
         tree.
         """
+        cdef list front = []
+        cdef list back = []
+        cdef Polygon poly
+
         if not self.plane:
             return polygons[:]
 
-        front = []
-        back = []
         for poly in polygons:
             self.plane.splitPolygon(poly, front, back, front, back)
 
@@ -414,7 +431,7 @@ class BSPNode(object):
         front.extend(back)
         return front
 
-    def clipTo(self, bsp):
+    cpdef None clipTo(self, BSPNode bsp):
         """
         Remove all polygons in this BSP tree that are inside the other BSP tree
         `bsp`.
@@ -425,18 +442,18 @@ class BSPNode(object):
         if self.back:
             self.back.clipTo(bsp)
 
-    def allPolygons(self):
+    cpdef list allPolygons(self):
         """
         Return a list of all polygons in this BSP tree.
         """
-        polygons = self.polygons[:]
+        cdef list polygons = self.polygons[:]
         if self.front:
             polygons.extend(self.front.allPolygons())
         if self.back:
             polygons.extend(self.back.allPolygons())
         return polygons
 
-    def build(self, polygons):
+    cpdef build(self, list polygons):
         """
         Build a BSP tree out of `polygons`. When called on an existing tree, the
         new polygons are filtered down to the bottom of the tree and become new
@@ -469,7 +486,7 @@ class BSPNode(object):
 
 
 
-class CSG(object):
+cdef class CSG(object):
     """
     Constructive Solid Geometry (CSG) is a modeling technique that uses Boolean
     operations like union and intersection to combine 3D solids. This library
@@ -522,8 +539,8 @@ class CSG(object):
     Additions by Alex Pletzer (Pennsylvania State University)
     """
 
-    __slots__ = ('polygons',
-                 )
+    cdef tuple __slots__ = ('polygons')
+    cdef list polygons
 
     def __init__(self):
         self.polygons = []
