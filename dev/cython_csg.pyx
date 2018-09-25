@@ -4,16 +4,16 @@ import math
 import operator
 from functools import reduce
 
-from cpython cimport array
-import array
+# from cpython cimport array
+# import array
 
 cimport cython
-cimport numpy as np
+# cimport numpy as np
 
 # increase the max number of recursive calls
 # sys.setrecursionlimit(10000)  # my default is 1000, increasing too much may cause a seg fault
 
-cdef array.array int_array_template = array.array('i', [])
+# cdef array.array int_array_template = array.array('i', [])
 
 
 @cython.nonecheck(False)
@@ -33,7 +33,7 @@ cdef class Vector(object):
     cdef public double y
     cdef public double z
 
-    cdef tuple __slots__ = ('x','y','z')
+    # cdef tuple __slots__ = ('x','y','z')
 
     def __init__(self, double x, double y, double z):
         self.x = x
@@ -56,7 +56,7 @@ cdef class Vector(object):
         #         self.y = a[1]
         #         self.z = a[2]
 
-    cpdef str __repr__(self):
+    def __repr__(self):
         return '({0}, {1}, {2})'.format(self.x, self.y, self.z)
 
     cpdef Vector clone(self):
@@ -67,38 +67,38 @@ cdef class Vector(object):
         """ Negated. """
         return Vector(-self.x, -self.y, -self.z)
 
-    cpdef Vector __neg__(self):
+    def __neg__(self):
         return self.negated()
 
     cpdef Vector plus(self, Vector a):
         """ Add. """
         return Vector(self.x + a.x, self.y + a.y, self.z + a.z)
 
-    cpdef Vector __add__(self, Vector a):
+    def __add__(self, Vector a):
         return self.plus(a)
 
     cpdef Vector minus(self, Vector a):
         """ Subtract. """
         return Vector(self.x - a.x, self.y - a.y, self.z - a.z)
 
-    cpdef Vector __sub__(self, Vector a):
+    def __sub__(self, Vector a):
         return self.minus(a)
 
     cpdef Vector times(self, double a):
         """ Multiply. """
         return Vector(self.x * a, self.y * a, self.z * a)
 
-    cpdef Vector __mul__(self, double a):
+    def __mul__(self, double a):
         return self.times(a)
 
     cpdef Vector dividedBy(self, double a):
         """ Divide. """
         return Vector(self.x / a, self.y / a, self.z / a)
 
-    cpdef Vector __truediv__(self, double a):
+    def __truediv__(self, double a):
         return self.dividedBy(float(a))
 
-    cpdef Vector __div__(self, double a):
+    def __div__(self, double a):
         return self.dividedBy(a)
 
     cpdef double dot(self, Vector a):
@@ -111,7 +111,7 @@ cdef class Vector(object):
 
     cpdef double length(self):
         """ Length. """
-        return np.sqrt(self.dot(self))
+        return math.sqrt(self.dot(self))
 
     cpdef Vector unit(self):
         """ Normalize. """
@@ -124,21 +124,21 @@ cdef class Vector(object):
             self.z * a.x - self.x * a.z,
             self.x * a.y - self.y * a.x)
 
-    cpdef double __getitem__(self, int key):
+    def __getitem__(self, int key):
         return (self.x, self.y, self.z)[key]
 
-    cpdef None __setitem__(self, int key, double value):
+    def __setitem__(self, int key, double value):
         l = [self.x, self.y, self.z]
         l[key] = value
         self.x, self.y, self.z = l
 
-    cpdef int __len__(self):
+    def __len__(self):
         return 3
 
     def __iter__(self):
         return iter((self.x, self.y, self.z))
 
-    cpdef str __repr__(self):
+    def __repr__(self):
         return 'Vector(%.2f, %.2f, %0.2f)' % (self.x, self.y, self.z)
 
 
@@ -165,7 +165,7 @@ cdef class Vertex(object):
     cpdef Vertex clone(self):
         return Vertex(self.pos.clone(), self.normal.clone())
 
-    cpdef None flip(self):
+    cpdef void flip(self):
         """
         Invert all orientation-specific data (e.g. vertex normal). Called when the
         orientation of a polygon is flipped.
@@ -181,9 +181,12 @@ cdef class Vertex(object):
         return Vertex(self.pos.lerp(other.pos, t),
                       self.normal.lerp(other.normal, t))
 
-    cpdef str __repr__(self):
+    def __repr__(self):
         return repr(self.pos)
 
+cpdef Plane planeFromPoints(Vector a, Vector b, Vector c):
+    n = b.minus(a).cross(c.minus(a)).unit()
+    return Plane(n, n.dot(a))
 
 cdef class Plane(object):
     """
@@ -196,10 +199,10 @@ cdef class Plane(object):
     `Plane.EPSILON` is the tolerance used by `splitPolygon()` to decide if a
     point is on the plane.
     """
-    cdef tuple __slots__ = ('normal', 'w')
+    # cdef tuple __slots__ = ('normal', 'w')
 
 
-    cdef public double EPSILON = 1.e-5
+    cdef public double EPSILON
     cdef public Vector normal
     cdef public Vector w
 
@@ -207,23 +210,19 @@ cdef class Plane(object):
         self.normal = normal
         # w is the (perpendicular) distance of the plane from (0, 0, 0)
         self.w = w
-
-    @classmethod
-    cpdef Plane fromPoints(Plane cls, Vector a, Vector b, Vector c):
-        n = b.minus(a).cross(c.minus(a)).unit()
-        return Plane(n, n.dot(a))
+        self.EPSILON = 1e-5
 
     cpdef Plane clone(self):
         return Plane(self.normal.clone(), self.w)
 
-    cpdef None flip(self):
+    cpdef void flip(self):
         self.normal = self.normal.negated()
         self.w = -self.w
 
-    cpdef str __repr__(self):
+    def __repr__(self):
         return 'normal: {0} w: {1}'.format(self.normal, self.w)
 
-    cpdef None splitPolygon(self, Polygon polygon, list coplanarFront,
+    cpdef void splitPolygon(self, Polygon polygon, list coplanarFront,
         list coplanarBack, list front, list back):
         """
         Split `polygon` by this plane if needed, then put the polygon or polygon
@@ -317,29 +316,46 @@ cdef class Polygon(object):
     """
 
     cdef public list vertices
-    cdef public bool shared
+    cdef public bint shared
 
-    cdef tuple __slots__ = (
-        'vertices',
-        'shared',
-        'plane'
-        )
+    # cdef tuple __slots__ = (
+    #     'vertices',
+    #     'shared',
+    #     'plane'
+    #     )
 
-    def __init__(self, list vertices, bool shared):
+    def __init__(self, list vertices, bint shared):
         self.vertices = vertices
         self.shared = shared
         self.plane = Plane.fromPoints(vertices[0].pos, vertices[1].pos, vertices[2].pos)
 
     cpdef Polygon clone(self):
-        vertices = list(map(lambda v: v.clone(), self.vertices))
+        # vertices = list(map(lambda v: v.clone(), self.vertices))
+        cdef list vertices
+        cdef Py_ssize_t vi
+        cdef int nverts
+
+        vertices = []
+        nverts = len(self.vertices)
+        for vi in range(nverts):
+            vertices.append(self.vertices[vi].close())
+
         return Polygon(vertices, self.shared)
 
-    cpdef None flip(self):
+    cpdef void flip(self):
+        cdef list vertices
+        cdef Py_ssize_t vi
+        cdef int nverts = len(self.vertices)
+
         self.vertices.reverse()
-        map(lambda v: v.flip(), self.vertices)
+        
+        # map(lambda v: v.flip(), self.vertices)
+        for vi in range(nverts):
+            self.vertices[vi].flip()
+
         self.plane.flip()
 
-    cpdef str __repr__(self):
+    def __repr__(self):
         return reduce(lambda x, y: x + y,
                       ['Polygon(['] + [repr(v) + ', ' \
                                        for v in self.vertices] + ['])'], '')
@@ -356,10 +372,10 @@ cdef class BSPNode(object):
     no distinction between internal and leaf nodes.
     """
 
-    __slots__ = ('plane',
-                 'front',
-                 'back',
-                 'polygons')
+    # __slots__ = ('plane',
+    #              'front',
+    #              'back',
+    #              'polygons')
 
     cdef public Plane plane
     cdef public BSPNode front
@@ -375,26 +391,39 @@ cdef class BSPNode(object):
             self.build(polygons)
 
     cpdef BSPNode clone(self):
+        cdef int npolys
+        cdef Py_ssize_t pi
         cdef BSPNode node = BSPNode()
+        
         if self.plane:
             node.plane = self.plane.clone()
         if self.front:
             node.front = self.front.clone()
         if self.back:
             node.back = self.back.clone()
-        node.polygons = list(map(lambda p: p.clone(), self.polygons))
+
+        # node.polygons = list(map(lambda p: p.clone(), self.polygons))
+        node.polygons = []
+        npolys = len(self.polygons)
+        for pi in range(npolys):
+            node.polygons.append(self.polygons[pi].clone())
+
         return node
 
-    cpdef None invert(self):
+    cpdef void invert(self):
         """
         Convert solid space to empty space and empty space to solid space.
         """
         # Polygon([Vector(-14.00, 0.00, 37.00), Vector(-14.00, 796.87, 37.00), Vector(-16.00, 0.00, 37.00), ])
         cdef Polygon poly
         cdef BSPNode temp
+        cdef int npolys = len(self.polygons)
+        cdef Py_ssize_t pi
 
-        for poly in self.polygons:
-            poly.flip()
+        for pi in range(npolys):
+            self.polygons[pi].flip()
+        # for poly in self.polygons:
+        #     poly.flip()
             # x = 100
         self.plane.flip()
         if self.front:
@@ -413,12 +442,16 @@ cdef class BSPNode(object):
         cdef list front = []
         cdef list back = []
         cdef Polygon poly
+        cdef int npolys = len(self.polygons)
+        cdef Py_ssize_t pi
 
         if not self.plane:
             return polygons[:]
 
-        for poly in polygons:
-            self.plane.splitPolygon(poly, front, back, front, back)
+        for pi in range(npolys):
+            self.plane.splitPolygon(self.polygons[pi], front, back, front, back)
+        # for poly in polygons:
+        #     self.plane.splitPolygon(poly, front, back, front, back)
 
         if self.front:
             front = self.front.clipPolygons(front)
@@ -431,7 +464,7 @@ cdef class BSPNode(object):
         front.extend(back)
         return front
 
-    cpdef None clipTo(self, BSPNode bsp):
+    cpdef void clipTo(self, BSPNode bsp):
         """
         Remove all polygons in this BSP tree that are inside the other BSP tree
         `bsp`.
@@ -460,6 +493,10 @@ cdef class BSPNode(object):
         nodes there. Each set of polygons is partitioned using the first polygon
         (no heuristic is used to pick a good split).
         """
+        cdef list front, back
+        cdef int npolys = len(self.polygons)
+        cdef Py_ssize_t pi
+
         if len(polygons) == 0:
             return
         if not self.plane:
@@ -469,10 +506,16 @@ cdef class BSPNode(object):
         front = []
         back = []
         # split all other polygons using the first polygon's plane
-        for poly in polygons[1:]:
+        for pi in range(1, npolys):
             # coplanar front and back polygons go into self.polygons
-            self.plane.splitPolygon(poly, self.polygons, self.polygons,
-                                    front, back)
+            self.plane.splitPolygon(
+                self.polygons[pi], self.polygons, self.polygons,
+                front, back
+                )
+        # for poly in polygons[1:]:
+        #     # coplanar front and back polygons go into self.polygons
+        #     self.plane.splitPolygon(poly, self.polygons, self.polygons,
+        #                             front, back)
         # recursively build the BSP tree
         if len(front) > 0:
             if not self.front:
@@ -484,7 +527,28 @@ cdef class BSPNode(object):
             self.back.build(back)
 
 
+cpdef CSG csgFromPolygons(list polygons):
+    cdef CSG csg
 
+    csg = CSG()
+    csg.polygons = polygons
+    return csg
+
+cdef Vector rotateVector(Vector v, Vector ax, double cosAngle, double sinAngle):
+    cdef double vA, vPerpLen, vCosA, vSinA
+    cdef Vector vPerp, u1, u2
+
+    vA = v.dot(ax)
+    vPerp = v.minus(ax.times(vA))
+    vPerpLen = vPerp.length()
+    if vPerpLen == 0:
+        # vector is parallel to axis, no need to rotate
+        return v
+    u1 = vPerp.unit()
+    u2 = u1.cross(ax)
+    vCosA = vPerpLen * cosAngle
+    vSinA = vPerpLen * sinAngle
+    return ax.times(vA).plus(u1.times(vCosA).plus(u2.times(vSinA)))
 
 cdef class CSG(object):
     """
@@ -539,34 +603,46 @@ cdef class CSG(object):
     Additions by Alex Pletzer (Pennsylvania State University)
     """
 
-    cdef tuple __slots__ = ('polygons')
+    # cdef tuple __slots__ = ('polygons')
     cdef list polygons
 
     def __init__(self):
         self.polygons = []
 
-    @classmethod
-    def fromPolygons(cls, polygons):
+    cpdef CSG clone(self):
+        cdef CSG csg
+        cdef int npolys
+        cdef Py_ssize_t pi
+
         csg = CSG()
-        csg.polygons = polygons
+        # csg.polygons = list(map(lambda p: p.clone(), self.polygons))
+        csg.polygons = []
+        npolys = len(csg.polygons)
+        for pi in range(npolys):
+            csg.polygons.append(self.polygons[pi].clone())
         return csg
 
-    def clone(self):
-        csg = CSG()
-        csg.polygons = list(map(lambda p: p.clone(), self.polygons))
-        return csg
-
-    def toPolygons(self):
+    cpdef list toPolygons(self):
         return self.polygons
 
-    def refine(self):
+    cpdef CSG refine(self):
         """
         Return a refined CSG. To each polygon, a middle point is added to each edge and to the center
         of the polygon
         """
-        newCSG = CSG()
-        for poly in self.polygons:
+        cdef CSG newCSG
+        cdef Polygon poly, newPoly
+        cdef list verts, newVerts, vs
+        cdef int numVerts
+        cdef int npolys = len(self.polygons)
+        cdef Py_ssize_t pi, i
+        cdef Vector midPos, midNormal
+        cdef Vertex midVert
 
+
+        newCSG = CSG()
+        for pi in range(npolys):
+            poly = self.polygon[pi]
             verts = poly.vertices
             numVerts = len(verts)
 
@@ -597,62 +673,81 @@ cdef class CSG(object):
 
         return newCSG
 
-    def translate(self, disp):
+    cpdef void translate(self, list disp):
         """
         Translate Geometry.
            disp: displacement (array of floats)
         """
+        cdef Vector d
+        cdef Vertex v
+        cdef int nverts
+        cdef int npolys = len(self.polygons)
+        cdef Py_ssize_t pi, vi
+
         d = Vector(disp[0], disp[1], disp[2])
-        for poly in self.polygons:
-            for v in poly.vertices:
+        for pi in range(npolys):
+            poly = self.polygon[pi]
+            nverts = len(poly.vertices)
+            for vi in range(nverts):
+                v = poly.vertices[vi]
                 v.pos = v.pos.plus(d)
                 # no change to the normals
 
-    def rotate(self, axis, angleDeg):
+    cpdef void rotate(self, list axis, double angleDeg):
         """
         Rotate geometry.
            axis: axis of rotation (array of floats)
            angleDeg: rotation angle in degrees
         """
+        cdef Vector ax
+        cdef Vertex vert
+        cdef Polygon poly
+        cdef double cosAngle, sinAngle
+        cdef int npolys = len(self.polygons)
+        cdef Py_ssize_t pi, vi
+
         ax = Vector(axis[0], axis[1], axis[2]).unit()
         cosAngle = math.cos(math.pi * angleDeg / 180.)
         sinAngle = math.sin(math.pi * angleDeg / 180.)
 
-        def newVector(v):
-            vA = v.dot(ax)
-            vPerp = v.minus(ax.times(vA))
-            vPerpLen = vPerp.length()
-            if vPerpLen == 0:
-                # vector is parallel to axis, no need to rotate
-                return v
-            u1 = vPerp.unit()
-            u2 = u1.cross(ax)
-            vCosA = vPerpLen * cosAngle
-            vSinA = vPerpLen * sinAngle
-            return ax.times(vA).plus(u1.times(vCosA).plus(u2.times(vSinA)))
+        for pi in range(npolys):
+            poly = self.polygon[pi]
+            nverts = len(poly.vertices)
+            for vi in range(nverts):
+                vert = poly.vertices[vi]
+                vert.pos = rotateVector(vert.pos, ax, cosAngle, sinAngle)
+                if vert.normal.length() > 0:
+                    vert.normal = rotateVector(vert.normal, ax, cosAngle, sinAngle)
 
-        for poly in self.polygons:
-            for vert in poly.vertices:
-                vert.pos = newVector(vert.pos)
-                normal = vert.normal
-                if normal.length() > 0:
-                    vert.normal = newVector(vert.normal)
-
-    def toVerticesAndPolygons(self):
+    cpdef int toVerticesAndPolygons(self, list verts, list polys):
         """
         Return list of vertices, polygons (cells), and the total
         number of vertex indices in the polygon connectivity list
         (count).
         """
-        offset = 1.234567890
+        
+        cdef dict vertexIndexMap
+        cdef double offset = 1.234567890
+        cdef int npolys = len(self.polygons)
+        cdef int count, index, nSortedVertexIndices, nWords
+        cdef Polygon poly
+        cdef Vertex v
+        cdef Vector p
+        cdef Py_ssize_t pi, vi, si, wi
+        cdef list cell, sortedVertexIndex, _p, words
+        cdef str vKey
+        
         verts = []
         polys = []
         vertexIndexMap = {}
         count = 0
-        for poly in self.polygons:
+        for pi in range(npolys):
+            poly = self.polygon[pi]
             verts = poly.vertices
             cell = []
-            for v in poly.vertices:
+            nverts = len(poly.vertices)
+            for vi in range(nverts):
+                v = poly.vertices[vi]
                 p = v.pos
                 # use string key to remove degeneracy associated
                 # very close points. The format %.10e ensures that
@@ -672,12 +767,19 @@ cdef class CSG(object):
         sortedVertexIndex = sorted(vertexIndexMap.items(),
                                    key=operator.itemgetter(1))
         verts = []
-        for v, i in sortedVertexIndex:
-            p = []
-            for c in v.split(','):
-                p.append(float(c) - offset)
+        nSortedVertexIndices = len(sortedVertexIndex)
+        for si in range(nSortedVertexIndices):
+            v = sortedVertexIndex[si][0]
+            i = sortedVertexIndex[si][1]
+            _p = []
+            words = v.split(',')
+            nWords = len(words)
+            for wi in range(nWords):
+                c = words[wi]
+                _p.append(float(c) - offset)
             verts.append(tuple(p))
-        return verts, polys, count
+        # return verts, polys, count
+        return count
 
     def saveVTK(self, filename):
         """
@@ -688,8 +790,10 @@ cdef class CSG(object):
             f.write('pycsg output\n')
             f.write('ASCII\n')
             f.write('DATASET POLYDATA\n')
+            verts = []
+            cells = []
 
-            verts, cells, count = self.toVerticesAndPolygons()
+            count = self.toVerticesAndPolygons(verts, cells)
 
             f.write('POINTS {0} float\n'.format(len(verts)))
             for v in verts:
@@ -702,7 +806,7 @@ cdef class CSG(object):
                     f.write('{0} '.format(index))
                 f.write('\n')
 
-    def union(self, csg):
+    cpdef CSG union(self, CSG csg):
         """
         Return a new CSG solid representing space in either this solid or in the
         solid `csg`. Neither this solid nor the solid `csg` are modified.::
@@ -718,6 +822,8 @@ cdef class CSG(object):
                  |       |            |       |
                  +-------+            +-------+
         """
+        cdef BSPNode a, b
+
         a = BSPNode(self.clone().polygons)
         b = BSPNode(csg.clone().polygons)
         a.clipTo(b)
@@ -726,12 +832,12 @@ cdef class CSG(object):
         b.clipTo(a)
         b.invert()
         a.build(b.allPolygons());
-        return CSG.fromPolygons(a.allPolygons())
+        return csgFromPolygons(a.allPolygons())
 
-    def __add__(self, csg):
+    def __add__(self, CSG csg):
         return self.union(csg)
 
-    def subtract(self, csg):
+    cpdef CSG subtract(self, CSG csg):
         """
         Return a new CSG solid representing space in this solid but not in the
         solid `csg`. Neither this solid nor the solid `csg` are modified.::
@@ -747,6 +853,8 @@ cdef class CSG(object):
                  |       |
                  +-------+
         """
+        cdef BSPNode a, b
+
         a = BSPNode(self.clone().polygons)
         b = BSPNode(csg.clone().polygons)
         a.invert()
@@ -757,14 +865,12 @@ cdef class CSG(object):
         b.invert()
         a.build(b.allPolygons())
         a.invert()
-        return CSG.fromPolygons(a.allPolygons())
+        return csgFromPolygons(a.allPolygons())
 
-
-
-    def __sub__(self, csg):
+    def __sub__(self, CSG csg):
         return self.subtract(csg)
 
-    def intersect(self, csg):
+    cpdef CSG intersect(self, CSG csg):
         """
         Return a new CSG solid representing space both this solid and in the
         solid `csg`. Neither this solid nor the solid `csg` are modified.::
@@ -780,6 +886,8 @@ cdef class CSG(object):
                  |       |
                  +-------+
         """
+        cdef BSPNode a, b
+
         a = BSPNode(self.clone().polygons)
         b = BSPNode(csg.clone().polygons)
         a.invert()
@@ -789,278 +897,289 @@ cdef class CSG(object):
         b.clipTo(a)
         a.build(b.allPolygons())
         a.invert()
-        return CSG.fromPolygons(a.allPolygons())
+        return csgFromPolygons(a.allPolygons())
 
-    def __mul__(self, csg):
+    def __mul__(self, CSG csg):
         return self.intersect(csg)
 
-    def inverse(self):
+    cpdef CSG inverse(self):
         """
         Return a new CSG solid with solid and empty space switched. This solid is
         not modified.
         """
+        cdef CSG csg
+        cdef int npolys
+        cdef Py_ssize_t pi
+
         csg = self.clone()
-        map(lambda p: p.flip(), csg.polygons)
+        # map(lambda p: p.flip(), csg.polygons)
+        npolys = len(csg.polygons)
+        for pi in range(npolys):
+            csg.polygons[pi].flip()
+
         return csg
 
-    @classmethod
-    def cube(cls, center=[0, 0, 0], radius=[1, 1, 1]):
-        """
-        Construct an axis-aligned solid cuboid. Optional parameters are `center` and
-        `radius`, which default to `[0, 0, 0]` and `[1, 1, 1]`. The radius can be
-        specified using a single number or a list of three numbers, one for each axis.
 
-        Example code::
+def cube(center=[0, 0, 0], radius=[1, 1, 1]):
+    """
+    Construct an axis-aligned solid cuboid. Optional parameters are `center` and
+    `radius`, which default to `[0, 0, 0]` and `[1, 1, 1]`. The radius can be
+    specified using a single number or a list of three numbers, one for each axis.
 
-            cube = CSG.cube(
-              center=[0, 0, 0],
-              radius=1
-            )
-        """
-        c = Vector(0, 0, 0)
-        r = [1, 1, 1]
-        if isinstance(center, list): c = Vector(center)
-        if isinstance(radius, list):
-            r = radius
-        else:
-            r = [radius, radius, radius]
+    Example code::
 
-        polygons = list(map(
-            lambda v: Polygon(
-                list(map(lambda i:
-                         Vertex(
-                             Vector(
-                                 c.x + r[0] * (2 * bool(i & 1) - 1),
-                                 c.y + r[1] * (2 * bool(i & 2) - 1),
-                                 c.z + r[2] * (2 * bool(i & 4) - 1)
-                             ),
-                             None
-                         ), v[0]))),
-            [
-                [[0, 4, 6, 2], [-1, 0, 0]],
-                [[1, 3, 7, 5], [+1, 0, 0]],
-                [[0, 1, 5, 4], [0, -1, 0]],
-                [[2, 6, 7, 3], [0, +1, 0]],
-                [[0, 2, 3, 1], [0, 0, -1]],
-                [[4, 5, 7, 6], [0, 0, +1]]
-            ]))
-        return CSG.fromPolygons(polygons)
+        cube = CSG.cube(
+          center=[0, 0, 0],
+          radius=1
+        )
+    """
+    cdef Vector c
+    cdef list r, polygons
 
-    @classmethod
-    def sphere(cls, **kwargs):
-        """ Returns a sphere.
+    c = Vector(0, 0, 0)
+    r = [1, 1, 1]
+    if isinstance(center, list): c = Vector(center)
+    if isinstance(radius, list):
+        r = radius
+    else:
+        r = [radius, radius, radius]
 
-            Kwargs:
-                center (list): Center of sphere, default [0, 0, 0].
+    polygons = list(map(
+        lambda v: Polygon(
+            list(map(lambda i:
+                     Vertex(
+                         Vector(
+                             c.x + r[0] * (2 * bool(i & 1) - 1),
+                             c.y + r[1] * (2 * bool(i & 2) - 1),
+                             c.z + r[2] * (2 * bool(i & 4) - 1)
+                         ),
+                         None
+                     ), v[0]))),
+        [
+            [[0, 4, 6, 2], [-1, 0, 0]],
+            [[1, 3, 7, 5], [+1, 0, 0]],
+            [[0, 1, 5, 4], [0, -1, 0]],
+            [[2, 6, 7, 3], [0, +1, 0]],
+            [[0, 2, 3, 1], [0, 0, -1]],
+            [[4, 5, 7, 6], [0, 0, +1]]
+        ]))
+    return csgFromPolygons(polygons)
 
-                radius (float): Radius of sphere, default 1.0.
 
-                slices (int): Number of slices, default 16.
+def sphere(**kwargs):
+    """ Returns a sphere.
 
-                stacks (int): Number of stacks, default 8.
-        """
-        center = kwargs.get('center', [0.0, 0.0, 0.0])
-        if isinstance(center, float):
-            center = [center, center, center]
-        c = Vector(center)
-        r = kwargs.get('radius', 1.0)
-        if isinstance(r, list) and len(r) > 2:
-            r = r[0]
-        slices = kwargs.get('slices', 16)
-        stacks = kwargs.get('stacks', 8)
-        polygons = []
+        Kwargs:
+            center (list): Center of sphere, default [0, 0, 0].
 
-        def appendVertex(vertices, theta, phi):
-            d = Vector(
-                math.cos(theta) * math.sin(phi),
-                math.cos(phi),
-                math.sin(theta) * math.sin(phi))
-            vertices.append(Vertex(c.plus(d.times(r)), d))
+            radius (float): Radius of sphere, default 1.0.
 
-        dTheta = math.pi * 2.0 / float(slices)
-        dPhi = math.pi / float(stacks)
+            slices (int): Number of slices, default 16.
 
-        j0 = 0
-        j1 = j0 + 1
+            stacks (int): Number of stacks, default 8.
+    """
+    center = kwargs.get('center', [0.0, 0.0, 0.0])
+    if isinstance(center, float):
+        center = [center, center, center]
+    c = Vector(center)
+    r = kwargs.get('radius', 1.0)
+    if isinstance(r, list) and len(r) > 2:
+        r = r[0]
+    slices = kwargs.get('slices', 16)
+    stacks = kwargs.get('stacks', 8)
+    polygons = []
+
+    def appendVertex(vertices, theta, phi):
+        d = Vector(
+            math.cos(theta) * math.sin(phi),
+            math.cos(phi),
+            math.sin(theta) * math.sin(phi))
+        vertices.append(Vertex(c.plus(d.times(r)), d))
+
+    dTheta = math.pi * 2.0 / float(slices)
+    dPhi = math.pi / float(stacks)
+
+    j0 = 0
+    j1 = j0 + 1
+    for i0 in range(0, slices):
+        i1 = i0 + 1
+        #  +--+
+        #  | /
+        #  |/
+        #  +
+        vertices = []
+        appendVertex(vertices, i0 * dTheta, j0 * dPhi)
+        appendVertex(vertices, i1 * dTheta, j1 * dPhi)
+        appendVertex(vertices, i0 * dTheta, j1 * dPhi)
+        polygons.append(Polygon(vertices))
+
+    j0 = stacks - 1
+    j1 = j0 + 1
+    for i0 in range(0, slices):
+        i1 = i0 + 1
+        #  +
+        #  |\
+        #  | \
+        #  +--+
+        vertices = []
+        appendVertex(vertices, i0 * dTheta, j0 * dPhi)
+        appendVertex(vertices, i1 * dTheta, j0 * dPhi)
+        appendVertex(vertices, i0 * dTheta, j1 * dPhi)
+        polygons.append(Polygon(vertices))
+
+    for j0 in range(1, stacks - 1):
+        j1 = j0 + 0.5
+        j2 = j0 + 1
         for i0 in range(0, slices):
-            i1 = i0 + 1
-            #  +--+
-            #  | /
-            #  |/
-            #  +
-            vertices = []
-            appendVertex(vertices, i0 * dTheta, j0 * dPhi)
-            appendVertex(vertices, i1 * dTheta, j1 * dPhi)
-            appendVertex(vertices, i0 * dTheta, j1 * dPhi)
-            polygons.append(Polygon(vertices))
+            i1 = i0 + 0.5
+            i2 = i0 + 1
+            #  +---+
+            #  |\ /|
+            #  | x |
+            #  |/ \|
+            #  +---+
+            verticesN = []
+            appendVertex(verticesN, i1 * dTheta, j1 * dPhi)
+            appendVertex(verticesN, i2 * dTheta, j2 * dPhi)
+            appendVertex(verticesN, i0 * dTheta, j2 * dPhi)
+            polygons.append(Polygon(verticesN))
+            verticesS = []
+            appendVertex(verticesS, i1 * dTheta, j1 * dPhi)
+            appendVertex(verticesS, i0 * dTheta, j0 * dPhi)
+            appendVertex(verticesS, i2 * dTheta, j0 * dPhi)
+            polygons.append(Polygon(verticesS))
+            verticesW = []
+            appendVertex(verticesW, i1 * dTheta, j1 * dPhi)
+            appendVertex(verticesW, i0 * dTheta, j2 * dPhi)
+            appendVertex(verticesW, i0 * dTheta, j0 * dPhi)
+            polygons.append(Polygon(verticesW))
+            verticesE = []
+            appendVertex(verticesE, i1 * dTheta, j1 * dPhi)
+            appendVertex(verticesE, i2 * dTheta, j0 * dPhi)
+            appendVertex(verticesE, i2 * dTheta, j2 * dPhi)
+            polygons.append(Polygon(verticesE))
 
-        j0 = stacks - 1
-        j1 = j0 + 1
-        for i0 in range(0, slices):
-            i1 = i0 + 1
-            #  +
-            #  |\
-            #  | \
-            #  +--+
-            vertices = []
-            appendVertex(vertices, i0 * dTheta, j0 * dPhi)
-            appendVertex(vertices, i1 * dTheta, j0 * dPhi)
-            appendVertex(vertices, i0 * dTheta, j1 * dPhi)
-            polygons.append(Polygon(vertices))
+    return csgFromPolygons(polygons)
 
-        for j0 in range(1, stacks - 1):
-            j1 = j0 + 0.5
-            j2 = j0 + 1
-            for i0 in range(0, slices):
-                i1 = i0 + 0.5
-                i2 = i0 + 1
-                #  +---+
-                #  |\ /|
-                #  | x |
-                #  |/ \|
-                #  +---+
-                verticesN = []
-                appendVertex(verticesN, i1 * dTheta, j1 * dPhi)
-                appendVertex(verticesN, i2 * dTheta, j2 * dPhi)
-                appendVertex(verticesN, i0 * dTheta, j2 * dPhi)
-                polygons.append(Polygon(verticesN))
-                verticesS = []
-                appendVertex(verticesS, i1 * dTheta, j1 * dPhi)
-                appendVertex(verticesS, i0 * dTheta, j0 * dPhi)
-                appendVertex(verticesS, i2 * dTheta, j0 * dPhi)
-                polygons.append(Polygon(verticesS))
-                verticesW = []
-                appendVertex(verticesW, i1 * dTheta, j1 * dPhi)
-                appendVertex(verticesW, i0 * dTheta, j2 * dPhi)
-                appendVertex(verticesW, i0 * dTheta, j0 * dPhi)
-                polygons.append(Polygon(verticesW))
-                verticesE = []
-                appendVertex(verticesE, i1 * dTheta, j1 * dPhi)
-                appendVertex(verticesE, i2 * dTheta, j0 * dPhi)
-                appendVertex(verticesE, i2 * dTheta, j2 * dPhi)
-                polygons.append(Polygon(verticesE))
 
-        return CSG.fromPolygons(polygons)
+def cylinder(**kwargs):
+    """ Returns a cylinder.
 
-    @classmethod
-    def cylinder(cls, **kwargs):
-        """ Returns a cylinder.
+        Kwargs:
+            start (list): Start of cylinder, default [0, -1, 0].
 
-            Kwargs:
-                start (list): Start of cylinder, default [0, -1, 0].
+            end (list): End of cylinder, default [0, 1, 0].
 
-                end (list): End of cylinder, default [0, 1, 0].
+            radius (float): Radius of cylinder, default 1.0.
 
-                radius (float): Radius of cylinder, default 1.0.
+            slices (int): Number of slices, default 16.
+    """
+    s = kwargs.get('start', Vector(0.0, -1.0, 0.0))
+    e = kwargs.get('end', Vector(0.0, 1.0, 0.0))
+    if isinstance(s, list):
+        s = Vector(*s)
+    if isinstance(e, list):
+        e = Vector(*e)
+    r = kwargs.get('radius', 1.0)
+    slices = kwargs.get('slices', 16)
+    ray = e.minus(s)
 
-                slices (int): Number of slices, default 16.
-        """
-        s = kwargs.get('start', Vector(0.0, -1.0, 0.0))
-        e = kwargs.get('end', Vector(0.0, 1.0, 0.0))
-        if isinstance(s, list):
-            s = Vector(*s)
-        if isinstance(e, list):
-            e = Vector(*e)
-        r = kwargs.get('radius', 1.0)
-        slices = kwargs.get('slices', 16)
-        ray = e.minus(s)
+    axisZ = ray.unit()
+    isY = (math.fabs(axisZ.y) > 0.5)
+    axisX = Vector(float(isY), float(not isY), 0).cross(axisZ).unit()
+    axisY = axisX.cross(axisZ).unit()
+    start = Vertex(s, axisZ.negated())
+    end = Vertex(e, axisZ.unit())
+    polygons = []
 
-        axisZ = ray.unit()
-        isY = (math.fabs(axisZ.y) > 0.5)
-        axisX = Vector(float(isY), float(not isY), 0).cross(axisZ).unit()
-        axisY = axisX.cross(axisZ).unit()
-        start = Vertex(s, axisZ.negated())
-        end = Vertex(e, axisZ.unit())
-        polygons = []
+    def point(stack, angle, normalBlend):
+        out = axisX.times(math.cos(angle)).plus(
+            axisY.times(math.sin(angle)))
+        pos = s.plus(ray.times(stack)).plus(out.times(r))
+        normal = out.times(1.0 - math.fabs(normalBlend)).plus(
+            axisZ.times(normalBlend))
+        return Vertex(pos, normal)
 
-        def point(stack, angle, normalBlend):
-            out = axisX.times(math.cos(angle)).plus(
-                axisY.times(math.sin(angle)))
-            pos = s.plus(ray.times(stack)).plus(out.times(r))
-            normal = out.times(1.0 - math.fabs(normalBlend)).plus(
-                axisZ.times(normalBlend))
-            return Vertex(pos, normal)
+    dt = math.pi * 2.0 / float(slices)
+    for i in range(0, slices):
+        t0 = i * dt
+        i1 = (i + 1) % slices
+        t1 = i1 * dt
+        polygons.append(Polygon([start.clone(),
+                                 point(0., t0, -1.),
+                                 point(0., t1, -1.)]))
+        polygons.append(Polygon([point(0., t1, 0.),
+                                 point(0., t0, 0.),
+                                 point(1., t0, 0.),
+                                 point(1., t1, 0.)]))
+        polygons.append(Polygon([end.clone(),
+                                 point(1., t1, 1.),
+                                 point(1., t0, 1.)]))
 
-        dt = math.pi * 2.0 / float(slices)
-        for i in range(0, slices):
-            t0 = i * dt
-            i1 = (i + 1) % slices
-            t1 = i1 * dt
-            polygons.append(Polygon([start.clone(),
-                                     point(0., t0, -1.),
-                                     point(0., t1, -1.)]))
-            polygons.append(Polygon([point(0., t1, 0.),
-                                     point(0., t0, 0.),
-                                     point(1., t0, 0.),
-                                     point(1., t1, 0.)]))
-            polygons.append(Polygon([end.clone(),
-                                     point(1., t1, 1.),
-                                     point(1., t0, 1.)]))
+    return csgFromPolygons(polygons)
 
-        return CSG.fromPolygons(polygons)
 
-    @classmethod
-    def cone(cls, **kwargs):
-        """ Returns a cone.
+def cone(**kwargs):
+    """ Returns a cone.
 
-            Kwargs:
-                start (list): Start of cone, default [0, -1, 0].
+        Kwargs:
+            start (list): Start of cone, default [0, -1, 0].
 
-                end (list): End of cone, default [0, 1, 0].
+            end (list): End of cone, default [0, 1, 0].
 
-                radius (float): Maximum radius of cone at start, default 1.0.
+            radius (float): Maximum radius of cone at start, default 1.0.
 
-                slices (int): Number of slices, default 16.
-        """
-        s = kwargs.get('start', Vector(0.0, -1.0, 0.0))
-        e = kwargs.get('end', Vector(0.0, 1.0, 0.0))
-        if isinstance(s, list):
-            s = Vector(*s)
-        if isinstance(e, list):
-            e = Vector(*e)
-        r = kwargs.get('radius', 1.0)
-        slices = kwargs.get('slices', 16)
-        ray = e.minus(s)
+            slices (int): Number of slices, default 16.
+    """
+    s = kwargs.get('start', Vector(0.0, -1.0, 0.0))
+    e = kwargs.get('end', Vector(0.0, 1.0, 0.0))
+    if isinstance(s, list):
+        s = Vector(*s)
+    if isinstance(e, list):
+        e = Vector(*e)
+    r = kwargs.get('radius', 1.0)
+    slices = kwargs.get('slices', 16)
+    ray = e.minus(s)
 
-        axisZ = ray.unit()
-        isY = (math.fabs(axisZ.y) > 0.5)
-        axisX = Vector(float(isY), float(not isY), 0).cross(axisZ).unit()
-        axisY = axisX.cross(axisZ).unit()
-        startNormal = axisZ.negated()
-        start = Vertex(s, startNormal)
-        polygons = []
+    axisZ = ray.unit()
+    isY = (math.fabs(axisZ.y) > 0.5)
+    axisX = Vector(float(isY), float(not isY), 0).cross(axisZ).unit()
+    axisY = axisX.cross(axisZ).unit()
+    startNormal = axisZ.negated()
+    start = Vertex(s, startNormal)
+    polygons = []
 
-        taperAngle = math.atan2(r, ray.length())
-        sinTaperAngle = math.sin(taperAngle)
-        cosTaperAngle = math.cos(taperAngle)
+    taperAngle = math.atan2(r, ray.length())
+    sinTaperAngle = math.sin(taperAngle)
+    cosTaperAngle = math.cos(taperAngle)
 
-        def point(angle):
-            # radial direction pointing out
-            out = axisX.times(math.cos(angle)).plus(
-                axisY.times(math.sin(angle)))
-            pos = s.plus(out.times(r))
-            # normal taking into account the tapering of the cone
-            normal = out.times(cosTaperAngle).plus(axisZ.times(sinTaperAngle))
-            return pos, normal
+    def point(angle):
+        # radial direction pointing out
+        out = axisX.times(math.cos(angle)).plus(
+            axisY.times(math.sin(angle)))
+        pos = s.plus(out.times(r))
+        # normal taking into account the tapering of the cone
+        normal = out.times(cosTaperAngle).plus(axisZ.times(sinTaperAngle))
+        return pos, normal
 
-        dt = math.pi * 2.0 / float(slices)
-        for i in range(0, slices):
-            t0 = i * dt
-            i1 = (i + 1) % slices
-            t1 = i1 * dt
-            # coordinates and associated normal pointing outwards of the cone's
-            # side
-            p0, n0 = point(t0)
-            p1, n1 = point(t1)
-            # average normal for the tip
-            nAvg = n0.plus(n1).times(0.5)
-            # polygon on the low side (disk sector)
-            polyStart = Polygon([start.clone(),
-                                 Vertex(p0, startNormal),
-                                 Vertex(p1, startNormal)])
-            polygons.append(polyStart)
-            # polygon extending from the low side to the tip
-            polySide = Polygon([Vertex(p0, n0), Vertex(e, nAvg), Vertex(p1, n1)])
-            polygons.append(polySide)
+    dt = math.pi * 2.0 / float(slices)
+    for i in range(0, slices):
+        t0 = i * dt
+        i1 = (i + 1) % slices
+        t1 = i1 * dt
+        # coordinates and associated normal pointing outwards of the cone's
+        # side
+        p0, n0 = point(t0)
+        p1, n1 = point(t1)
+        # average normal for the tip
+        nAvg = n0.plus(n1).times(0.5)
+        # polygon on the low side (disk sector)
+        polyStart = Polygon([start.clone(),
+                             Vertex(p0, startNormal),
+                             Vertex(p1, startNormal)])
+        polygons.append(polyStart)
+        # polygon extending from the low side to the tip
+        polySide = Polygon([Vertex(p0, n0), Vertex(e, nAvg), Vertex(p1, n1)])
+        polygons.append(polySide)
 
-        return CSG.fromPolygons(polygons)
+    return csgFromPolygons(polygons)
