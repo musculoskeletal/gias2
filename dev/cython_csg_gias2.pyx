@@ -425,24 +425,17 @@ cdef class BSPNode(object):
         for pi in range(npolys):
             self.polygons[pi].flip()
 
-        print('invert 1')
         # for poly in self.polygons:
         #     poly.flip()
             # x = 100
         self.plane.flip()
-        print('invert 2')
         if self.front:
             self.front.invert()
-        print('invert 3')
         if self.back:
             self.back.invert()
-        print('invert 4')
         temp = self.front
-        print('invert 5')
         self.front = self.back
-        print('invert 6')
         self.back = temp
-        print('invert 7')
 
     cpdef list clipPolygons(self, list polygons):
         """
@@ -452,14 +445,15 @@ cdef class BSPNode(object):
         cdef list front = []
         cdef list back = []
         cdef Polygon poly
-        cdef int npolys = len(self.polygons)
+        cdef int npolys
         cdef Py_ssize_t pi
 
         if not self.plane:
             return polygons[:]
 
+        npolys = len(polygons)
         for pi in range(npolys):
-            self.plane.splitPolygon(self.polygons[pi], front, back, front, back)
+            self.plane.splitPolygon(polygons[pi], front, back, front, back)
         # for poly in polygons:
         #     self.plane.splitPolygon(poly, front, back, front, back)
 
@@ -504,7 +498,7 @@ cdef class BSPNode(object):
         (no heuristic is used to pick a good split).
         """
         cdef list front, back
-        cdef int npolys = len(self.polygons)
+        cdef int npolys
         cdef Py_ssize_t pi
 
         if len(polygons) == 0:
@@ -516,10 +510,11 @@ cdef class BSPNode(object):
         front = []
         back = []
         # split all other polygons using the first polygon's plane
+        npolys = len(polygons)
         for pi in range(1, npolys):
             # coplanar front and back polygons go into self.polygons
             self.plane.splitPolygon(
-                self.polygons[pi], self.polygons, self.polygons,
+                polygons[pi], self.polygons, self.polygons,
                 front, back
                 )
         # for poly in polygons[1:]:
@@ -835,21 +830,13 @@ cdef class CSG(object):
         cdef BSPNode a, b
 
         a = BSPNode(self.clone().polygons)
-        print('union: bspnode a created')
         b = BSPNode(csg.clone().polygons)
-        print('union: bspnode b created')
         a.clipTo(b)
-        print('union: 1')
         b.clipTo(a)
-        print('union: 2')
         b.invert()
-        print('union: 3')
         b.clipTo(a)
-        print('union: 4')
         b.invert()
-        print('union: 5')
         a.build(b.allPolygons());
-        print('union: 6')
         return csgFromPolygons(a.allPolygons())
 
     def __add__(self, CSG csg):
