@@ -1,12 +1,15 @@
 
+# cython: profile=True
+
 # import cython
-import math
+# import math
 import operator
 from functools import reduce
 
 # from cpython cimport array
 # import array
 
+import cython
 cimport cython
 # cimport numpy as np
 
@@ -15,6 +18,12 @@ cimport cython
 
 # cdef array.array int_array_template = array.array('i', [])
 
+from libc.math cimport sqrt, sin, cos, atan2, abs
+
+cdef double PI = 3.14159265358979323846264338327
+
+cdef double dot_vectors(Vector a, Vector b):
+    return a.x * b.x + a.y * b.y + a.z * b.z
 
 @cython.nonecheck(False)
 cdef class Vector(object):
@@ -34,6 +43,10 @@ cdef class Vector(object):
     cdef public double z
 
     # cdef tuple __slots__ = ('x','y','z')
+    # def __cinit__(self, double x, double y, double z):
+    #     self.x = x
+    #     self.y = y
+    #     self.z = z
 
     def __init__(self, double x, double y, double z):
         self.x = x
@@ -111,7 +124,8 @@ cdef class Vector(object):
 
     cpdef double length(self):
         """ Length. """
-        return math.sqrt(self.dot(self))
+        # return math.sqrt(self.dot(self))
+        return sqrt(dot_vectors(self, self))
 
     cpdef Vector unit(self):
         """ Normalize. """
@@ -186,7 +200,8 @@ cdef class Vertex(object):
 
 cpdef Plane planeFromPoints(Vector a, Vector b, Vector c):
     n = b.minus(a).cross(c.minus(a)).unit()
-    return Plane(n, n.dot(a))
+    # return Plane(n, n.dot(a))
+    return Plane(n, dot_vectors(n, a))
 
 cdef class Plane(object):
     """
@@ -222,6 +237,7 @@ cdef class Plane(object):
     def __repr__(self):
         return 'normal: {0} w: {1}'.format(self.normal, self.w)
 
+    @cython.nonecheck(False)
     cpdef void splitPolygon(self, Polygon polygon, list coplanarFront,
         list coplanarBack, list front, list back):
         """
@@ -238,10 +254,12 @@ cdef class Plane(object):
         cdef int numVertices = len(polygon.vertices)
         cdef Py_ssize_t i, j, ti, tj
         cdef int loc
-        cdef double t, normalDotPlaneNormal
+        cdef double t, normalDotPlaneNormal, t1, t2
         cdef double EPS = self.EPSILON
         cdef double NEPS = -1.0*self.EPSILON
         cdef Vertex vi, vj, v
+        cdef Polygon poly
+        cdef Vector pos, pos2
 
         # Classify each point as well as the entire polygon into one of the above
         # four classes.
@@ -251,7 +269,9 @@ cdef class Plane(object):
         cdef list b = []  # list of vertices
         
         for i in range(numVertices):
-            t = self.normal.dot(polygon.vertices[i].pos) - self.w
+            # t = self.normal.dot(polygon.vertices[i].pos) - self.w
+            v = polygon.vertices[i]
+            t = dot_vectors(self.normal, v.pos) - self.w
             loc = -1
             if t < NEPS:
                 loc = BACK
@@ -264,7 +284,8 @@ cdef class Plane(object):
 
         # Put the polygon in the correct list, splitting it when necessary.
         if polygonType == COPLANAR:
-            normalDotPlaneNormal = self.normal.dot(polygon.plane.normal)
+            # normalDotPlaneNormal = self.normal.dot(polygon.plane.normal)
+            normalDotPlaneNormal = dot_vectors(self.normal, polygon.plane.normal)
             if normalDotPlaneNormal > 0.0:
                 coplanarFront.append(polygon)  # list op
             else:
@@ -291,15 +312,22 @@ cdef class Plane(object):
                         b.append(vi)  # list op
                 if (ti | tj) == SPANNING:
                     # interpolation weight at the intersection point
-                    t = (self.w - self.normal.dot(vi.pos)) / self.normal.dot(vj.pos.minus(vi.pos))
+                    # t = (self.w - self.normal.dot(vi.pos)) / self.normal.dot(vj.pos.minus(vi.pos))
+                    pos = vi.pos
+                    t1 = dot_vectors(self.normal, pos)
+                    pos2 = vj.pos.minus(pos)
+                    t2 = dot_vectors(self.normal, pos2)
+                    t = (self.w - t1) / t2
                     # intersection point on the plane
                     v = vi.interpolate(vj, t)
                     f.append(v)  # list op
                     b.append(v.clone())  # list op
             if len(f) >= 3:
-                front.append(Polygon(f, polygon.shared))  # list op
+                poly = Polygon(f, polygon.shared)
+                front.append(poly)  # list op
             if len(b) >= 3:
-                back.append(Polygon(b, polygon.shared))  # list op
+                poly = Polygon(b, polygon.shared)
+                back.append(poly)  # list op
 
 
 cdef class Polygon(object):
@@ -336,11 +364,13 @@ cdef class Polygon(object):
         cdef list vertices
         cdef Py_ssize_t vi
         cdef int nverts
+        cdef Vertex v
 
         vertices = []
         nverts = len(self.vertices)
         for vi in range(nverts):
-            vertices.append(self.vertices[vi].clone())
+            v = self.vertices[vi]
+            vertices.append(v.clone())
 
         return Polygon(vertices, self.shared)
 
@@ -348,12 +378,14 @@ cdef class Polygon(object):
         cdef list vertices
         cdef Py_ssize_t vi
         cdef int nverts = len(self.vertices)
+        cdef Vertex v
 
         self.vertices.reverse()
         
         # map(lambda v: v.flip(), self.vertices)
         for vi in range(nverts):
-            self.vertices[vi].flip()
+            v = self.vertices[vi]
+            v.flip()
 
         self.plane.flip()
 
@@ -396,6 +428,7 @@ cdef class BSPNode(object):
         cdef int npolys
         cdef Py_ssize_t pi
         cdef BSPNode node = BSPNode()
+        cdef Polygon poly
         
         if self.plane:
             node.plane = self.plane.clone()
@@ -408,7 +441,8 @@ cdef class BSPNode(object):
         node.polygons = []
         npolys = len(self.polygons)
         for pi in range(npolys):
-            node.polygons.append(self.polygons[pi].clone())
+            poly = self.polygons[pi]
+            node.polygons.append(poly.clone())
 
         return node
 
@@ -423,7 +457,8 @@ cdef class BSPNode(object):
         cdef Py_ssize_t pi
 
         for pi in range(npolys):
-            self.polygons[pi].flip()
+            poly = self.polygons[pi]
+            poly.flip()
 
         # for poly in self.polygons:
         #     poly.flip()
@@ -453,7 +488,8 @@ cdef class BSPNode(object):
 
         npolys = len(polygons)
         for pi in range(npolys):
-            self.plane.splitPolygon(polygons[pi], front, back, front, back)
+            poly = polygons[pi]
+            self.plane.splitPolygon(poly, front, back, front, back)
         # for poly in polygons:
         #     self.plane.splitPolygon(poly, front, back, front, back)
 
@@ -499,12 +535,15 @@ cdef class BSPNode(object):
         """
         cdef list front, back
         cdef int npolys
+        cdef Polygon poly
         cdef Py_ssize_t pi
 
         if len(polygons) == 0:
             return
         if not self.plane:
-            self.plane = polygons[0].plane.clone()
+            poly = polygons[0]
+            self.plane = poly.plane.clone()
+
         # add polygon to this node
         self.polygons.append(polygons[0])
         front = []
@@ -513,8 +552,9 @@ cdef class BSPNode(object):
         npolys = len(polygons)
         for pi in range(1, npolys):
             # coplanar front and back polygons go into self.polygons
+            poly = polygons[pi]
             self.plane.splitPolygon(
-                polygons[pi], self.polygons, self.polygons,
+                poly, self.polygons, self.polygons,
                 front, back
                 )
         # for poly in polygons[1:]:
@@ -543,7 +583,8 @@ cdef Vector rotateVector(Vector v, Vector ax, double cosAngle, double sinAngle):
     cdef double vA, vPerpLen, vCosA, vSinA
     cdef Vector vPerp, u1, u2
 
-    vA = v.dot(ax)
+    # vA = v.dot(ax)
+    vA = dot_vectors(v, ax)
     vPerp = v.minus(ax.times(vA))
     vPerpLen = vPerp.length()
     if vPerpLen == 0:
@@ -617,6 +658,7 @@ cdef class CSG(object):
     cpdef CSG clone(self):
         cdef CSG csg
         cdef int npolys
+        cdef Polygon poly
         cdef Py_ssize_t pi
 
         csg = CSG()
@@ -624,7 +666,8 @@ cdef class CSG(object):
         csg.polygons = []
         npolys = len(self.polygons)
         for pi in range(npolys):
-            csg.polygons.append(self.polygons[pi].clone())
+            poly = self.polygons[pi]
+            csg.polygons.append(poly.clone())
         return csg
 
     cpdef list toPolygons(self):
@@ -640,10 +683,9 @@ cdef class CSG(object):
         cdef list verts, newVerts, vs
         cdef int numVerts
         cdef int npolys = len(self.polygons)
-        cdef Py_ssize_t pi, i
-        cdef Vector midPos, midNormal
+        cdef Py_ssize_t pi, i, vi
+        cdef Vector midPos, midNormal, midPosAccum
         cdef Vertex midVert
-
 
         newCSG = CSG()
         for pi in range(npolys):
@@ -655,6 +697,12 @@ cdef class CSG(object):
                 continue
 
             midPos = reduce(operator.add, [v.pos for v in verts]) / float(numVerts)
+            # midPosAccum = verts[0].clone()
+            # for vi in range(1, numVerts):
+            #     with cython.nonecheck(False):
+            #         midPosAccum = midPosAccum + verts[vi].pos
+            # midPos = midPosAccum/float(numVerts)
+
             midNormal = None
             if verts[0].normal is not None:
                 midNormal = poly.plane.normal
@@ -712,8 +760,10 @@ cdef class CSG(object):
         cdef Py_ssize_t pi, vi
 
         ax = Vector(axis[0], axis[1], axis[2]).unit()
-        cosAngle = math.cos(math.pi * angleDeg / 180.)
-        sinAngle = math.sin(math.pi * angleDeg / 180.)
+        # cosAngle = math.cos(math.pi * angleDeg / 180.)
+        # sinAngle = math.sin(math.pi * angleDeg / 180.)
+        cosAngle = cos(PI * angleDeg / 180.)
+        sinAngle = sin(PI * angleDeg / 180.)
 
         for pi in range(npolys):
             poly = self.polygon[pi]
@@ -759,9 +809,9 @@ cdef class CSG(object):
                 # points differing in the 11 digits and higher are
                 # treated as the same. For instance 1.2e-10 and
                 # 1.3e-10 are essentially the same.
-                vKey = '%.10e,%.10e,%.10e' % (p[0] + offset,
-                                              p[1] + offset,
-                                              p[2] + offset)
+                vKey = '%.10e,%.10e,%.10e' % (p.x + offset,
+                                              p.y + offset,
+                                              p.z + offset)
                 if not vKey in vertexIndexMap:
                     vertexIndexMap[vKey] = len(vertexIndexMap)
                 index = vertexIndexMap[vKey]
@@ -984,30 +1034,34 @@ def sphere(**kwargs):
             stacks (int): Number of stacks, default 8.
     """
     cdef list polygon, vertices, verticesN, verticesS, verticesE, verticesW
-    cdef Vector c
+    cdef Vector c, d
     cdef int slices, stacks, j0, i0
-    cdef float j1, j2, i1
+    cdef float r, j1, j2, i1, dTheta, dPhi
 
     center = kwargs.get('center', [0.0, 0.0, 0.0])
     if isinstance(center, float):
         center = [center, center, center]
     c = Vector(*center)
     r = kwargs.get('radius', 1.0)
-    if isinstance(r, list) and len(r) > 2:
-        r = r[0]
+    # if isinstance(r, list) and len(r) > 2:
+    #     r = r[0]
     slices = kwargs.get('slices', 16)
     stacks = kwargs.get('stacks', 8)
     polygons = []
 
     def appendVertex(vertices, theta, phi):
+        # d = Vector(
+        #     math.cos(theta) * math.sin(phi),
+        #     math.cos(phi),
+        #     math.sin(theta) * math.sin(phi))
         d = Vector(
-            math.cos(theta) * math.sin(phi),
-            math.cos(phi),
-            math.sin(theta) * math.sin(phi))
+            cos(theta) * sin(phi),
+            cos(phi),
+            sin(theta) * sin(phi))
         vertices.append(Vertex(c.plus(d.times(r)), d))
 
-    dTheta = math.pi * 2.0 / float(slices)
-    dPhi = math.pi / float(stacks)
+    dTheta = PI * 2.0 / float(slices)
+    dPhi = PI / float(stacks)
 
     j0 = 0
     j1 = j0 + 1
@@ -1087,21 +1141,22 @@ def cylinder(**kwargs):
     cdef int slices, i
     cdef double t0, i1, t1, dt
     cdef list polygons
-    cdef Vector ray, axisZ, axisX, axisY, out, pos, normal
+    cdef Vector s, e, ray, axisZ, axisX, axisY, out, pos, normal
     cdef Vertex end
 
-    s = kwargs.get('start', Vector(0.0, -1.0, 0.0))
-    e = kwargs.get('end', Vector(0.0, 1.0, 0.0))
-    if isinstance(s, list):
-        s = Vector(*s)
-    if isinstance(e, list):
-        e = Vector(*e)
+    _s = kwargs.get('start', Vector(0.0, -1.0, 0.0))
+    _e = kwargs.get('end', Vector(0.0, 1.0, 0.0))
+    if isinstance(_s, list):
+        s = Vector(*_s)
+    if isinstance(_e, list):
+        e = Vector(*_e)
     r = kwargs.get('radius', 1.0)
     slices = kwargs.get('slices', 16)
     ray = e.minus(s)
 
     axisZ = ray.unit()
-    isY = (math.fabs(axisZ.y) > 0.5)
+    # isY = (math.fabs(axisZ.y) > 0.5)
+    isY = (abs(axisZ.y) > 0.5)
     axisX = Vector(float(isY), float(not isY), 0).cross(axisZ).unit()
     axisY = axisX.cross(axisZ).unit()
     start = Vertex(s, axisZ.negated())
@@ -1109,14 +1164,15 @@ def cylinder(**kwargs):
     polygons = []
 
     def point(stack, angle, normalBlend):
-        out = axisX.times(math.cos(angle)).plus(
-            axisY.times(math.sin(angle)))
+        out = axisX.times(cos(angle)).plus(
+            axisY.times(sin(angle)))
         pos = s.plus(ray.times(stack)).plus(out.times(r))
-        normal = out.times(1.0 - math.fabs(normalBlend)).plus(
+        # normal = out.times(1.0 - math.fabs(normalBlend)).plus(
+        normal = out.times(1.0 - abs(normalBlend)).plus(
             axisZ.times(normalBlend))
         return Vertex(pos, normal)
 
-    dt = math.pi * 2.0 / float(slices)
+    dt = PI * 2.0 / float(slices)
     for i in range(0, slices):
         t0 = i * dt
         i1 = (i + 1) % slices
@@ -1147,38 +1203,48 @@ def cone(**kwargs):
 
             slices (int): Number of slices, default 16.
     """
-    s = kwargs.get('start', Vector(0.0, -1.0, 0.0))
-    e = kwargs.get('end', Vector(0.0, 1.0, 0.0))
-    if isinstance(s, list):
-        s = Vector(*s)
-    if isinstance(e, list):
-        e = Vector(*e)
+    
+    cdef list polygons
+    cdef double r, taperAngle, sinTaperAngle, cosTaperAngle, dt, t0, i1, t1
+    cdef int slices, i
+    cdef Vector s, e, ray, axisZ, axisX, axisY, startNormal, out, pos, normal, p0, n0, p1, n1, nAvg
+    cdef Vertex start
+    cdef Polygon polyStart, polySide
+
+    _s = kwargs.get('start', Vector(0.0, -1.0, 0.0))
+    _e = kwargs.get('end', Vector(0.0, 1.0, 0.0))
+    if isinstance(_s, list):
+        s = Vector(*_s)
+    if isinstance(_e, list):
+        e = Vector(*_e)
     r = kwargs.get('radius', 1.0)
     slices = kwargs.get('slices', 16)
     ray = e.minus(s)
 
     axisZ = ray.unit()
-    isY = (math.fabs(axisZ.y) > 0.5)
+    # isY = (math.fabs(axisZ.y) > 0.5)
+    isY = (abs(axisZ.y) > 0.5)
     axisX = Vector(float(isY), float(not isY), 0).cross(axisZ).unit()
     axisY = axisX.cross(axisZ).unit()
     startNormal = axisZ.negated()
     start = Vertex(s, startNormal)
     polygons = []
 
-    taperAngle = math.atan2(r, ray.length())
-    sinTaperAngle = math.sin(taperAngle)
-    cosTaperAngle = math.cos(taperAngle)
+    # taperAngle = math.atan2(r, ray.length())
+    taperAngle = atan2(r, ray.length())
+    sinTaperAngle = sin(taperAngle)
+    cosTaperAngle = cos(taperAngle)
 
     def point(angle):
         # radial direction pointing out
-        out = axisX.times(math.cos(angle)).plus(
-            axisY.times(math.sin(angle)))
+        out = axisX.times(cos(angle)).plus(
+            axisY.times(sin(angle)))
         pos = s.plus(out.times(r))
         # normal taking into account the tapering of the cone
         normal = out.times(cosTaperAngle).plus(axisZ.times(sinTaperAngle))
         return pos, normal
 
-    dt = math.pi * 2.0 / float(slices)
+    dt = PI * 2.0 / float(slices)
     for i in range(0, slices):
         t0 = i * dt
         i1 = (i + 1) % slices
