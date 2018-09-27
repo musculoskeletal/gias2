@@ -9,6 +9,8 @@ pyximport.install(
 
 import cython_csg_gias2 as CSG
 
+from gias2.mesh import vtktools, simplemesh
+
 # Vector tests
 vec1 = CSG.Vector(1,0,0)
 vec2 = CSG.Vector(0,1,0)
@@ -55,15 +57,50 @@ a = CSG.sphere(center=[0.5, 0.5, 0.5], radius=0.5, slices=8, stacks=4)
 print('sphere csg created')
 b = CSG.cylinder(start=[0.,0.,0.], end=[1.,0.,0.], radius=0.3, slices=16)
 print('cylinder csg created')
-
-# bspa = CSG.BSPNode(a.clone().polygons)
-# bspb = CSG.BSPNode(b.clone().polygons)
-# bspa.clipTo(bspb)
-# bspb.clipTo(bspa)
-# bspb.invert()
-# bspb.clipTo(bspa)
-# bspb.invert()
-# bspa.build(bspb.allPolygons())
-# union_ab = CSG.csgFromPolygons(bspa.allPolygons())
-
 union_ab_1 = a.union(b)
+
+# shape tests
+cube = CSG.cube([10,10,10], [1,2,3])
+cone = CSG.cone(start=[10,0,0], end=[20,0,0], radius=5, slices=8)
+cup = CSG.cup([0,0,0], [0,0,1], 9, 10, 8, 8)
+trunc_cone = CSG.cylinder_var_radius(start=[0,0,0], end=[10,0,0], startr=2.0, endr=4.0, slice=8, stacks=8)
+
+
+def get_csg_triangles(csgeom, clean=False, normals=False):
+    """
+    Return the vertex coordinates, triangle vertex indices, and point normals
+    (if defined) of a triangulated csg geometry.
+
+    inputs
+    ======
+    csgeom : CSG Solid instance
+        CSG solid to be meshed
+    clean : bool (default=False)
+        Clean the mesh
+    normals : bool (default=False)
+        Calculated normals
+
+    Returns
+    =======
+    v : nx3 array
+        a list of vertex coordinates
+    f : mx3 array
+        a list of 3-tuples face vertex indices
+    n : mx3 array
+        a list of face normals if normals=True, else None.
+    """
+    vertices, faces = CSG.get_csg_polys(csgeom)
+    if len(vertices)==0:
+        raise ValueError('no polygons in geometry')
+    return vtktools.polygons2Tri(vertices, faces, clean, normals)
+
+def csg2simplemesh(csgeom, clean=True):
+    v, f, n = get_csg_triangles(csgeom, clean=clean, normals=False)
+    return simplemesh.SimpleMesh(v=v, f=f)
+
+sphere_sm = csg2simplemesh(a)
+cylinder_sm = csg2simplemesh(b)
+cube_sm = csg2simplemesh(cube)
+cone_sm = csg2simplemesh(cone)
+cup_sm = csg2simplemesh(cup)
+trunc_cone_sm = csg2simplemesh(trunc_cone)

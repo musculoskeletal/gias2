@@ -993,31 +993,40 @@ def cube(center=[0, 0, 0], radius=[1, 1, 1]):
 
     c = Vector(0, 0, 0)
     r = [1, 1, 1]
-    if isinstance(center, list): c = Vector(center)
+    if isinstance(center, list): c = Vector(*center)
     if isinstance(radius, list):
         r = radius
     else:
         r = [radius, radius, radius]
 
-    polygons = list(map(
-        lambda v: Polygon(
-            list(map(lambda i:
-                     Vertex(
-                         Vector(
-                             c.x + r[0] * (2 * bool(i & 1) - 1),
-                             c.y + r[1] * (2 * bool(i & 2) - 1),
-                             c.z + r[2] * (2 * bool(i & 4) - 1)
-                         ),
-                         None
-                     ), v[0]))),
-        [
-            [[0, 4, 6, 2], [-1, 0, 0]],
-            [[1, 3, 7, 5], [+1, 0, 0]],
-            [[0, 1, 5, 4], [0, -1, 0]],
-            [[2, 6, 7, 3], [0, +1, 0]],
-            [[0, 2, 3, 1], [0, 0, -1]],
-            [[4, 5, 7, 6], [0, 0, +1]]
-        ]))
+    polygons = list(
+        map(
+            lambda v: Polygon(
+                list(
+                    map(
+                        lambda i: Vertex(
+                            Vector(
+                                c.x + r[0] * (2 * bool(i & 1) - 1),
+                                c.y + r[1] * (2 * bool(i & 2) - 1),
+                                c.z + r[2] * (2 * bool(i & 4) - 1)
+                                ),
+                            None
+                            ),
+                        v[0]
+                        )
+                    ),
+                False
+                ),
+            [
+                [[0, 4, 6, 2], [-1, 0, 0]],
+                [[1, 3, 7, 5], [+1, 0, 0]],
+                [[0, 1, 5, 4], [0, -1, 0]],
+                [[2, 6, 7, 3], [0, +1, 0]],
+                [[0, 2, 3, 1], [0, 0, -1]],
+                [[4, 5, 7, 6], [0, 0, +1]]
+                ]
+            )
+        )
     return csgFromPolygons(polygons)
 
 
@@ -1276,7 +1285,7 @@ def cup(list centre, list normal, double ri, double ro, int slices, int stacks):
         ri (double): inner cup radius
         ro (double): outer cup radius
     """
-    cdef CSG sphere_out, sphere_in, shell, cylinder, cup
+    cdef CSG sphere_out, sphere_in, shell, cyl, cup
     cdef list shell_poly, cend
 
     # create outer sphere
@@ -1295,13 +1304,13 @@ def cup(list centre, list normal, double ri, double ro, int slices, int stacks):
         centre[1]-normal[1]*ro*1.5,
         centre[2]-normal[2]*ro*1.5,
         ]
-    cylinder = cylinder(
+    cyl= cylinder(
         start=centre,
         end=cend,
         radius=ro*1.5
         )
     # create cup
-    cup = shell.subtract(cylinder)
+    cup = shell.subtract(cyl)
 
     return cup
 
@@ -1326,7 +1335,7 @@ def cylinder_var_radius(**kwargs):
     cdef double sr, er, stack_l, stackr, slicer, angle, r, normalBlend
     cdef bint isY
     cdef dict _verts
-    cdef Vertex start, vert
+    cdef Vertex start, end, vert
     cdef Py_ssize_t i, j
 
     _s = kwargs.get('start', [0.0, -1.0, 0.0])
@@ -1348,13 +1357,14 @@ def cylinder_var_radius(**kwargs):
     axisY = axisX.cross(axisZ).unit()
     startNormal = axisZ.negated()
     start = Vertex(s, startNormal)
+    end = Vertex(e, axisZ.unit())
     polygons = []
     _verts = {}
 
     def make_vert(stacki, slicei, normalBlend):
         stackr = stacki*stack_l
         slicer = slicei/float(slices)
-        angle = slicer*np.pi*2.0
+        angle = slicer*PI*2.0
         out = axisX*cos(angle) + axisY*sin(angle)
         r = sr + stackr*(er-sr)
         pos = s + ray*stackr + out*r
@@ -1380,10 +1390,10 @@ def cylinder_var_radius(**kwargs):
             if i==0:
                 polygons.append(
                     Polygon([
-                        start,
+                        start.clone(),
                         point(i, j,   -1.), 
                         point(i, j+1, -1.)
-                        ])
+                        ], False)
                     )
             # round side quad
             polygons.append(
@@ -1392,17 +1402,17 @@ def cylinder_var_radius(**kwargs):
                     point(i,   j,   0.),
                     point(i+1, j,   0.),
                     point(i+1, j+1, 0.)
-                    ])
+                    ], False)
                 )
             
             # end side triangle
             if i==(stacks-1):
                 polygons.append(
                     Polygon([
-                        end,
+                        end.clone(),
                         point(i+1, j+1, 1.), 
                         point(i+1, j,   1.)
-                        ])
+                        ], False)
                     )
     
     return csgFromPolygons(polygons)
@@ -1413,10 +1423,9 @@ def poly_2_csg(list vertices, list vnormals, list faces):
 
     cdef int nverts = len(vertices)
     cdef int nfaces = len(faces)
-    cdef list verts, polys
+    cdef list verts, polys, face_vis, face_verts
     cdef Py_ssize_t i, j
     cdef Vertex vert
-    cdef list face_vis, face_verts, polys
     cdef int nfv
     cdef Polygon poly
 
@@ -1440,9 +1449,10 @@ def poly_2_csg(list vertices, list vnormals, list faces):
 
 def get_csg_polys(CSG csg):
 
-    cdef list polygons, vertices, faces, face_vertex_numbers, pos
+    cdef list polygons, vertices, faces, face_vertex_numbers
+    cdef tuple pos
     cdef dict vertex_numbers
-    cdef int new_vertex_number
+    cdef int new_vertex_number, npoly
     cdef Py_ssize_t i, j
     cdef Vertex v
     cdef Polygon polygon
@@ -1454,8 +1464,9 @@ def get_csg_polys(CSG csg):
     vertex_numbers = {}
     faces = []
     new_vertex_number = 0
+    npolys = len(polygons)
     for i in range(npolys):
-        polygon = polygons[i]:
+        polygon = polygons[i]
         face_vertex_numbers = []
         nverts = len(polygon.vertices)
         
