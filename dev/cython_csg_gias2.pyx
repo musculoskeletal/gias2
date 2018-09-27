@@ -1265,3 +1265,210 @@ def cone(**kwargs):
         polygons.append(polySide)
 
     return csgFromPolygons(polygons)
+
+def cup(list centre, list normal, double ri, double ro, int slices, int stacks):
+    """Return a hemispherical cup.
+
+    Args:
+        centre (list): sphere centre coordinates
+        normal (list): normal unit vector of the open plane of the cup, point
+            into the cup
+        ri (double): inner cup radius
+        ro (double): outer cup radius
+    """
+    cdef CSG sphere_out, sphere_in, shell, cylinder, cup
+    cdef list shell_poly, cend
+
+    # create outer sphere
+    sphere_out = sphere(center=centre, radius=ro, slices=slices, stacks=stacks)
+
+    # create inner sphere
+    sphere_in = sphere(center=centre, radius=ri, slices=slices, stacks=stacks)
+
+    # create shell
+    shell = sphere_out.subtract(sphere_in)
+    shell_poly = shell.toPolygons()
+
+    # create cylinder to cut shell
+    cend = [
+        centre[0]-normal[0]*ro*1.5,
+        centre[1]-normal[1]*ro*1.5,
+        centre[2]-normal[2]*ro*1.5,
+        ]
+    cylinder = cylinder(
+        start=centre,
+        end=cend,
+        radius=ro*1.5
+        )
+    # create cup
+    cup = shell.subtract(cylinder)
+
+    return cup
+
+def cylinder_var_radius(**kwargs):
+    """Returns a cylinder with linearly changing radius between the two ends.
+        
+        Kwargs:
+            start (list): Start of cylinder, default [0, -1, 0].
+            
+            end (list): End of cylinder, default [0, 1, 0].
+            
+            startr (float): Radius of cylinder at the start, default 1.0.
+            
+            enr (float): Radius of cylinder at the end, default 1.0.
+            
+            slices (int): Number of radial slices, default 16.
+
+            stacks (int): Number of axial slices, default=2.
+    """
+    cdef Vector s, e, ray, axisZ, axisX, axisY, startNormal, out, pos, normal, p0, n0, p1, n1, nAvg
+    cdef int slices, stacks, slicei, stacki
+    cdef double sr, er, stack_l, stackr, slicer, angle, r, normalBlend
+    cdef bint isY
+    cdef dict _verts
+    cdef Vertex start, vert
+    cdef Py_ssize_t i, j
+
+    _s = kwargs.get('start', [0.0, -1.0, 0.0])
+    _e = kwargs.get('end', [0.0, 1.0, 0.0])
+    if isinstance(_s, list):
+        s = Vector(*_s)
+    if isinstance(_e, list):
+        e = Vector(*_e)
+    sr = kwargs.get('startr', 1.0)
+    er = kwargs.get('endr', 1.0)
+    slices = kwargs.get('slices', 16)
+    stacks = kwargs.get('stacks', 2)
+    stack_l = 1.0/stacks # length of each stack segment
+    ray = e - s
+    
+    axisZ = ray.unit()
+    isY = abs(axisZ[1])>0.5
+    axisX = Vector(float(isY), float(not isY), 0).cross(axisZ).unit()
+    axisY = axisX.cross(axisZ).unit()
+    startNormal = axisZ.negated()
+    start = Vertex(s, startNormal)
+    polygons = []
+    _verts = {}
+
+    def make_vert(stacki, slicei, normalBlend):
+        stackr = stacki*stack_l
+        slicer = slicei/float(slices)
+        angle = slicer*np.pi*2.0
+        out = axisX*cos(angle) + axisY*sin(angle)
+        r = sr + stackr*(er-sr)
+        pos = s + ray*stackr + out*r
+        normal = out*(1.0 - abs(normalBlend)) + (axisZ*normalBlend)
+        return Vertex(pos, normal)  
+    
+    def point(stacki, slicei, normalBlend):
+        # wrap around
+        if slicei==slices:
+            slicei = 0
+
+        # check if vertex already exists. Duplicated vertices may
+        # cause self-intersection errors
+        vert = _verts.get((stacki, slicei), None)
+        if vert is None:
+            vert = make_vert(stacki, slicei, normalBlend)
+            _verts[(stacki, slicei)] = vert
+        return vert
+    
+    for i in range(0, stacks):
+        for j in range(0, slices):
+            # start side triangle
+            if i==0:
+                polygons.append(
+                    Polygon([
+                        start,
+                        point(i, j,   -1.), 
+                        point(i, j+1, -1.)
+                        ])
+                    )
+            # round side quad
+            polygons.append(
+                Polygon([
+                    point(i,   j+1, 0.),
+                    point(i,   j,   0.),
+                    point(i+1, j,   0.),
+                    point(i+1, j+1, 0.)
+                    ])
+                )
+            
+            # end side triangle
+            if i==(stacks-1):
+                polygons.append(
+                    Polygon([
+                        end,
+                        point(i+1, j+1, 1.), 
+                        point(i+1, j,   1.)
+                        ])
+                    )
+    
+    return csgFromPolygons(polygons)
+
+def poly_2_csg(list vertices, list vnormals, list faces):
+    """Return a CSG instance build from the give list of vertices and faces
+    """
+
+    cdef int nverts = len(vertices)
+    cdef int nfaces = len(faces)
+    cdef list verts, polys
+    cdef Py_ssize_t i, j
+    cdef Vertex vert
+    cdef list face_vis, face_verts, polys
+    cdef int nfv
+    cdef Polygon poly
+
+    verts = []
+    for i in range(nverts):
+        vert = Vertex(vertices[i], vnormals[i])
+        verts.append(verts)
+
+    polys = []
+    for i in range(nfaces):
+        face_vis = faces[i]
+        nfv = len(face_vis)
+        face_verts = []
+        for j in range(nfv):
+            face_verts.append(vertices[face_vis[j]])
+
+        poly = Polygon(face_verts, False)
+        polys.append(poly)
+
+    return csgFromPolygons(polys)
+
+def get_csg_polys(CSG csg):
+
+    cdef list polygons, vertices, faces, face_vertex_numbers, pos
+    cdef dict vertex_numbers
+    cdef int new_vertex_number
+    cdef Py_ssize_t i, j
+    cdef Vertex v
+    cdef Polygon polygon
+
+    polygons = csg.toPolygons()
+
+    # get vertices for each polygon
+    vertices = []
+    vertex_numbers = {}
+    faces = []
+    new_vertex_number = 0
+    for i in range(npolys):
+        polygon = polygons[i]:
+        face_vertex_numbers = []
+        nverts = len(polygon.vertices)
+        
+        for j in range(nverts):
+            v = polygon.vertices[j]
+            pos = (v.pos.x, v.pos.y, v.pos.z)
+            vertex_number = vertex_numbers.get(pos)
+            if vertex_number is None:
+                vertices.append(pos)
+                vertex_numbers[pos] = new_vertex_number
+                vertex_number = new_vertex_number
+                new_vertex_number += 1
+            face_vertex_numbers.append(vertex_number)
+        faces.append(face_vertex_numbers)
+
+    return vertices, faces
