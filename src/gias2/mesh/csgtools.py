@@ -15,17 +15,21 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 import math
 import numpy as np
 
-try:
-    from _cython_csg import CSG
-    HAS_CYTHON_CSG = True
-except ImportError:
-    try:
-        from csg.core import CSG
-    except ImportError:
-        raise ImportError('Unable to import csg or cython-csg')
-    HAS_CYTHON_CSG = False
+import pyximport
+pyximport.install()
+from gias2.mesh import cython_csg as CSG
 
-from csg import geom
+# try:
+#     from _cython_csg import CSG
+#     HAS_CYTHON_CSG = True
+# except ImportError:
+#     try:
+#         from csg.core import CSG
+#     except ImportError:
+#         raise ImportError('Unable to import csg or cython-csg')
+#     HAS_CYTHON_CSG = False
+
+# from csg import geom
 from gias2.mesh import vtktools, simplemesh
 from gias2.common import math as gmath
 vtk = vtktools.vtk
@@ -48,30 +52,33 @@ def _unit(v):
     """
     return v/np.sqrt((v**2.0).sum(-1))
 
-def poly_2_csgeom(vertices, faces):
+def poly_2_csgeom(vertices, faces, normals=None):
     """
     Create a CSG geometry from a list of vertices and faces.
 
     Inputs:
-    vertices: an nx3 array of vertices coordinates
-    faces: an mxp array of faces
+    vertices: an nx3 nested list of vertices coordinates
+    faces: an mxp nested list of faces
 
     Returns:
     geom: a csg geometry instance
     """
+    if normals is None:
+        normals = list(np.zeros((len(vertices), 3)))
+    return CSG.poly_2_csg(vertices, faces, normals)
 
-    # instantiate csg vertices for all vertices
-    csg_vertices = [geom.Vertex(list(v)) for v in vertices]
+    # # instantiate csg vertices for all vertices
+    # csg_vertices = [geom.Vertex(list(v)) for v in vertices]
     
-    # instantiate csg polygons for all faces
-    csg_polygons = []
-    for f in faces:
-        face_vertices = [csg_vertices[i] for i in f]
-        p = geom.Polygon(face_vertices)
-        csg_polygons.append(p)
+    # # instantiate csg polygons for all faces
+    # csg_polygons = []
+    # for f in faces:
+    #     face_vertices = [csg_vertices[i] for i in f]
+    #     p = geom.Polygon(face_vertices)
+    #     csg_polygons.append(p)
 
-    # create csg geom
-    return CSG.fromPolygons(csg_polygons)
+    # # create csg geom
+    # return CSG.fromPolygons(csg_polygons)
 
 def get_csg_polys(csgeom):
     """
@@ -79,27 +86,29 @@ def get_csg_polys(csgeom):
     of a csg geometry
     """
 
-    polygons = csgeom.toPolygons()
+    return CSG.csg_2_polys(csgeom)
 
-    # get vertices for each polygon
-    vertices = []
-    vertex_numbers = {}
-    faces = []
-    new_vertex_number = 0
-    for polygon in polygons:
-        face_vertex_numbers = []
-        for v in polygon.vertices:
-            pos = (v.pos.x, v.pos.y, v.pos.z)
-            vertex_number = vertex_numbers.get(pos)
-            if vertex_number is None:
-                vertices.append(pos)
-                vertex_numbers[pos] = new_vertex_number
-                vertex_number = new_vertex_number
-                new_vertex_number += 1
-            face_vertex_numbers.append(vertex_number)
-        faces.append(face_vertex_numbers)
+    # polygons = csgeom.toPolygons()
 
-    return vertices, faces
+    # # get vertices for each polygon
+    # vertices = []
+    # vertex_numbers = {}
+    # faces = []
+    # new_vertex_number = 0
+    # for polygon in polygons:
+    #     face_vertex_numbers = []
+    #     for v in polygon.vertices:
+    #         pos = (v.pos.x, v.pos.y, v.pos.z)
+    #         vertex_number = vertex_numbers.get(pos)
+    #         if vertex_number is None:
+    #             vertices.append(pos)
+    #             vertex_numbers[pos] = new_vertex_number
+    #             vertex_number = new_vertex_number
+    #             new_vertex_number += 1
+    #         face_vertex_numbers.append(vertex_number)
+    #     faces.append(face_vertex_numbers)
+
+    # return vertices, faces
 
 def get_csg_triangles(csgeom, clean=False, normals=False):
     """
@@ -134,33 +143,39 @@ def csg2simplemesh(csgeom, clean=True):
     return simplemesh.SimpleMesh(v=v, f=f)
     
 def simplemesh2csg(sm):
-    return poly_2_csgeom(sm.v, sm.f)
+    if sm.vertexNormals is not None:
+        normals = sm.vertexNormals.tolist()
+    else:
+        normals = None
+    return poly_2_csgeom(sm.v.tolist(), sm.f.tolist(), normals)
 
 def cup(centre, normal, ri, ro):
-    slices=16
-    stacks=8
-    centre = np.array(centre)
-    normal = gmath.norm(np.array(normal))
+    return CSG.cup(list(centre), list(normal), ri, ro)
 
-    # create outer sphere
-    sphere_out = CSG.sphere(center=list(centre), radius=ro, slices=slices, stacks=stacks)
+    # slices=16
+    # stacks=8
+    # centre = np.array(centre)
+    # normal = gmath.norm(np.array(normal))
 
-    # create inner sphere
-    sphere_in = CSG.sphere(center=list(centre), radius=ri, slices=slices, stacks=stacks)
+    # # create outer sphere
+    # sphere_out = CSG.sphere(center=list(centre), radius=ro, slices=slices, stacks=stacks)
 
-    # create shell
-    shell = sphere_out.subtract(sphere_in)
-    shell_poly = shell.toPolygons()
+    # # create inner sphere
+    # sphere_in = CSG.sphere(center=list(centre), radius=ri, slices=slices, stacks=stacks)
 
-    # create cylinder to cut shell
-    cylinder = CSG.cylinder(start=list(centre),
-                            end=list(centre-normal*(ro*1.5)),
-                            radius=ro*1.5
-                            )
-    # create cup
-    cup = shell.subtract(cylinder)
+    # # create shell
+    # shell = sphere_out.subtract(sphere_in)
+    # shell_poly = shell.toPolygons()
 
-    return cup
+    # # create cylinder to cut shell
+    # cylinder = CSG.cylinder(start=list(centre),
+    #                         end=list(centre-normal*(ro*1.5)),
+    #                         radius=ro*1.5
+    #                         )
+    # # create cup
+    # cup = shell.subtract(cylinder)
+
+    # return cup
 
 def cylinder_var_radius(**kwargs):
     """ Returns a cylinder with linearly changing radius between the two ends.
@@ -178,80 +193,82 @@ def cylinder_var_radius(**kwargs):
 
             stacks (int): Number of axial slices, default=2.
     """
-    s = kwargs.get('start', np.array([0.0, -1.0, 0.0]))
-    e = kwargs.get('end', np.array([0.0, 1.0, 0.0]))
-    if isinstance(s, list):
-        s = np.array(s)
-    if isinstance(e, list):
-        e = np.array(e)
-    sr = kwargs.get('startr', 1.0)
-    er = kwargs.get('endr', 1.0)
-    slices = kwargs.get('slices', 16)
-    stacks = kwargs.get('stacks', 2)
-    stack_l = 1.0/stacks # length of each stack segment
-    ray = e - s
-    
-    axisZ = _unit(ray)
-    isY = np.abs(axisZ[1])>0.5
-    axisX = _unit(np.cross([float(isY), float(not isY), 0], axisZ))
-    axisY = _unit(np.cross(axisX, axisZ))
-    start = geom.Vertex(list(s), list(-axisZ))
-    end = geom.Vertex(list(e), list(axisZ))
-    polygons = []
-    _verts = {}
+    return CSG.cylinder_var_radius(**kwargs)
 
-    def make_vert(stacki, slicei, normalBlend):
-        stackr = stacki*stack_l
-        slicer = slicei/float(slices)
-        angle = slicer*np.pi*2.0
-        out = axisX*np.cos(angle) + axisY*np.sin(angle)
-        r = sr + stackr*(er-sr)
-        pos = s + ray*stackr + out*r
-        normal = out*(1.0 - np.abs(normalBlend)) + (axisZ*normalBlend)
-        return geom.Vertex(list(pos), list(normal))  
+    # s = kwargs.get('start', np.array([0.0, -1.0, 0.0]))
+    # e = kwargs.get('end', np.array([0.0, 1.0, 0.0]))
+    # if isinstance(s, list):
+    #     s = np.array(s)
+    # if isinstance(e, list):
+    #     e = np.array(e)
+    # sr = kwargs.get('startr', 1.0)
+    # er = kwargs.get('endr', 1.0)
+    # slices = kwargs.get('slices', 16)
+    # stacks = kwargs.get('stacks', 2)
+    # stack_l = 1.0/stacks # length of each stack segment
+    # ray = e - s
     
-    def point(stacki, slicei, normalBlend):
-        # wrap around
-        if slicei==slices:
-            slicei = 0
+    # axisZ = _unit(ray)
+    # isY = np.abs(axisZ[1])>0.5
+    # axisX = _unit(np.cross([float(isY), float(not isY), 0], axisZ))
+    # axisY = _unit(np.cross(axisX, axisZ))
+    # start = geom.Vertex(list(s), list(-axisZ))
+    # end = geom.Vertex(list(e), list(axisZ))
+    # polygons = []
+    # _verts = {}
 
-        # check if vertex already exists. Duplicated vertices may
-        # cause self-intersection errors
-        vert = _verts.get((stacki, slicei), None)
-        if vert is None:
-            vert = make_vert(stacki, slicei, normalBlend)
-            _verts[(stacki, slicei)] = vert
-        return vert
+    # def make_vert(stacki, slicei, normalBlend):
+    #     stackr = stacki*stack_l
+    #     slicer = slicei/float(slices)
+    #     angle = slicer*np.pi*2.0
+    #     out = axisX*np.cos(angle) + axisY*np.sin(angle)
+    #     r = sr + stackr*(er-sr)
+    #     pos = s + ray*stackr + out*r
+    #     normal = out*(1.0 - np.abs(normalBlend)) + (axisZ*normalBlend)
+    #     return geom.Vertex(list(pos), list(normal))  
     
-    for i in range(0, stacks):
-        for j in range(0, slices):
-            # start side triangle
-            if i==0:
-                polygons.append(
-                    geom.Polygon([
-                        start,
-                        point(i, j,   -1.), 
-                        point(i, j+1, -1.)
-                        ])
-                    )
-            # round side quad
-            polygons.append(
-                geom.Polygon([
-                    point(i,   j+1, 0.),
-                    point(i,   j,   0.),
-                    point(i+1, j,   0.),
-                    point(i+1, j+1, 0.)
-                    ])
-                )
+    # def point(stacki, slicei, normalBlend):
+    #     # wrap around
+    #     if slicei==slices:
+    #         slicei = 0
+
+    #     # check if vertex already exists. Duplicated vertices may
+    #     # cause self-intersection errors
+    #     vert = _verts.get((stacki, slicei), None)
+    #     if vert is None:
+    #         vert = make_vert(stacki, slicei, normalBlend)
+    #         _verts[(stacki, slicei)] = vert
+    #     return vert
+    
+    # for i in range(0, stacks):
+    #     for j in range(0, slices):
+    #         # start side triangle
+    #         if i==0:
+    #             polygons.append(
+    #                 geom.Polygon([
+    #                     start,
+    #                     point(i, j,   -1.), 
+    #                     point(i, j+1, -1.)
+    #                     ])
+    #                 )
+    #         # round side quad
+    #         polygons.append(
+    #             geom.Polygon([
+    #                 point(i,   j+1, 0.),
+    #                 point(i,   j,   0.),
+    #                 point(i+1, j,   0.),
+    #                 point(i+1, j+1, 0.)
+    #                 ])
+    #             )
             
-            # end side triangle
-            if i==(stacks-1):
-                polygons.append(
-                    geom.Polygon([
-                        end,
-                        point(i+1, j+1, 1.), 
-                        point(i+1, j,   1.)
-                        ])
-                    )
+    #         # end side triangle
+    #         if i==(stacks-1):
+    #             polygons.append(
+    #                 geom.Polygon([
+    #                     end,
+    #                     point(i+1, j+1, 1.), 
+    #                     point(i+1, j,   1.)
+    #                     ])
+    #                 )
     
-    return CSG.fromPolygons(polygons)
+    # return CSG.fromPolygons(polygons)
