@@ -1,31 +1,27 @@
 
 # cython: profile=True
-
-# import cython
-# import math
-import operator
-from functools import reduce
-
-# from cpython cimport array
-# import array
+# cython: boundscheck=False, nonecheck=False
 
 import cython
 cimport cython
-# cimport numpy as np
+# from cpython cimport array
+# import array
+
+import operator
+from functools import reduce
 
 # increase the max number of recursive calls
 # sys.setrecursionlimit(10000)  # my default is 1000, increasing too much may cause a seg fault
-
-# cdef array.array int_array_template = array.array('i', [])
 
 from libc.math cimport sqrt, sin, cos, atan2, abs
 
 cdef double PI = 3.14159265358979323846264338327
 
+# cdef array.array int_array_template = array.array('i', [])
+
 cdef double dot_vectors(Vector a, Vector b):
     return a.x * b.x + a.y * b.y + a.z * b.z
 
-@cython.nonecheck(False)
 cdef class Vector(object):
     """
     class Vector
@@ -74,7 +70,7 @@ cdef class Vector(object):
 
     cpdef Vector clone(self):
         """ Clone. """
-        return Vector(self.x, self.y, self.z)
+        return Vector(<double>self.x, <double>self.y, <double>self.z)
 
     cpdef Vector negated(self):
         """ Negated. """
@@ -237,7 +233,6 @@ cdef class Plane(object):
     def __repr__(self):
         return 'normal: {0} w: {1}'.format(self.normal, self.w)
 
-    @cython.nonecheck(False)
     cpdef void splitPolygon(self, Polygon polygon, list coplanarFront,
         list coplanarBack, list front, list back):
         """
@@ -265,8 +260,15 @@ cdef class Plane(object):
         # four classes.
         cdef int polygonType = 0
         cdef list vertexLocs = []  # list of ints
-        cdef list f = []  # list of vertices
-        cdef list b = []  # list of vertices
+        # cdef array.array vertexLocs
+        # vertexLocs = array.clone(int_array_template, numVertices, zero=True)
+        cdef list _f = []  # list of vertices
+        cdef list _b = []  # list of vertices
+
+        # cdef list _front = [] #list(front)
+        # cdef list _back = [] #list(back)
+        # cdef list _coplanarFront = [] #list(coplanarFront)
+        # cdef list _coplanarBack = [] #list(coplanarBack)
         
         for i in range(numVertices):
             # t = self.normal.dot(polygon.vertices[i].pos) - self.w
@@ -295,8 +297,8 @@ cdef class Plane(object):
         elif polygonType == BACK:
             back.append(polygon)  # list op
         elif polygonType == SPANNING:
-            f = []
-            b = []
+            _f = []
+            _b = []
             for i in range(numVertices):
                 j = (i + 1) % numVertices
                 ti = vertexLocs[i]
@@ -304,12 +306,12 @@ cdef class Plane(object):
                 vi = polygon.vertices[i]
                 vj = polygon.vertices[j]
                 if ti != BACK:
-                    f.append(vi)  # list op
+                    _f.append(vi)  # list op
                 if ti != FRONT:
                     if ti != BACK:
-                        b.append(vi.clone())  # list op
+                        _b.append(vi.clone())  # list op
                     else:
-                        b.append(vi)  # list op
+                        _b.append(vi)  # list op
                 if (ti | tj) == SPANNING:
                     # interpolation weight at the intersection point
                     # t = (self.w - self.normal.dot(vi.pos)) / self.normal.dot(vj.pos.minus(vi.pos))
@@ -320,14 +322,32 @@ cdef class Plane(object):
                     t = (self.w - t1) / t2
                     # intersection point on the plane
                     v = vi.interpolate(vj, t)
-                    f.append(v)  # list op
-                    b.append(v.clone())  # list op
-            if len(f) >= 3:
-                poly = Polygon(f, polygon.shared)
+                    _f.append(v)  # list op
+                    _b.append(v.clone())  # list op
+            if len(_f) >= 3:
+                poly = Polygon(_f, polygon.shared)
                 front.append(poly)  # list op
-            if len(b) >= 3:
-                poly = Polygon(b, polygon.shared)
+            if len(_b) >= 3:
+                # b = _b[:]
+                poly = Polygon(_b, polygon.shared)
                 back.append(poly)  # list op
+
+        # front += _front
+        # back += _back
+        # coplanarFront += _coplanarFront
+        # coplanarBack += _coplanarBack
+
+        # for x in _front:
+        #     front.append(x)
+
+        # for x in _back:
+        #     back.append(x)
+
+        # for x in _coplanarFront:
+        #     coplanarFront.append(x)
+
+        # for x in _coplanarBack:
+        #     coplanarBack.append(x)
 
 
 cdef class Polygon(object):
@@ -345,7 +365,7 @@ cdef class Polygon(object):
     """
 
     cdef public list vertices
-    cdef public bint shared
+    cdef public int shared
     cdef public Plane plane
 
     # cdef tuple __slots__ = (
@@ -354,7 +374,7 @@ cdef class Polygon(object):
     #     'plane'
     #     )
 
-    def __init__(self, list vertices, bint shared):
+    def __init__(self, list vertices, int shared):
         self.vertices = vertices
         self.shared = shared
         self.plane = planeFromPoints(vertices[0].pos, vertices[1].pos, vertices[2].pos)
@@ -1015,7 +1035,7 @@ def cube(center=[0, 0, 0], radius=[1, 1, 1]):
                         v[0]
                         )
                     ),
-                False
+                0
                 ),
             [
                 [[0, 4, 6, 2], [-1, 0, 0]],
@@ -1084,7 +1104,7 @@ def sphere(**kwargs):
         appendVertex(vertices, i0 * dTheta, j0 * dPhi)
         appendVertex(vertices, i1 * dTheta, j1 * dPhi)
         appendVertex(vertices, i0 * dTheta, j1 * dPhi)
-        polygons.append(Polygon(vertices, False))
+        polygons.append(Polygon(vertices, 0))
 
     j0 = stacks - 1
     j1 = j0 + 1
@@ -1098,7 +1118,7 @@ def sphere(**kwargs):
         appendVertex(vertices, i0 * dTheta, j0 * dPhi)
         appendVertex(vertices, i1 * dTheta, j0 * dPhi)
         appendVertex(vertices, i0 * dTheta, j1 * dPhi)
-        polygons.append(Polygon(vertices, False))
+        polygons.append(Polygon(vertices, 0))
 
     for j0 in range(1, stacks - 1):
         j1 = j0 + 0.5
@@ -1115,22 +1135,22 @@ def sphere(**kwargs):
             appendVertex(verticesN, i1 * dTheta, j1 * dPhi)
             appendVertex(verticesN, i2 * dTheta, j2 * dPhi)
             appendVertex(verticesN, i0 * dTheta, j2 * dPhi)
-            polygons.append(Polygon(verticesN, False))
+            polygons.append(Polygon(verticesN, 0))
             verticesS = []
             appendVertex(verticesS, i1 * dTheta, j1 * dPhi)
             appendVertex(verticesS, i0 * dTheta, j0 * dPhi)
             appendVertex(verticesS, i2 * dTheta, j0 * dPhi)
-            polygons.append(Polygon(verticesS, False))
+            polygons.append(Polygon(verticesS, 0))
             verticesW = []
             appendVertex(verticesW, i1 * dTheta, j1 * dPhi)
             appendVertex(verticesW, i0 * dTheta, j2 * dPhi)
             appendVertex(verticesW, i0 * dTheta, j0 * dPhi)
-            polygons.append(Polygon(verticesW, False))
+            polygons.append(Polygon(verticesW, 0))
             verticesE = []
             appendVertex(verticesE, i1 * dTheta, j1 * dPhi)
             appendVertex(verticesE, i2 * dTheta, j0 * dPhi)
             appendVertex(verticesE, i2 * dTheta, j2 * dPhi)
-            polygons.append(Polygon(verticesE, False))
+            polygons.append(Polygon(verticesE, 0))
 
     return csgFromPolygons(polygons)
 
@@ -1188,14 +1208,14 @@ def cylinder(**kwargs):
         t1 = i1 * dt
         polygons.append(Polygon([start.clone(),
                                  point(0., t0, -1.),
-                                 point(0., t1, -1.)], False))
+                                 point(0., t1, -1.)], 0))
         polygons.append(Polygon([point(0., t1, 0.),
                                  point(0., t0, 0.),
                                  point(1., t0, 0.),
-                                 point(1., t1, 0.)], False))
+                                 point(1., t1, 0.)], 0))
         polygons.append(Polygon([end.clone(),
                                  point(1., t1, 1.),
-                                 point(1., t0, 1.)], False))
+                                 point(1., t0, 1.)], 0))
 
     return csgFromPolygons(polygons)
 
@@ -1267,10 +1287,10 @@ def cone(**kwargs):
         # polygon on the low side (disk sector)
         polyStart = Polygon([start.clone(),
                              Vertex(p0, startNormal),
-                             Vertex(p1, startNormal)], False)
+                             Vertex(p1, startNormal)], 0)
         polygons.append(polyStart)
         # polygon extending from the low side to the tip
-        polySide = Polygon([Vertex(p0, n0), Vertex(e, nAvg), Vertex(p1, n1)], False)
+        polySide = Polygon([Vertex(p0, n0), Vertex(e, nAvg), Vertex(p1, n1)], 0)
         polygons.append(polySide)
 
     return csgFromPolygons(polygons)
@@ -1393,7 +1413,7 @@ def cylinder_var_radius(**kwargs):
                         start.clone(),
                         point(i, j,   -1.), 
                         point(i, j+1, -1.)
-                        ], False)
+                        ], 0)
                     )
             # round side quad
             polygons.append(
@@ -1402,7 +1422,7 @@ def cylinder_var_radius(**kwargs):
                     point(i,   j,   0.),
                     point(i+1, j,   0.),
                     point(i+1, j+1, 0.)
-                    ], False)
+                    ], 0)
                 )
             
             # end side triangle
@@ -1412,7 +1432,7 @@ def cylinder_var_radius(**kwargs):
                         end.clone(),
                         point(i+1, j+1, 1.), 
                         point(i+1, j,   1.)
-                        ], False)
+                        ], 0)
                     )
     
     return csgFromPolygons(polygons)
@@ -1442,7 +1462,7 @@ def poly_2_csg(list vertices, list vnormals, list faces):
         for j in range(nfv):
             face_verts.append(vertices[face_vis[j]])
 
-        poly = Polygon(face_verts, False)
+        poly = Polygon(face_verts, 0)
         polys.append(poly)
 
     return csgFromPolygons(polys)
