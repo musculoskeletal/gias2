@@ -212,10 +212,13 @@ cdef class Plane(object):
         respect to this plane. Polygons in front or in back of this plane go into
         either `front` or `back`
         """
+        
+        # classification of the polygon
         cdef int COPLANAR = 0  # all the vertices are within EPSILON distance from plane
         cdef int FRONT = 1  # all the vertices are in front of the plane
         cdef int BACK = 2  # all the vertices are at the back of the plane
         cdef int SPANNING = 3  # some vertices are in front, some in the back
+
         cdef int numVertices = len(polygon.vertices)
         cdef Py_ssize_t i, j, ti, tj
         cdef int loc
@@ -226,13 +229,16 @@ cdef class Plane(object):
         cdef Polygon poly
         cdef Vector pos, pos2
 
-        # Classify each point as well as the entire polygon into one of the above
-        # four classes.
         cdef int polygonType = 0
         cdef list vertexLocs = []  # list of ints
         cdef list _f = []  # list of vertices
         cdef list _b = []  # list of vertices
-        
+
+        #---------------------------------------------------------------------#
+        # Classify each point as well as the entire polygon into one of the
+        # four classes.
+        #---------------------------------------------------------------------#
+        # loop through each polygon vertex
         for i in range(numVertices):
             # t = self.normal.dot(polygon.vertices[i].pos) - self.w
             v = polygon.vertices[i]
@@ -244,10 +250,12 @@ cdef class Plane(object):
                 loc = FRONT
             else:
                 loc = COPLANAR
-            polygonType |= loc
+            polygonType |= loc  # sets polygonType to loc or 3(SPANNING) if polygonType is already 1 or 2 and loc is the other
             vertexLocs.append(loc)  # list op
 
+        #---------------------------------------------------------------------#
         # Put the polygon in the correct list, splitting it when necessary.
+        #---------------------------------------------------------------------#
         if polygonType == COPLANAR:
             # normalDotPlaneNormal = self.normal.dot(polygon.plane.normal)
             normalDotPlaneNormal = dot_vectors(self.normal, polygon.plane.normal)
@@ -260,10 +268,12 @@ cdef class Plane(object):
         elif polygonType == BACK:
             back.append(polygon)  # list op
         elif polygonType == SPANNING:
+            # lists for holding the class of each vertex
             _f = []
             _b = []
+            # split polygon, loop through polygon vertices
             for i in range(numVertices):
-                j = (i + 1) % numVertices
+                j = (i + 1) % numVertices  # get the adjacent vertex
                 ti = vertexLocs[i]
                 tj = vertexLocs[j]
                 vi = polygon.vertices[i]
@@ -272,6 +282,7 @@ cdef class Plane(object):
                     _f.append(vi)  # list op
                 if ti != FRONT:
                     if ti != BACK:
+                        # coplanar vertex
                         _b.append(vi.clone())  # list op
                     else:
                         _b.append(vi)  # list op
@@ -283,7 +294,7 @@ cdef class Plane(object):
                     pos2 = vj.pos.minus(pos)
                     t2 = dot_vectors(self.normal, pos2)
                     t = (self.w - t1) / t2
-                    # intersection point on the plane
+                    # intersection point on the plane, a new vertex
                     v = vi.interpolate(vj, t)
                     _f.append(v)  # list op
                     _b.append(v.clone())  # list op
@@ -486,7 +497,7 @@ cdef class BSPNode(object):
             polygons.extend(self.back.allPolygons())
         return polygons
 
-    cpdef build(self, list polygons):
+    cpdef void build(self, list polygons):
         """
         Build a BSP tree out of `polygons`. When called on an existing tree, the
         new polygons are filtered down to the bottom of the tree and become new
