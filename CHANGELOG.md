@@ -1,5 +1,9 @@
 # GIAS2 Change log
 
+## 0.6.0
+- optimised Cython implementation of csg package included.
+- csgtools now uses the included Cython csg module.
+
 ## 0.5.3
 - optionally use least_squares for point-cloud shapemodel fitting
 
