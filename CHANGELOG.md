@@ -1,5 +1,8 @@
 # GIAS2 Change log
 
+## 0.6.1
+- update i2c and c2i matrices in downscale method if copy==False 
+
 ## 0.6.0
 - optimised Cython implementation of csg package included.
 - csgtools now uses the included Cython csg module.
