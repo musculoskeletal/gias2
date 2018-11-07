@@ -37,6 +37,9 @@ PRECISION = 1e-16
 class NonInterceptError(Exception):
     pass
 
+class InPlaneError(Exception):
+    pass
+
 class Line3D( object ):
     """ X = t*a + b
     """
@@ -470,6 +473,25 @@ class Plane( object ):
 
         # calc angle between v and v_proj
         return angle(v_proj, v)
+
+    def intersect_line(self, l):
+        """
+        Find the point of intersection between a line l and this plane
+        """
+
+        nom = scipy.dot((self.O - l.b), self.N)
+        denom = scipy.dot(l.a, self.N)
+
+        if abs(nom)<PRECISION:
+            # line is in plane
+            raise InPlaneError('line is in plane, infinite intersections')
+        elif abs(denom)<PRECISION:
+            # line is parallel to plane
+            raise NonInterceptError('line is parallel to plane but out of plane, no intersections')
+        else:
+            t = nom/denom
+            p = l.eval(t)
+            return p
 
     def transformAffine(self, t):
         self.O = scipy.dot(
