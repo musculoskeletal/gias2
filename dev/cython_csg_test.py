@@ -7,7 +7,8 @@ pyximport.install(
     }
 )
 
-import cython_csg_gias2 as CSG
+# import cython_csg_gias2 as CSG
+from gias2.mesh import cython_csg as CSG
 
 from gias2.mesh import vtktools, simplemesh
 
@@ -61,6 +62,8 @@ union_ab_1 = a.union(b)
 
 # shape tests
 cube = CSG.cube([10,10,10], [1,2,3])
+cube2 = CSG.cube([10,10,10], [5,1,1])
+cube_sub = cube.subtract(cube2)
 cone = CSG.cone(start=[10,0,0], end=[20,0,0], radius=5, slices=8)
 cup = CSG.cup([0,0,0], [0,0,1], 9, 10, 8, 8)
 trunc_cone = CSG.cylinder_var_radius(start=[0,0,0], end=[10,0,0], startr=2.0, endr=4.0, slice=8, stacks=8)
@@ -89,7 +92,7 @@ def get_csg_triangles(csgeom, clean=False, normals=False):
     n : mx3 array
         a list of face normals if normals=True, else None.
     """
-    vertices, faces = CSG.get_csg_polys(csgeom)
+    vertices, faces = CSG.csg_2_polys(csgeom)
     if len(vertices)==0:
         raise ValueError('no polygons in geometry')
     return vtktools.polygons2Tri(vertices, faces, clean, normals)
@@ -101,6 +104,8 @@ def csg2simplemesh(csgeom, clean=True):
 sphere_sm = csg2simplemesh(a)
 cylinder_sm = csg2simplemesh(b)
 cube_sm = csg2simplemesh(cube)
+cube2_sm = csg2simplemesh(cube2)
+cube_sub_sm = csg2simplemesh(cube_sub)
 cone_sm = csg2simplemesh(cone)
 cup_sm = csg2simplemesh(cup)
 trunc_cone_sm = csg2simplemesh(trunc_cone)

@@ -717,7 +717,7 @@ cdef class CSG(object):
 
         newCSG = CSG()
         for pi in range(npolys):
-            poly = self.polygon[pi]
+            poly = self.polygons[pi]
             verts = poly.vertices
             numVerts = len(verts)
 
@@ -767,7 +767,7 @@ cdef class CSG(object):
 
         d = Vector(disp[0], disp[1], disp[2])
         for pi in range(npolys):
-            poly = self.polygon[pi]
+            poly = self.polygons[pi]
             nverts = len(poly.vertices)
             for vi in range(nverts):
                 v = poly.vertices[vi]
@@ -794,13 +794,44 @@ cdef class CSG(object):
         sinAngle = sin(PI * angleDeg / 180.)
 
         for pi in range(npolys):
-            poly = self.polygon[pi]
+            poly = self.polygons[pi]
             nverts = len(poly.vertices)
             for vi in range(nverts):
                 vert = poly.vertices[vi]
                 vert.pos = rotateVector(vert.pos, ax, cosAngle, sinAngle)
                 if vert.normal.length() > 0:
                     vert.normal = rotateVector(vert.normal, ax, cosAngle, sinAngle)
+
+    cpdef void transformMatrix(self, list M1, list M2, list M3):
+        """
+        Transform geometry using a transformation matrix.
+            M1: 1st row of the matrix (list of floats)
+            M2: 2nd row of the matrix (list of floats)
+            M3: 3rd row of the matrix (list of floats)
+        """
+
+        cdef Vector d
+        cdef Vertex v
+        cdef int nverts
+        cdef int npolys = len(self.polygons)
+        cdef double x, y, z
+        cdef Py_ssize_t pi, vi
+
+        for pi in range(npolys):
+            poly = self.polygons[pi]
+            nverts = len(poly.vertices)
+            for vi in range(nverts):
+                vert = poly.vertices[vi]
+                x = M1[0]*vert.pos.x + M1[1]*vert.pos.y + M1[2]*vert.pos.z + M1[3]
+                y = M2[0]*vert.pos.x + M2[1]*vert.pos.y + M2[2]*vert.pos.z + M2[3]
+                z = M3[0]*vert.pos.x + M3[1]*vert.pos.y + M3[2]*vert.pos.z + M3[3]
+                vert.pos = Vector(x, y, z)
+
+                if vert.normal is not None:
+                    x = M1[0]*vert.normal.x + M1[1]*vert.normal.y + M1[2]*vert.normal.z
+                    y = M2[0]*vert.normal.x + M2[1]*vert.normal.y + M2[2]*vert.normal.z
+                    z = M3[0]*vert.normal.x + M3[1]*vert.normal.y + M3[2]*vert.normal.z
+                    vert.normal = Vector(x, y, z)
 
     cpdef int toVerticesAndPolygons(self, list verts, list polys):
         """
@@ -825,7 +856,7 @@ cdef class CSG(object):
         vertexIndexMap = {}
         count = 0
         for pi in range(npolys):
-            poly = self.polygon[pi]
+            poly = self.polygons[pi]
             verts = poly.vertices
             cell = []
             nverts = len(poly.vertices)
@@ -1027,34 +1058,31 @@ def cube(center=[0, 0, 0], radius=[1, 1, 1]):
     else:
         r = [radius, radius, radius]
 
-    polygons = list(
-        map(
-            lambda v: Polygon(
-                list(
-                    map(
-                        lambda i: Vertex(
-                            Vector(
-                                c.x + r[0] * (2 * bool(i & 1) - 1),
-                                c.y + r[1] * (2 * bool(i & 2) - 1),
-                                c.z + r[2] * (2 * bool(i & 4) - 1)
-                                ),
-                            None
-                            ),
-                        v[0]
+    polygons = list(map(
+        lambda v: Polygon(
+            list(map(lambda i:
+                Vertex(
+                    Vector(
+                        c.x + r[0] * (2 * bool(i & 1) - 1),
+                        c.y + r[1] * (2 * bool(i & 2) - 1),
+                        c.z + r[2] * (2 * bool(i & 4) - 1)
+                        ),
+                    Vector(
+                        v[1][0], v[1][1], v[1][2]
                         )
                     ),
-                0
-                ),
-            [
-                [[0, 4, 6, 2], [-1, 0, 0]],
-                [[1, 3, 7, 5], [+1, 0, 0]],
-                [[0, 1, 5, 4], [0, -1, 0]],
-                [[2, 6, 7, 3], [0, +1, 0]],
-                [[0, 2, 3, 1], [0, 0, -1]],
-                [[4, 5, 7, 6], [0, 0, +1]]
-                ]
-            )
-        )
+                v[0])),
+            0),
+        [
+            [[0, 4, 6, 2], [-1, 0, 0]],
+            [[1, 3, 7, 5], [+1, 0, 0]],
+            [[0, 1, 5, 4], [0, -1, 0]],
+            [[2, 6, 7, 3], [0, +1, 0]],
+            [[0, 2, 3, 1], [0, 0, -1]],
+            [[4, 5, 7, 6], [0, 0, +1]]
+        ]
+    ))
+
     return csgFromPolygons(polygons)
 
 

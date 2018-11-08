@@ -149,6 +149,9 @@ def simplemesh2csg(sm):
         normals = None
     return poly_2_csgeom(sm.v.tolist(), sm.f.tolist(), normals)
 
+def cube(center=[0,0,0], radius=[1,1,1]):
+    return CSG.cube(center=list(center), radius=list(radius))
+
 def cup(centre, normal, ri, ro):
     return CSG.cup(list(centre), list(normal), ri, ro)
 
