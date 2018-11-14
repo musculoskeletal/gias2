@@ -61,7 +61,7 @@ print('cylinder csg created')
 union_ab_1 = a.union(b)
 
 # shape tests
-cube = CSG.cube([10,10,10], [1,2,3])
+cube = CSG.cube([10,10,10], [3,3,3])
 cube2 = CSG.cube([10,10,10], [5,1,1])
 cube_sub = cube.subtract(cube2)
 cone = CSG.cone(start=[10,0,0], end=[20,0,0], radius=5, slices=8)
@@ -109,3 +109,10 @@ cube_sub_sm = csg2simplemesh(cube_sub)
 cone_sm = csg2simplemesh(cone)
 cup_sm = csg2simplemesh(cup)
 trunc_cone_sm = csg2simplemesh(trunc_cone)
+
+cube.transformMatrix(
+    [2.,0.,0.,10.],
+    [0.,1.,0.,10.],
+    [0.,0.,1.,10.],
+    )
+cube_trans_sm = csg2simplemesh(cube)
