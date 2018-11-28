@@ -1,5 +1,10 @@
 # GIAS2 Change log
 
+## 0.6.2
+- calculate intersection between plane and line
+- affine transform for CSG
+- fixed CSG cube
+
 ## 0.6.1
 - update i2c and c2i matrices in downscale method if copy==False 
 
