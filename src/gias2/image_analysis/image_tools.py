@@ -2110,7 +2110,10 @@ def cropImageAroundPoints(points, scan, pad, croppedName=None, transformToIndexS
     # calculate new affine matrices
     if scan.USE_DICOM_AFFINE:
         i2cmat = scan.index2CoordA.copy()
-        i2cmat[:3,3] = scan.index2Coord(scipy.array([cropOffset,])).squeeze()
+        translation = scipy.eye(4)
+        translation[:3,3] = scan.index2Coord(scipy.array([cropOffset,])).squeeze()
+        i2cmat = scipy.dot(i2cmat, translation)
+        # i2cmat[:3,3] = scan.index2Coord(scipy.array([cropOffset,])).squeeze()
         c2imat = inv(i2cmat)
     else:
         i2cmat = None
