@@ -257,6 +257,53 @@ cdef class Plane(object):
     def __repr__(self):
         return 'normal: {0} w: {1}'.format(self.normal, self.w)
 
+    cpdef int classifyPolygon(self, Polygon polygon):
+        """
+        Classify `polygon` with respect to this plane. Possible classes
+        are:
+        0: coplanar
+        1: front
+        2: back
+        3: spanning
+        """
+        
+        # classification of the polygon
+        cdef int COPLANAR = 0  # all the vertices are within EPSILON distance from plane
+        cdef int FRONT = 1  # all the vertices are in front of the plane
+        cdef int BACK = 2  # all the vertices are at the back of the plane
+        cdef int SPANNING = 3  # some vertices are in front, some in the back
+
+        cdef int numVertices = len(polygon.vertices)
+        cdef Py_ssize_t i
+        cdef int loc
+        cdef double t
+        cdef double EPS = self.EPSILON
+        cdef double NEPS = -1.0*self.EPSILON
+        cdef Vertex v
+        cdef Vector pos
+        cdef int polygonType = 0
+
+        #---------------------------------------------------------------------#
+        # Classify each point as well as the entire polygon into one of the
+        # four classes.
+        #---------------------------------------------------------------------#
+        # loop through each polygon vertex
+        for i in range(numVertices):
+            # t = self.normal.dot(polygon.vertices[i].pos) - self.w
+            v = polygon.vertices[i]
+            t = dot_vectors(self.normal, v.pos) - self.w
+            loc = -1
+            if t < NEPS:
+                loc = BACK
+            elif t > EPS:
+                loc = FRONT
+            else:
+                loc = COPLANAR
+            polygonType |= loc  # sets polygonType to loc or 3(SPANNING) if polygonType is already 1 or 2 and loc is the other
+            vertexLocs.append(loc)  # list op
+
+        return polygonType
+
     cpdef void splitPolygon(self, Polygon polygon, list coplanarFront,
         list coplanarBack, list front, list back):
         """
@@ -539,6 +586,60 @@ cdef class BSPNode(object):
             self.front.clipTo(bsp)
         if self.back:
             self.back.clipTo(bsp)
+
+    cpdef int detectPolyCollision(self, Polygon poly):
+        """
+        Check input polygon for intersection or colinearity with
+        any faces in this BSP
+        """
+
+        # classification of the polygon
+        cdef int COPLANAR = 0  # all the vertices are within EPSILON distance from plane
+        cdef int FRONT = 1  # all the vertices are in front of the plane
+        cdef int BACK = 2  # all the vertices are at the back of the plane
+        cdef int SPANNING = 3  # some vertices are in front, some in the back
+
+        polyType = self.plane.classifyPolygon(poly)
+        if (polyType==COPLANAR) or (polyType==SPANNING):
+            return 1
+        elif polyType==FRONT:
+            if not self.front:
+                return 0
+            else:
+                return self.front.detectPolyCollision(poly)
+        else:
+            if not self.back:
+                return 0
+            else:
+                return self.back.detectPolyCollision(poly)
+
+    cpdef list detectCollision(self, list polygons):
+        """
+        Recursively check for collision or intersection with the input list of polygons.
+
+        Returns a list of of same length as polygons where each element is 0 if that
+        polygon doesnt collide, and 1 if it does.
+        """
+        cdef Polygon poly
+        cdef int npolys
+        cdef Py_ssize_t pi
+        cdef list col_polys = []
+
+        # classification of the polygon
+        cdef int COPLANAR = 0  # all the vertices are within EPSILON distance from plane
+        cdef int FRONT = 1  # all the vertices are in front of the plane
+        cdef int BACK = 2  # all the vertices are at the back of the plane
+        cdef int SPANNING = 3  # some vertices are in front, some in the back
+
+        if not self.plane:
+            return []
+
+        npolys = len(polygons)
+        for pi in range(npolys):
+            poly = polygons[pi]
+            col_polys.append(self.detectPolyCollision(poly))
+
+        return col_polys
 
     cpdef list allPolygons(self):
         """
@@ -1032,6 +1133,18 @@ cdef class CSG(object):
             csg.polygons[pi].flip()
 
         return csg
+
+    cpdef list detectCollision(self, CSG csg):
+        """
+        Detect if this CSG is in collision or intersection with the input CSG.
+
+        Returns a list of of same length as csg.polygons where each element is 0 if that
+        polygon doesnt collide, and 1 if it does.
+        """
+        cdef BSPNode a, b
+
+        a = BSPNode(self.clone().polygons)
+        return a.detectCollision(csg.polygons)
 
 
 def cube(center=[0, 0, 0], radius=[1, 1, 1]):
