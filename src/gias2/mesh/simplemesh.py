@@ -105,6 +105,7 @@ class SimpleMesh( object ):
         self.E = scipy.array(E)
         self.data = data
         self.faceNormals = None
+        self.hasFaceNormals = False
         self.faceAreas = None
         self.faceBarycenters = None
         self.boundingBox = None
@@ -277,6 +278,7 @@ class SimpleMesh( object ):
         v2 = faceVertices[:,2,:] - faceVertices[:,0,:]
         v1v2 = scipy.cross( v1, v2 )
         self.faceNormals = normalise2( v1v2 )
+        self.hasFaceNormals = True
         self.faceAreas = 0.5*mag2( v1v2 )
         self.faceBarycenters = (faceVertices[:,0,:] + (faceVertices[:,1,:] + faceVertices[:,2,:]) )/3.0
     
