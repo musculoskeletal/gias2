@@ -1,5 +1,8 @@
 # GIAS2 Change log
 
+## 0.6.3
+- added hasFaceNormals attribute to Simplemesh for consistency
+
 ## 0.6.2
 - calculate intersection between plane and line
 - affine transform for CSG
