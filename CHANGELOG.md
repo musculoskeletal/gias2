@@ -1,5 +1,9 @@
 # GIAS2 Change log
 
+## 0.6.4
+- enabled 2way fitmode for pc fitting
+- fixed set_affine_matrix in Scan class
+
 ## 0.6.3
 - added hasFaceNormals attribute to Simplemesh for consistency
 
