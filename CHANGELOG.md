@@ -1,5 +1,8 @@
 # GIAS2 Change log
 
+## 0.6.5
+- avoid using numpy helps when convering numpy points to vtk points in python 2. This should fix the issue of giasrbfreg outputting meshes with a vertex at origin.
+
 ## 0.6.4
 - enabled 2way fitmode for pc fitting
 - fixed set_affine_matrix in Scan class
