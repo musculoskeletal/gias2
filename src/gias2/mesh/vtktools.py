@@ -12,6 +12,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
 
+import sys
 from os import path
 from scipy import zeros, array, uint8, int16, uint16, ones, newaxis, ascontiguousarray
 import pickle
@@ -798,11 +799,14 @@ def polygons2Polydata(vertices, faces, vcolours=None, fcolours=None, vnormals=No
     """
     # define points
     points = vtk.vtkPoints()
-    points.SetData(numpy_support.numpy_to_vtk(
-        ascontiguousarray(array(vertices))
-        ))
-    # for x, y, z in vertices:
-    #     points.InsertNextPoint(x, y, z)
+
+    if sys.version_info.major==3:
+        points.SetData(numpy_support.numpy_to_vtk(
+            ascontiguousarray(array(vertices))
+            ))
+    else:
+        for x, y, z in vertices:
+            points.InsertNextPoint(x, y, z)
 
     # create polygons
     polygons = vtk.vtkCellArray()
