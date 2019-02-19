@@ -90,7 +90,13 @@ class Fieldvi(HasTraits):
     LLHJC2 = Range(-90.0, +90.0,0.0)
     LLHJC3 = Range(-90.0, +90.0,0.0)
     LLKnee1 = Range(-150.0, 0.0,0.0)
+
+    # 2 rigid-body
+    RBAX0 = Range(-scipy.pi, +scipy.pi, 0.0)
+    RBAX1 = Range(-scipy.pi, +scipy.pi, 0.0)
+    RBAX2 = Range(-scipy.pi, +scipy.pi, 0.0)
     
+    # screenshot
     saveImageFilename = Str('screenshot.jpeg')
     saveImageWidth = Str('2000')
     saveImageLength = Str('1500')
@@ -204,6 +210,13 @@ class Fieldvi(HasTraits):
                             Item('LLKnee1', style='custom', springy=True, label='Knee Flexion'),
                             label='Lower limb atlas'
                         ),
+
+                        VGroup(
+                            Item('RBAX0', style='custom', springy=True, label='Axis 0'),
+                            Item('RBAX1', style='custom', springy=True, label='Axis 1'),
+                            Item('RBAX2', style='custom', springy=True, label='Axis 2'),
+                            label='Rigid Bodies'
+                            ),
                     springy=False),
                     
                     Item('scene', editor=SceneEditor(scene_class=MayaviScene), height=600, width=800, show_label=False),
@@ -1109,6 +1122,9 @@ class Fieldvi(HasTraits):
         vrmlEx.file_name = filename
         vrmlEx.write()
 
+    #=========================================================================#
+    # Lower limb atlas
+    #=========================================================================#
     def setLowerLimbAtlas(self, LL, gfEvalMaker):
         self.LL = LL
         self.LLParams = list(LL._neutral_params)
@@ -1175,7 +1191,45 @@ class Fieldvi(HasTraits):
         for mn in self.LL.models:
             self.updateGeometricField('LL_'+mn)
 
+    #=========================================================================#
+    # 2 rigid-body
+    #=========================================================================#
+    def setRigidBodies(self, meshparent, meshchild, *joints):
+        self.rb_parent = meshparent
+        self.rb_child = meshchild
+        self.joints = joints
+
+        self.addTri('Parent body', self.rb_parent)
+        self.addTri('Child body', self.rb_child)
+
+    def _updateRigidBodies(self):
+        self.updateTriSurface('Parent body')
+        self.updateTriSurface('Child body')
+
+    def _RBAX0_changed(self):
+        if len(self.joints)>0:
+            self.joints[0].angle = self.RBAX0
+            self._updateRigidBodies()
+        else:
+            print('Axis 0 not defined')
+
+    def _RBAX1_changed(self):
+        if len(self.joints)>1:
+            self.joints[1].angle = self.RBAX1
+            self._updateRigidBodies()
+        else:
+            print('Axis 1 not defined')
+
+    def _RBAX2_changed(self):
+        if len(self.joints)>2:
+            self.joints[2].angle = self.RBAX2
+            self._updateRigidBodies()
+        else:
+            print('Axis 2 not defined')
+
+    #=========================================================================#
     # image picker
+    #=========================================================================#
     def _ipw_pick_callback(self, obj, evt):
         img_coords = scipy.around(obj.GetCurrentCursorPosition()).astype(int)
         img_val = obj.GetCurrentImageValue()
