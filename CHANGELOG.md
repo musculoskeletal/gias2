@@ -1,5 +1,9 @@
 # GIAS2 Change log
 
+## 0.6.6
+- added rigidbody visualisation tab for fieldvi
+- auto loads dicom series with the most number of slices
+
 ## 0.6.5
 - avoid using numpy helps when convering numpy points to vtk points in python 2. This should fix the issue of giasrbfreg outputting meshes with a vertex at origin.
 
