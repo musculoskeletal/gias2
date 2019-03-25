@@ -1,5 +1,8 @@
 # GIAS2 Change log
 
+## 0.6.7
+- better scan slicing method
+
 ## 0.6.6
 - added rigidbody visualisation tab for fieldvi
 - auto loads dicom series with the most number of slices
