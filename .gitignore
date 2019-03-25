@@ -17,3 +17,4 @@ src/gias2/examples/fieldwork/fit_whole_pelvis_data/output/*
 *out.log
 *.sublime-project
 *.sublime-workspace
+.idea/
