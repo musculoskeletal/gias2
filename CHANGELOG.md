@@ -1,5 +1,9 @@
 # GIAS2 Change log
 
+## 0.6.8
+- Use ImagePositionPatient if SliceLocation is missing for slice ordering
+- clip values to 1 in angle calculation
+
 ## 0.6.7
 - better scan slicing method
 
