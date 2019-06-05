@@ -482,6 +482,8 @@ class SimpleMesh( object ):
             self.vertexNormals = scipy.dot(t[:3,:3], self.vertexNormals.T).T
         if self.faceNormals is not None:
             self.faceNormals = scipy.dot(t[:3,:3], self.faceNormals.T).T
+        if self.faceBarycenters is not None:
+            self.faceBarycenters = transform3D.transformAffine(self.faceBarycenters, t)
 
     def getBoundaryVertices( self ):
         """ 
