@@ -1,5 +1,8 @@
 # GIAS2 Change log
 
+## 0.6.10
+- transform barycenters when affine transforming a simple mesh
+
 ## 0.6.9
 - Corrected orientation and dimension of slices sampled from scans
 
