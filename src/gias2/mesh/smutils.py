@@ -149,11 +149,9 @@ def remove_small_regions_2(sm, k):
     """
     Removes regions with less than k faces
     """
-    if not hasattr(sm, 'faces1Ring'):
-        sm.set1Ring()
 
-    if not hasattr(sm, 'faces1RingFaces'):
-        set_1ring_faces(sm)
+    # calculate adjacent faces for each face
+    sm.set1RingFaces()
 
     # partition mesh by connected regions
     region_faces, face_labels = partition_regions(sm, np.inf)
