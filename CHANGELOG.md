@@ -1,5 +1,8 @@
 # GIAS2 Change log
 
+## 0.6.11
+- fix to smutil for removing small regions
+
 ## 0.6.10
 - transform barycenters when affine transforming a simple mesh
 
