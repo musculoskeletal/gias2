@@ -1,5 +1,8 @@
 # GIAS2 Change log
 
+## 0.6.12
+- improved dicom slice reordering
+
 ## 0.6.11
 - fix to smutil for removing small regions
 
