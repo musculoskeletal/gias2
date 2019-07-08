@@ -16,7 +16,11 @@ import math
 import numpy as np
 
 import pyximport
-pyximport.install()
+pyximport.install(
+    setup_args={"include_dirs":np.get_include()},
+    reload_support=True,
+    language_level=3
+    )
 from gias2.mesh import cython_csg as CSG
 
 # try:
