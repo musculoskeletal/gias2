@@ -427,6 +427,11 @@ class Plane( object ):
     def calcDistanceToPlane( self, P ):
         d = ((P - self.O) * self.N ).sum(-1)
         return d
+
+    def near_points(self, pts: np.ndarray, dmax: float) -> np.ndarray:
+        dist = self.calcDistanceToPlane(pts)
+        mask = abs(dist) <= dmax
+        return np.array(pts[mask])
         
     def project2Plane3D( self, P ):
         """
