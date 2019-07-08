@@ -53,7 +53,7 @@ Optimized Cython port Copyright (c) 2018 Ju Zhang (https://bitbucket.org/jangle/
 under the MIT license.
 """
     
-# cython: boundscheck=False, nonecheck=False
+# cython: boundscheck=False, nonecheck=False, language_level=3
 
 import cython
 cimport cython
