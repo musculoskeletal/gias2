@@ -8,53 +8,44 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
 
-#!/usr/bin/env python
-from setuptools import setup, find_packages
-# from setuptools.command.install import install as _install
-# import subprocess
-
+# !/usr/bin/env python
 import sys
 from os import path
+from setuptools import setup, find_packages
+
 SELF_DIR = path.split(__file__)[0]
 sys.path.append(path.join(SELF_DIR, 'src'))
 from gias2.version import __version__
 
+
 def readme():
-     with open('README.md', 'r') as f:
-          return f.read()
+    with open('README.md', 'r') as f:
+        return f.read()
 
-# installs things in requirements.txt
-# class InstallCmd(_install):
 
-#     def run(self):
-#         subprocess.call(['pip', 'install', '-r', path.join(SELF_DIR, 'requirements.txt')])
-#         _install.run(self)
-        
-#=============================================================================#
+def requirements():
+    requirement_path = path.join(SELF_DIR + 'requirements.txt')
+    with open(requirement_path, 'r') as f:
+        return list(f.read().splitlines())
+
+
+# =============================================================================#
 name = 'gias2'
 version = __version__
-install_requires = [
-     'numpy >= 1.6.1',
-     'scipy >= 0.9',
-     'scikit-learn >= 0.15',
-     'scikit-image >= 0.13.0',
-     # 'vtk',
-     'cython >= 0.27.0',
-     'matplotlib',
-]
-if sys.version_info.major==2:
-     install_requires.append('ConfigParser')
+install_requires = requirements()
+if sys.version_info.major == 2:
+    install_requires.append('ConfigParser')
 else:
-     install_requires.append('configparser')
+    install_requires.append('configparser')
 
 package_data = {
-     'gias2': [
-          'src/gias2/examples/data/*',
-          'src/gias2/examples/outputs/*.md',
-          'src/gias2/examples/data/tetgen_mesh/*',
-          'src/gias2/examples/fieldwork/data/*',
-          'src/gias2/examples/fieldwork/fit_whole_pelvis_data/*',
-     ],
+    'gias2': [
+        'src/gias2/examples/data/*',
+        'src/gias2/examples/outputs/*.md',
+        'src/gias2/examples/data/tetgen_mesh/*',
+        'src/gias2/examples/fieldwork/data/*',
+        'src/gias2/examples/fieldwork/fit_whole_pelvis_data/*',
+    ],
 }
 include_package_data = True
 description = 'A library of musculoskeletal modelling tools.'
@@ -63,42 +54,40 @@ url = 'https://bitbucket.org/jangle/gias2'
 keywords = 'musculoskeletal map mapclient'
 license = 'mozilla'
 classifiers = [
-     'Development Status :: 3 - Alpha',
-     'License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)',
-     'Programming Language :: Python :: 2.7',
-     'Programming Language :: Python :: 3.5',
-     'Topic :: Scientific/Engineering :: Medical Science Apps.'
+    'Development Status :: 3 - Alpha',
+    'License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)',
+    'Programming Language :: Python :: 2.7',
+    'Programming Language :: Python :: 3.5',
+    'Topic :: Scientific/Engineering :: Medical Science Apps.'
 ]
 entry_points = {
-     'console_scripts': [
-          'gias-rbfreg=gias2.applications.giasrbfreg:main',
-          'gias-rigidreg=gias2.applications.giasrigidreg:main',
-          'gias-pcreg=gias2.applications.giaspcreg:main',
-          'gias-trainpcashapemodel=gias2.applications.giastrainpcashapemodel:main',
-          'gias-surfacedistance=gias2.applications.giassurfacedistance:main',
-          'gias-hmfinp2surf=gias2.applications.giashmfinp2surf:main',
-          'gias-inpsampledicom=gias2.applications.giasinpsampledicom:main'
-     ]
+    'console_scripts': [
+        'gias-rbfreg=gias2.applications.giasrbfreg:main',
+        'gias-rigidreg=gias2.applications.giasrigidreg:main',
+        'gias-pcreg=gias2.applications.giaspcreg:main',
+        'gias-trainpcashapemodel=gias2.applications.giastrainpcashapemodel:main',
+        'gias-surfacedistance=gias2.applications.giassurfacedistance:main',
+        'gias-hmfinp2surf=gias2.applications.giashmfinp2surf:main',
+        'gias-inpsampledicom=gias2.applications.giasinpsampledicom:main'
+    ]
 }
 
-#=============================================================================#
+# =============================================================================#
 if __name__ == '__main__':
-     setup(
-          name=name,
-          version=version,
-          description=description,
-          long_description=readme(),
-          packages=find_packages(where="src"),
-          package_data=package_data,
-          include_package_data=include_package_data,
-          package_dir={"": "src"},
-          classifiers=classifiers,
-          author=author,
-          url=url,
-          install_requires=install_requires,
-          # cmdClass={'install':InstallCmd},
-          keywords=keywords,
-          license=license,
-          # scripts=scripts,
-          entry_points = entry_points,
-     )
+    setup(
+        name=name,
+        version=version,
+        description=description,
+        long_description=readme(),
+        packages=find_packages(where="src"),
+        package_data=package_data,
+        include_package_data=include_package_data,
+        package_dir={"": "src"},
+        classifiers=classifiers,
+        author=author,
+        url=url,
+        install_requires=install_requires,
+        keywords=keywords,
+        license=license,
+        entry_points=entry_points,
+    )
