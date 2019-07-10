@@ -19,7 +19,7 @@ from gias2.version import __version__
 
 
 def readme():
-    with open('README.md', 'r') as f:
+    with open('README.rst', 'r') as f:
         return f.read()
 
 
