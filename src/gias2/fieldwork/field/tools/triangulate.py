@@ -13,7 +13,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 """
 
 from scipy import array, sort, where, product, unique, zeros, arange
-from scipy.misc import comb
+from scipy.special import comb
 from scipy.spatial import cKDTree
 from scipy.spatial.distance import pdist, squareform
 
