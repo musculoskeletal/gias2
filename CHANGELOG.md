@@ -1,6 +1,12 @@
 # GIAS2 Change log
 
 ## 0.6.12
+- cleaned up cython language-levels
+- PyPi compliant readme
+- Plane method to get close-by points
+- dicom_series fix for scans with no slope (e.g. MRI)
+
+## 0.6.12
 - improved dicom slice reordering
 
 ## 0.6.11
