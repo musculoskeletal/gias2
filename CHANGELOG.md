@@ -1,5 +1,9 @@
 # GIAS2 Change log
 
+## 0.6.14
+- Added pydicom 1.3.0 as a requirement for dicom reading
+- updates to dicom_series to work with pydicom 1.3.0
+
 ## 0.6.12
 - cleaned up cython language-levels
 - PyPi compliant readme
