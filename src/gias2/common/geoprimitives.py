@@ -15,15 +15,9 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 """ 
 functions and classes for fitting meshes to segmented data
 """
-import os
-import sys
-import time
-import pickle
-import itertools
-import cProfile
 
+import numpy as np
 import scipy
-from scipy.spatial import cKDTree
 from scipy.spatial.distance import cdist, euclidean
 from scipy.optimize import leastsq, fmin
 from scipy.linalg import eig, inv
@@ -33,58 +27,62 @@ from gias2.common.math import *
 
 PRECISION = 1e-16
 
-#======================================================================#
+
+# ======================================================================#
 class NonInterceptError(Exception):
     pass
+
 
 class InPlaneError(Exception):
     pass
 
-class Line3D( object ):
+
+class Line3D(object):
     """ X = t*a + b
     """
-    def __init__(self, a, b ):
-        self.setAB( a, b )
+
+    def __init__(self, a, b):
+        self.setAB(a, b)
         self.t0 = 0.0
         self.t1 = 1.0
         self._l = self
-        
-    def setAB( self, a, b ):
-        self.a = norm( scipy.array(a, dtype=float) )
-        self._a = self.a[:,scipy.newaxis]
+
+    def setAB(self, a, b):
+        self.a = norm(scipy.array(a, dtype=float))
+        self._a = self.a[:, scipy.newaxis]
         self.b = scipy.array(b, dtype=float)
-        
-    def eval( self, t ):
-        return (t*self._a).T.squeeze() + self.b
+
+    def eval(self, t):
+        return (t * self._a).T.squeeze() + self.b
         # try:
         #   return self.a*t[:,scipy.newaxis] + self.b
         # except IndexError:
         #   return self.a*t + self.b
 
-    def findClosest( self, p ):
+    def findClosest(self, p):
         """ calc closest point on line to p
         """
         p = scipy.array(p, dtype=float)
-        closestT = scipy.dot( (p-self.b), self.a )
-        closestP = self.eval( closestT )
+        closestT = scipy.dot((p - self.b), self.a)
+        closestP = self.eval(closestT)
         return closestP, closestT
-        
-    def calcDistanceFromPoint( self, p, retT=False ):
+
+    def calcDistanceFromPoint(self, p, retT=False):
         """ calc closest distance to point p
         """
-        pLine, tLine = self.findClosest( p )
-        #~ return scipy.sqrt( ( ( p - pLine )**2.0 ).sum() )
+        pLine, tLine = self.findClosest(p)
+        # ~ return scipy.sqrt( ( ( p - pLine )**2.0 ).sum() )
         if retT:
-            return euclidean( p, pLine ), tLine
+            return euclidean(p, pLine), tLine
         else:
-            return euclidean( p, pLine )
+            return euclidean(p, pLine)
 
     def project_coordinate(self, x, dim):
         """
         Calculate the parameter coordinate along the line that gives a point
         with a coordinate of x in dimension dim
         """
-        t = (x-self.b[dim])/self.a[dim]
+        t = (x - self.b[dim]) / self.a[dim]
         return t
 
     def checkParallel(self, l):
@@ -96,7 +94,7 @@ class Line3D( object ):
         a = scipy.dot(u, u)
         b = scipy.dot(u, v)
         c = scipy.dot(v, v)
-        denom = (a*c - b*b)
+        denom = (a * c - b * b)
 
         # if lines are parallel
         if denom < PRECISION:
@@ -113,7 +111,7 @@ class Line3D( object ):
         d1 = l.calcDistanceFromPoint(p1)
         d2 = l.calcDistanceFromPoint(p2)
         # print d1, d2
-        if (d1<PRECISION) and (d2<PRECISION):
+        if (d1 < PRECISION) and (d2 < PRECISION):
             # print 'coincident'
             return True
         else:
@@ -136,15 +134,15 @@ class Line3D( object ):
         ey = self.b[1] - l.b[1]
         f = self.a[1] / self.a[0]
 
-        ti = (f*ex + ey)/(l.a[1] - l.a[0]*f)
-        si = (l.a[0]*ti + ex)/self.a[0]
+        ti = (f * ex + ey) / (l.a[1] - l.a[0] * f)
+        si = (l.a[0] * ti + ex) / self.a[0]
 
         # check if parameter actually give an intercept
         p1 = self.eval(si)
         p2 = l.eval(ti)
 
-        if np.sqrt(((p1-p2)**2.0).sum())<PRECISION:
-            return (p1+p2)/2.0, si, ti
+        if scipy.sqrt(((p1 - p2) ** 2.0).sum()) < PRECISION:
+            return (p1 + p2) / 2.0, si, ti
         else:
             # print si, p1
             # print ti, p2
@@ -177,7 +175,7 @@ class Line3D( object ):
             c = scipy.dot(v, v)
             d = scipy.dot(u, w0)
             e = scipy.dot(v, w0)
-            denom = (a*c - b*b)
+            denom = (a * c - b * b)
             if denom < 0.0:
                 raise RuntimeError('negative denominator in closest approach calculation: {}'.format(denom))
 
@@ -190,11 +188,11 @@ class Line3D( object ):
                 else:
                     print('WARNING: parallel lines')
             else:
-                sc = (b*e - c*d)/denom
-                tc = (a*e - b*d)/denom
+                sc = (b * e - c * d) / denom
+                tc = (a * e - b * d) / denom
 
-                wc = w0 + u*sc - v*tc
-                d = scipy.sqrt((wc*wc).sum())
+                wc = w0 + u * sc - v * tc
+                d = scipy.sqrt((wc * wc).sum())
 
         return d, sc, tc
 
@@ -217,37 +215,39 @@ class Line3D( object ):
         r = float(r)
         o = scipy.array(o, dtype=float)
         ob = self.b - o
-        root = scipy.dot(self.a, ob)**2.0 - mag(ob)**2.0 + r**2.0
-        if root<0.0:
+        root = scipy.dot(self.a, ob) ** 2.0 - mag(ob) ** 2.0 + r ** 2.0
+        if root < 0.0:
             return [], []
         else:
-            const = -np.dot(self.a, ob)
-            if abs(root)<TOL:
-                return [self.eval(const),], [const,]
+            const = -scipy.dot(self.a, ob)
+            if abs(root) < TOL:
+                return [self.eval(const), ], [const, ]
             else:
-                d1 = const+scipy.sqrt(root)
-                d2 = const-scipy.sqrt(root)
-                return [self.eval(d1),self.eval(d2)], [d1, d2]
+                d1 = const + scipy.sqrt(root)
+                d2 = const - scipy.sqrt(root)
+                return [self.eval(d1), self.eval(d2)], [d1, d2]
 
     def transformAffine(self, t):
         self.b = scipy.dot(
-                    t,
-                    scipy.hstack([
-                        self.b,
-                        1.0
-                        ])
-                    )[:3]
+            t,
+            scipy.hstack([
+                self.b,
+                1.0
+            ])
+        )[:3]
         self.a = scipy.dot(
-                    t[:3,:3],
-                    self.a
-                    )
+            t[:3, :3],
+            self.a
+        )
+
 
 class LineOutOfBoundsError(Exception):
     pass
 
+
 class LineSegment3D(Line3D):
 
-    def __init__(self, a, b, t0, t1 ):
+    def __init__(self, a, b, t0, t1):
         self.t0 = t0
         self.t1 = t1
         self._l = Line3D(a, b)
@@ -258,14 +258,14 @@ class LineSegment3D(Line3D):
 
     def setAB(self, a, b):
         self.a = norm(scipy.array(a, dtype=float))
-        self._a = self.a[:,scipy.newaxis]
-        self.b = scipy.array(b, dtype=float)   
+        self._a = self.a[:, scipy.newaxis]
+        self.b = scipy.array(b, dtype=float)
         self.p0 = self.eval(self.t0)
         self.p1 = self.eval(self.t1)
         self._l.setAB(a, b)
 
     def _checkBound(self, t):
-        return (self.t0<=t) & (t<=self.t1)
+        return (self.t0 <= t) & (t <= self.t1)
 
     def checkCoincidence(self, l):
         """check if self is coincident to another 3D line segment l.
@@ -275,7 +275,7 @@ class LineSegment3D(Line3D):
 
     def eval(self, t, checkBound=True):
 
-        x = (t*self._a).T.squeeze() + self.b
+        x = (t * self._a).T.squeeze() + self.b
         if checkBound:
             if self._checkBound(t):
                 return x
@@ -286,7 +286,7 @@ class LineSegment3D(Line3D):
 
     def findClosest(self, p):
         p = scipy.array(p, dtype=float)
-        tc = scipy.dot( (p-self.b), self.a )
+        tc = scipy.dot((p - self.b), self.a)
 
         if isinstance(tc, float):
             if self._checkBound(tc):
@@ -299,17 +299,17 @@ class LineSegment3D(Line3D):
             # array
             bd = self._checkBound(tc)
             output_eval = self.eval(tc, checkBound=False)
-            output_eval[tc<self.t0] = self.p0
-            output_eval[tc>self.t1] = self.p1
+            output_eval[tc < self.t0] = self.p0
+            output_eval[tc > self.t1] = self.p1
             tc = tc.clip(min=self.t0, max=self.t1)
             return output_eval, tc
 
     def calcClosestDistanceToLine(self, l):
-        if l.__class__==Line3D:
+        if l.__class__ == Line3D:
             return self._distanceToLine(l)
-        elif l.__class__==LineSegment3D:
+        elif l.__class__ == LineSegment3D:
             return self._distanceToLineSegment(l)
-        
+
     def _distanceToLine(self, l):
         """ closest distance to an infinite line
         """
@@ -330,14 +330,14 @@ class LineSegment3D(Line3D):
         """
 
         d, sc, tc = self._l.calcClosestDistanceToLine(l._l)
-    
+
         if self._checkBound(sc):
             if l._checkBound(tc):
                 # if both sc and tc are in bound, then all good
-                pass 
+                pass
             else:
                 # closest point is on self segment
-                if tc<l.t0:
+                if tc < l.t0:
                     d, sc = self.calcDistanceFromPoint(l.p0, retT=True)
                     tc = l.t0
                 else:
@@ -346,7 +346,7 @@ class LineSegment3D(Line3D):
         else:
             if l._checkBound(tc):
                 # closest point is on l
-                if sc<self.t0:
+                if sc < self.t0:
                     d, sc = l.calcDistanceFromPoint(self.p0, retT=True)
                     sc = self.t0
                 else:
@@ -401,20 +401,23 @@ class LineSegment3D(Line3D):
 
         return d, sc, tc
 
+
 class LineElement3D(Line3D):
     """ X = (1-x)A + (x)B
     """
-    def __init__( self, p1, p2):
+
+    def __init__(self, p1, p2):
         self.p1 = scipy.array(p1)
         self.p2 = scipy.array(p2)
-        
-    def eval( self, x ):
-        return (1-x)*self.p1 + x*self.p2
 
-class Plane( object ):
-    
-    def __init__( self, origin, normal, x=None, y=None ):
-        
+    def eval(self, x):
+        return (1 - x) * self.p1 + x * self.p2
+
+
+class Plane(object):
+
+    def __init__(self, origin, normal, x=None, y=None):
+
         self.O = scipy.array(origin, dtype=float)
         self.N = norm(normal)
         self.X = None
@@ -423,25 +426,25 @@ class Plane( object ):
             self.X = scipy.array(x, dtype=float)
         if y is not None:
             self.Y = scipy.array(y, dtype=float)
-    
-    def calcDistanceToPlane( self, P ):
-        d = ((P - self.O) * self.N ).sum(-1)
+
+    def calcDistanceToPlane(self, P):
+        d = ((P - self.O) * self.N).sum(-1)
         return d
 
     def near_points(self, pts: np.ndarray, dmax: float) -> np.ndarray:
         dist = self.calcDistanceToPlane(pts)
         mask = abs(dist) <= dmax
         return np.array(pts[mask])
-        
-    def project2Plane3D( self, P ):
+
+    def project2Plane3D(self, P):
         """
         returns the closest points to P on the plane, in 3D coordinates
         """
-        d = self.calcDistanceToPlane( P )
-        p = P - d*self.N
+        d = self.calcDistanceToPlane(P)
+        p = P - d * self.N
         return p
-        
-    def project2Plane2D( self, P ):
+
+    def project2Plane2D(self, P):
         """
         returns the closest points to P on the plane, in 2D in-plane
         coordinates
@@ -451,16 +454,16 @@ class Plane( object ):
 
         u = ((P - self.O) * self.X).sum(-1)
         v = ((P - self.O) * self.Y).sum(-1)
-        return scipy.array([u,v]).T
-    
-    def plane2Dto3D( self, P ):
+        return scipy.array([u, v]).T
+
+    def plane2Dto3D(self, P):
         """
         return 3D coordinates of from 2D in-plane coordinates
         """
         if (self.X is None) or (self.Y is None):
             raise ValueError('plane X and Y vectors not set')
 
-        p = P[:,0,scipy.newaxis]*self.X + P[:,1,scipy.newaxis]*self.Y + self.O
+        p = P[:, 0, scipy.newaxis] * self.X + P[:, 1, scipy.newaxis] * self.Y + self.O
         return p
 
     def angleToPlane(self, p):
@@ -487,37 +490,37 @@ class Plane( object ):
         nom = scipy.dot((self.O - l.b), self.N)
         denom = scipy.dot(l.a, self.N)
 
-        if abs(nom)<PRECISION:
+        if abs(nom) < PRECISION:
             # line is in plane
             raise InPlaneError('line is in plane, infinite intersections')
-        elif abs(denom)<PRECISION:
+        elif abs(denom) < PRECISION:
             # line is parallel to plane
             raise NonInterceptError('line is parallel to plane but out of plane, no intersections')
         else:
-            t = nom/denom
+            t = nom / denom
             p = l.eval(t)
             return p
 
     def transformAffine(self, t):
         self.O = scipy.dot(
-                    t,
-                    scipy.hstack([
-                        self.O,
-                        1.0
-                        ])
-                    )[:3]
+            t,
+            scipy.hstack([
+                self.O,
+                1.0
+            ])
+        )[:3]
         self.N = norm(
-                    scipy.dot(
-                        t[:3,:3],
-                        self.N
-                        )
-                    )
+            scipy.dot(
+                t[:3, :3],
+                self.N
+            )
+        )
         if self.X is not None:
-            self.X = norm(scipy.dot(t[:3,:3], self.X))
+            self.X = norm(scipy.dot(t[:3, :3], self.X))
         if self.Y is not None:
-            self.Y = norm(scipy.dot(t[:3,:3], self.Y))
+            self.Y = norm(scipy.dot(t[:3, :3], self.Y))
 
-    def drawPlane(self, mscene, l=100, acolor=(1,0,0), ascale=10.0, scolor=(0,1,0), sopacity=0.5):
+    def drawPlane(self, mscene, l=100, acolor=(1, 0, 0), ascale=10.0, scolor=(0, 1, 0), sopacity=0.5):
         """ Draw the plane in a mayavi scene as a square and a normal vector arrow.
         Inputs:
         ========
@@ -534,18 +537,18 @@ class Plane( object ):
         square: mayavi output for drawing the plane square
         """
         # plane data to draw
-        l2 = 0.5*l
-        planeCorners2D = np.array([[-l2,-l2],
-                                   [ l2,-l2],
+        l2 = 0.5 * l
+        planeCorners2D = np.array([[-l2, -l2],
+                                   [l2, -l2],
                                    [-l2, l2],
-                                   [ l2, l2]])
+                                   [l2, l2]])
         p3D = self.plane2Dto3D(planeCorners2D)
-        square = mscene.mlab.mesh([[p3D[0,0], p3D[1,0]],
-                                  [p3D[2,0], p3D[3,0]]],
-                                 [[p3D[0,1], p3D[1,1]],
-                                  [p3D[2,1], p3D[3,1]]],
-                                 [[p3D[0,2], p3D[1,2]],
-                                  [p3D[2,2], p3D[3,2]]],
+        square = mscene.mlab.mesh([[p3D[0, 0], p3D[1, 0]],
+                                   [p3D[2, 0], p3D[3, 0]]],
+                                  [[p3D[0, 1], p3D[1, 1]],
+                                   [p3D[2, 1], p3D[3, 1]]],
+                                  [[p3D[0, 2], p3D[1, 2]],
+                                   [p3D[2, 2], p3D[3, 2]]],
                                   color=scolor,
                                   opacity=sopacity)
         if self.X is None:
@@ -564,80 +567,81 @@ class Plane( object ):
                 [self.O[0], self.O[0], self.O[0]],
                 [self.O[1], self.O[1], self.O[1]],
                 [self.O[2], self.O[2], self.O[2]],
-                [self.X[0], self.Y[0], self.N[0],],
-                [self.X[1], self.Y[1], self.N[1],],
-                [self.X[2], self.Y[2], self.N[2],],
+                [self.X[0], self.Y[0], self.N[0], ],
+                [self.X[1], self.Y[1], self.N[1], ],
+                [self.X[2], self.Y[2], self.N[2], ],
                 mode='arrow',
                 scale_factor=ascale,
-                scalars=[1,2,3],
+                scalars=[1, 2, 3],
                 scale_mode='scalar',
                 color=acolor)
 
         return arrow, square
-            
-#===============================================================================#
-def fitAxis3D( data, axis ):
-    
+
+
+# ===============================================================================#
+def fitAxis3D(data, axis):
     xtol = 1e-5
     ftol = 1e-5
-    maxfev = 6*1000
+    maxfev = 6 * 1000
     dataCoM = data.mean(0)
-    
-    def obj( x ):
-         axis.setAB( x[0:3], x[3:6] )
-         axisPoints = axis.findClosest(data)[0]
-         #~ axisPoints = scipy.array([axis.findClosest(d)[0] for d in data])
-         CoMDist = ((axis.b - dataCoM)**2.0).sum()
-         d2 = ((data - axisPoints)**2.0).sum(1)
-         return scipy.hstack( [d2, CoMDist] )
-         
-    xOpt = leastsq( obj, scipy.hstack([axis.a,axis.b]), xtol=xtol, ftol=ftol, maxfev=maxfev )[0]
-    fittedRMSE = scipy.sqrt( obj(xOpt).mean() )
-    axis.setAB( xOpt[0:3], xOpt[3:6] )
-    
+
+    def obj(x):
+        axis.setAB(x[0:3], x[3:6])
+        axisPoints = axis.findClosest(data)[0]
+        # ~ axisPoints = scipy.array([axis.findClosest(d)[0] for d in data])
+        CoMDist = ((axis.b - dataCoM) ** 2.0).sum()
+        d2 = ((data - axisPoints) ** 2.0).sum(1)
+        return scipy.hstack([d2, CoMDist])
+
+    xOpt = leastsq(obj, scipy.hstack([axis.a, axis.b]), xtol=xtol, ftol=ftol, maxfev=maxfev)[0]
+    fittedRMSE = scipy.sqrt(obj(xOpt).mean())
+    axis.setAB(xOpt[0:3], xOpt[3:6])
+
     return axis, xOpt, fittedRMSE
 
-def fitPlaneLS( X ):
-    
+
+def fitPlaneLS(X):
     # calc CoM
     CoM = X.mean(0)
     XC = X - CoM
-    
+
     # eigen system
-    A = scipy.zeros([3,3])
-    A[0,0] = (XC[:,0]**2.0).sum()
-    A[1,1] = (XC[:,1]**2.0).sum()
-    A[2,2] = (XC[:,2]**2.0).sum()
-    A[0,1] = A[1,0] = (XC[:,0]*XC[:,1]).sum()   
-    A[0,2] = A[2,0] = (XC[:,0]*XC[:,2]).sum()   
-    A[1,2] = A[2,1] = (XC[:,1]*XC[:,2]).sum()
-    
-    W, V = eig( A )
-    V = V[:,W.argsort()]
-    
+    A = scipy.zeros([3, 3])
+    A[0, 0] = (XC[:, 0] ** 2.0).sum()
+    A[1, 1] = (XC[:, 1] ** 2.0).sum()
+    A[2, 2] = (XC[:, 2] ** 2.0).sum()
+    A[0, 1] = A[1, 0] = (XC[:, 0] * XC[:, 1]).sum()
+    A[0, 2] = A[2, 0] = (XC[:, 0] * XC[:, 2]).sum()
+    A[1, 2] = A[2, 1] = (XC[:, 1] * XC[:, 2]).sum()
+
+    W, V = eig(A)
+    V = V[:, W.argsort()]
+
     # project points onto plane
-    P = Plane( CoM, V[:,0], V[:,1], V[:,2] ) 
-    
+    P = Plane(CoM, V[:, 0], V[:, 1], V[:, 2])
+
     return P
 
-def fitSphere( X ):
 
-    def obj( x ):
+def fitSphere(X):
+    def obj(x):
         d = X - x[0:3]
-        e = scipy.sqrt((d*d).sum(1)) - x[3]
-        return e*e
-    
+        e = scipy.sqrt((d * d).sum(1)) - x[3]
+        return e * e
+
     initCentre = scipy.mean(X, 0)
     initR = scipy.mean(mag(X - initCentre))
     x0 = scipy.hstack((initCentre, initR))
     try:
-        xOpt = leastsq( obj, x0 )[0]
+        xOpt = leastsq(obj, x0)[0]
     except TypeError:
         print('WARNING: fitSphere: probably not enough points to fit')
-        return 0, scipy.array([0,0,0,0])
+        return 0, scipy.array([0, 0, 0, 0])
     else:
-        rmsOpt = scipy.sqrt((obj( xOpt )).mean())
+        rmsOpt = scipy.sqrt((obj(xOpt)).mean())
         return rmsOpt, xOpt
+
 
 def fitSphereAnalytic(X):
     """
@@ -661,78 +665,77 @@ def fitSphereAnalytic(X):
     Author:
     Alan Jennings, University of Dayton
     """
-    A = scipy.zeros((3,3), dtype=float)
-    A[0,0] =   (X[:,0]*(X[:,0]-X[:,0].mean())).mean()
-    A[0,1] = 2*(X[:,0]*(X[:,1]-X[:,1].mean())).mean()
-    A[0,2] = 2*(X[:,0]*(X[:,2]-X[:,2].mean())).mean()
-    A[1,0] = 0
-    A[1,1] =   (X[:,1]*(X[:,1]-X[:,1].mean())).mean()
-    A[1,2] = 2*(X[:,1]*(X[:,2]-X[:,2].mean())).mean()
-    A[2,0] = 0
-    A[2,1] = 0
-    A[2,2] =   (X[:,2]*(X[:,2]-X[:,2].mean())).mean()
-    
+    A = scipy.zeros((3, 3), dtype=float)
+    A[0, 0] = (X[:, 0] * (X[:, 0] - X[:, 0].mean())).mean()
+    A[0, 1] = 2 * (X[:, 0] * (X[:, 1] - X[:, 1].mean())).mean()
+    A[0, 2] = 2 * (X[:, 0] * (X[:, 2] - X[:, 2].mean())).mean()
+    A[1, 0] = 0
+    A[1, 1] = (X[:, 1] * (X[:, 1] - X[:, 1].mean())).mean()
+    A[1, 2] = 2 * (X[:, 1] * (X[:, 2] - X[:, 2].mean())).mean()
+    A[2, 0] = 0
+    A[2, 1] = 0
+    A[2, 2] = (X[:, 2] * (X[:, 2] - X[:, 2].mean())).mean()
+
     A = A + A.T
 
     B = scipy.zeros(3, dtype=float)
-    B[0] = ((X[:,0]**2.0+X[:,1]**2+X[:,2]**2)*(X[:,0]-X[:,0].mean())).mean()
-    B[1] = ((X[:,0]**2.0+X[:,1]**2+X[:,2]**2)*(X[:,1]-X[:,1].mean())).mean()
-    B[2] = ((X[:,0]**2.0+X[:,1]**2+X[:,2]**2)*(X[:,2]-X[:,2].mean())).mean()
+    B[0] = ((X[:, 0] ** 2.0 + X[:, 1] ** 2 + X[:, 2] ** 2) * (X[:, 0] - X[:, 0].mean())).mean()
+    B[1] = ((X[:, 0] ** 2.0 + X[:, 1] ** 2 + X[:, 2] ** 2) * (X[:, 1] - X[:, 1].mean())).mean()
+    B[2] = ((X[:, 0] ** 2.0 + X[:, 1] ** 2 + X[:, 2] ** 2) * (X[:, 2] - X[:, 2].mean())).mean()
 
     # Center=(A\B).';
     Centre = scipy.dot(inv(A), B)
-    
-    Radius=scipy.sqrt((scipy.vstack([X[:,0]-Centre[0],
-                                     X[:,1]-Centre[1],
-                                     X[:,2]-Centre[2]])**2).sum(0).mean())
+
+    Radius = scipy.sqrt((scipy.vstack([X[:, 0] - Centre[0],
+                                       X[:, 1] - Centre[1],
+                                       X[:, 2] - Centre[2]]) ** 2).sum(0).mean())
 
     return Centre, Radius
 
 
-def fitBox( data, centre, axes ):
-    
+def fitBox(data, centre, axes):
     maxIt = 10000
     # initialise axes
-    X = Line3D( axes[0], centre )
-    Y = Line3D( axes[1], centre )
-    Z = Line3D( axes[2], centre )
-    
-    def obj( x ):
-        
+    X = Line3D(axes[0], centre)
+    Y = Line3D(axes[1], centre)
+    Z = Line3D(axes[2], centre)
+
+    def obj(x):
         # update box axes
         newB = x[:3]
-        oldAs = scipy.array( [ v.a.copy() for v in [X,Y,Z] ] )
-        newAs = transform3D.transformRigid3D( oldAs, [0,0,0,x[3],x[4],x[5]] )
-        
-        X.setAB( newAs[0], newB )
-        Y.setAB( newAs[1], newB )
-        Z.setAB( newAs[2], newB )
-        
+        oldAs = scipy.array([v.a.copy() for v in [X, Y, Z]])
+        newAs = transform3D.transformRigid3D(oldAs, [0, 0, 0, x[3], x[4], x[5]])
+
+        X.setAB(newAs[0], newB)
+        Y.setAB(newAs[1], newB)
+        Z.setAB(newAs[2], newB)
+
         # project data points
-        pX = X.findClosest( data )[1]
-        pY = Y.findClosest( data )[1]
-        pZ = Z.findClosest( data )[1]
-        
+        pX = X.findClosest(data)[1]
+        pY = Y.findClosest(data)[1]
+        pZ = Z.findClosest(data)[1]
+
         # calc volume
-        V = (pX.max() - pX.min())*(pY.max() - pY.min())*(pZ.max() - pZ.min())
-        #~ print x
+        V = (pX.max() - pX.min()) * (pY.max() - pY.min()) * (pZ.max() - pZ.min())
+        # ~ print x
         print(V)
         return V
-        
-    x0 = scipy.hstack( [centre, [0,0,0]] )
-    xOpt = fmin( obj, x0, maxiter=maxIt )
+
+    x0 = scipy.hstack([centre, [0, 0, 0]])
+    xOpt = fmin(obj, x0, maxiter=maxIt)
 
     finalCentre = xOpt[:3]
-    finalAxes = scipy.array( [ v.a.copy() for v in [X,Y,Z] ] )
-    finalVolume = obj( xOpt )
-    
+    finalAxes = scipy.array([v.a.copy() for v in [X, Y, Z]])
+    finalVolume = obj(xOpt)
+
     # calculate fitted box dimensions
-    pX = X.findClosest( data )[1]
-    pY = Y.findClosest( data )[1]
-    pZ = Z.findClosest( data )[1]
-    finalDim = scipy.array( [pX.max() - pX.min(), pY.max() - pY.min(), pZ.max() - pZ.min()] )
-    
-    return finalCentre, finalVolume, finalDim,  [X,Y,Z]
+    pX = X.findClosest(data)[1]
+    pY = Y.findClosest(data)[1]
+    pZ = Z.findClosest(data)[1]
+    finalDim = scipy.array([pX.max() - pX.min(), pY.max() - pY.min(), pZ.max() - pZ.min()])
+
+    return finalCentre, finalVolume, finalDim, [X, Y, Z]
+
 
 def circumcentre3Points(a, b, c):
     """
@@ -742,26 +745,26 @@ def circumcentre3Points(a, b, c):
     a = scipy.array(a, dtype=float)
     b = scipy.array(b, dtype=float)
     c = scipy.array(c, dtype=float)
-    
+
     # plane normal
-    N = norm(scipy.cross((a-b), (a-c)))
+    N = norm(scipy.cross((a - b), (a - c)))
 
     # midpoints of ab and ac
-    d = 0.5*(a + b)
-    e = 0.5*(a + c)
+    d = 0.5 * (a + b)
+    e = 0.5 * (a + c)
 
     # calculate perpendicular bisectors
-    do = norm(np.cross(N, d-a))
-    eo = norm(np.cross(N, e-a))
+    do = norm(np.cross(N, d - a))
+    eo = norm(np.cross(N, e - a))
 
     ldo = Line3D(do, d)
     leo = Line3D(eo, e)
 
     # find intercept of bisectors
     dist, sldo, sleo = ldo.calcClosestDistanceToLine(leo)
-    O = 0.5*(ldo.eval(sldo) + leo.eval(sleo))
+    O = 0.5 * (ldo.eval(sldo) + leo.eval(sleo))
 
     # calc radius
-    R = scipy.mean([mag(a-O), mag(b-O), mag(c-O)])
+    R = scipy.mean([mag(a - O), mag(b - O), mag(c - O)])
 
     return O, R, N
