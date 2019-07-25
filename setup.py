@@ -12,6 +12,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 import sys
 from os import path
 from setuptools import setup, find_packages
+from setuptools.extension import Extension
 
 SELF_DIR = path.split(__file__)[0]
 sys.path.append(path.join(SELF_DIR, 'src'))
@@ -32,6 +33,11 @@ def requirements():
 # =============================================================================#
 name = 'gias2'
 version = __version__
+setup_requires = [
+    'setuptools>=40.0',
+    'cython>=0.29.7',
+    'numpy>=1.16.2'
+]
 install_requires = requirements()
 if sys.version_info.major == 2:
     install_requires.append('ConfigParser')
@@ -72,6 +78,37 @@ entry_points = {
     ]
 }
 
+
+# Numerical python is a transitive dependency that is required for build only.
+# If it is required for install, then all distributions that use it will likely
+# fail as they will have to express the dependency.
+#
+# see
+#  - https://stackoverflow.com/questions/19919905/how-to-bootstrap-numpy-installation-in-setup-py
+def any_argv(s):
+    for arg in sys.argv:
+        if arg == s:
+            return True
+    return False
+
+
+if any_argv('bdist_wheel'):
+    print('Performing build with numpy')
+    import numpy
+    from Cython.Build import cythonize
+
+    np_include_dirs = [numpy.get_include()]
+    cython_modules = cythonize(
+        [
+            Extension('gias2.image_analysis.asm_search_c', ['src/gias2/image_analysis/asm_search_c.pyx']),
+            Extension('gias2.image_analysis.integralimagec', ['src/gias2/image_analysis/integralimagec.pyx']),
+        ])
+    print(np_include_dirs)
+else:
+    print('Not performing a build with numpy')
+    np_include_dirs = None
+    cython_modules = None
+
 # =============================================================================#
 if __name__ == '__main__':
     setup(
@@ -90,4 +127,7 @@ if __name__ == '__main__':
         keywords=keywords,
         license=license,
         entry_points=entry_points,
+        ext_modules=cython_modules,
+        include_dirs=np_include_dirs,
+        setup_requires=setup_requires
     )
