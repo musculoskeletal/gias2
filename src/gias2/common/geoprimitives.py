@@ -482,7 +482,7 @@ class Plane(object):
         # calc angle between v and v_proj
         return angle(v_proj, v)
 
-    def intersect_line(self, l):
+    def intersect_line(self, l, ret_t=False):
         """
         Find the point of intersection between a line l and this plane
         """
@@ -499,7 +499,10 @@ class Plane(object):
         else:
             t = nom / denom
             p = l.eval(t)
-            return p
+            if ret_t:
+                return p, t
+            else:
+                return p
 
     def transformAffine(self, t):
         self.O = scipy.dot(
