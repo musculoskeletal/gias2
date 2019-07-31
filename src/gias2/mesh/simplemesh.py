@@ -369,7 +369,7 @@ class SimpleMesh(object):
             try:
                 l, e = eigh(V)
             except ValueError:
-                print('WARNING: singular V for vertex', v.ID)
+                print('WARNING: singular V for vertex', vi)
                 l = scipy.zeros(3)
                 e = scipy.eye(3)
             else:
