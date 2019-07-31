@@ -102,6 +102,16 @@ class scalarField( object ):
         V = self.ensembleFieldFunction.evaluate_field_at_element_point( element, XI, parameters=self.fieldParameters )
         return V
 
+    def evaluateFieldAtMaterialPoints(self, matpoints):
+        """
+        evaluate in multiple elements. matpoints is list of element points expressed
+        as a tuple (element_number, xi_coordinates). Example of input EP:
+        [(0, [0.5, 0.1]), (1, [0.1, 0.1]),]
+        """
+        evaluator = makeScalarFieldEvaluatorSparse(self, [1, 1], matPoints=matpoints)
+        X = evaluator(self.fieldParameters)
+        return X
+
     def getFieldParameters( self ):
         return self.fieldParameters.copy()
         
@@ -110,7 +120,7 @@ class scalarField( object ):
         flatEFF = self.ensembleFieldFunction.flatten()[0]
         self.ensembleFieldFunction = flatEFF
 #======================================================================#
-def makeScalarFieldEvaluatorSparse( S, evalD ):
+def makeScalarFieldEvaluatorSparse( S, evalD, matPoints=None ):
     """ create a function for evaluation the scalar field values,
     taking advantage of a precomputed sparse matrix of basis function
     values at fixed element coordinates
@@ -123,30 +133,52 @@ def makeScalarFieldEvaluatorSparse( S, evalD ):
     if not f.is_flat():
         f = f.flatten()[0]
     ep = S.evaluateField( evalD )
-    
-    # calculate static basis values for the required evalD and assemble
-    # matrix
-    basisValues = {}
-    A = scipy.zeros( (ep.shape[0], f.get_number_of_ensemble_points()), dtype=float )
-    row = 0
-    for elementNumber in scipy.sort(list(f.mesh.elements.keys())):
-        # get element
-        element = f.mesh.elements[ elementNumber ]
-        # calculate basis values
-        if basisValues.get( element.type ) == None:
-            evalGrid = element.generate_eval_grid( evalD ).squeeze()
-            basisValues[element.type] = f.basis[element.type].eval( evalGrid.T ).T
-    
-        # fill in A matrix
-        b = basisValues[element.type]                               # basis values
-        emap = f.mapper._element_to_ensemble_map[elementNumber]     # element to ensemble map
-        for n in range(b.shape[1]):
-            try:
-                A[row:row+b.shape[0], emap[n][0][0]] = b[:,n]
-            except ValueError:
-                pdb.set_trace()
-                
-        row += b.shape[0]
+
+    if matPoints is not None:
+        nEPs= len(matPoints)
+    else:
+        ep = S.evaluate_geometric_field(evalD)
+        nEPs = ep.shape[1]
+
+    A = scipy.zeros((nEPs, f.get_number_of_ensemble_points()), dtype=float)
+
+    if matPoints is not None:
+        # ~ pdb.set_trace()
+        elemEnsNodes = {}
+        for mpI, (elem, xi) in enumerate(matPoints):
+            element = f.mesh.elements[elem]
+            b = f.basis[element.type].eval(xi)
+            ensNodes = elemEnsNodes.get(elem)
+            if ensNodes is None:
+                emap = f.mapper._element_to_ensemble_map[elem]
+                ensNodes = [emap[k][0][0] for k in list(emap.keys())]
+                elemEnsNodes[elem] = ensNodes
+
+            A[mpI, ensNodes] = b
+    else:
+        # calculate static basis values for the required evalD and assemble
+        # matrix
+        basisValues = {}
+        A = scipy.zeros( (ep.shape[0], f.get_number_of_ensemble_points()), dtype=float )
+        row = 0
+        for elementNumber in scipy.sort(list(f.mesh.elements.keys())):
+            # get element
+            element = f.mesh.elements[ elementNumber ]
+            # calculate basis values
+            if basisValues.get( element.type ) == None:
+                evalGrid = element.generate_eval_grid( evalD ).squeeze()
+                basisValues[element.type] = f.basis[element.type].eval( evalGrid.T ).T
+
+            # fill in A matrix
+            b = basisValues[element.type]                               # basis values
+            emap = f.mapper._element_to_ensemble_map[elementNumber]     # element to ensemble map
+            for n in range(b.shape[1]):
+                try:
+                    A[row:row+b.shape[0], emap[n][0][0]] = b[:,n]
+                except ValueError:
+                    pdb.set_trace()
+
+            row += b.shape[0]
     
     # sparsify A
     As = sparse.csc_matrix(A)
