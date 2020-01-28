@@ -92,12 +92,9 @@ class Fieldvi(HasTraits):
     LLKnee1 = Range(-150.0, 0.0, 0.0)
 
     # 2 rigid-body
-    # RBAX0 = Range(-scipy.pi, +scipy.pi, 0.0)
-    # RBAX1 = Range(-scipy.pi, +scipy.pi, 0.0)
-    # RBAX2 = Range(-scipy.pi, +scipy.pi, 0.0)
-    RBAX0 = Range(-180, +180, 0.0)
-    RBAX1 = Range(-180, +180, 0.0)
-    RBAX2 = Range(-180, +180, 0.0)
+    RBAX0 = Range(-180., +180., 0.0)
+    RBAX1 = Range(-180., +180., 0.0)
+    RBAX2 = Range(-180., +180., 0.0)
 
     # screenshot
     saveImageFilename = Str('screenshot.jpeg')
