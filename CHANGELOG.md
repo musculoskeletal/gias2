@@ -1,5 +1,11 @@
 # GIAS2 Change log
 
+## 0.6.15
+- allow NPZ files to be loaded with object arrays to handle old PCA npz result files. This was disabled in numpy 1.18.
+- increased numpy dependency to latest version.
+- fixed rigid body sliders in fieldvi.
+- specified dependency versions for numpy, scipy, cython, skimage, sklearn
+
 ## 0.6.14
 - Added pydicom 1.3.0 as a requirement for dicom reading
 - updates to dicom_series to work with pydicom 1.3.0
