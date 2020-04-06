@@ -42,6 +42,9 @@ class Line3D(object):
     """
 
     def __init__(self, a, b):
+        self.a = None
+        self.b = None
+        self._a = None
         self.setAB(a, b)
         self.t0 = 0.0
         self.t1 = 1.0
