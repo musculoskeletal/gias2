@@ -3,10 +3,6 @@ A Python library for tools used in musculoskeletal modelling. Includes tools for
 parametric meshing, registration, image analysis, statistical shape modelling,
 and 3-D visualisation using Mayavi.
 
-## Dependencies
-* scipy
-* scikit-learn
-
 ## Optional dependencies
 * VTK and VTK Python bindings (for mesh processing)
 * Mayavi (for 3-D visualisation, requires Numpy, VTK, wxPython, configobj)
