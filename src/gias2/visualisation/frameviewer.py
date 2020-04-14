@@ -3,13 +3,13 @@ Module for viewing framesets in a matplotlib widget
 """
 
 import json
-import numpy as np
+
 import matplotlib.pyplot as plt
 from matplotlib.image import AxesImage
 from matplotlib.widgets import Slider, Button
 
-class FrameViewer(object):
 
+class FrameViewer(object):
     # parameters
     pick_marker = 'x'
     pick_out_path = 'picked_points.json'
@@ -20,7 +20,7 @@ class FrameViewer(object):
         Visualise target frames with nodes and sensor paths using a slider widget
         """
         self.frames = frames
-        self.nodes= nodes
+        self.nodes = nodes
         self.title = title
         self.cmap = cmap
 
@@ -33,11 +33,11 @@ class FrameViewer(object):
             raise ValueError('Need at least 1 piece of input data')
 
         self.init_fig()
-    
+
     def init_fig(self):
 
         # create figure
-        self.fig, self.ax = plt.subplots(figsize=(10,8))
+        self.fig, self.ax = plt.subplots(figsize=(10, 8))
         plt.subplots_adjust(left=0.1, bottom=0.25)
         if self.title is not None:
             self.ax.set_title(self.title)
@@ -46,29 +46,29 @@ class FrameViewer(object):
         self.axslider = plt.axes([0.125, 0.125, 0.7, 0.03])
         self.slider = Slider(
             self.axslider, 'Frame', 1, self.n_frames, valinit=1
-            )
-        
+        )
+
         # draw frame
         if self.frames is not None:
             self.img = self.ax.imshow(
                 self.frames[0], picker=True, cmap=self.cmap,
                 vmin=self.frames.min(), vmax=self.frames.max()
-                )
+            )
             self.ax.axis(
                 (0, self.frames[0].shape[1], self.frames[0].shape[0], 0)
-                )
-            
+            )
+
         # draw nodes if we have them
         if self.nodes is not None:
             self.nodes_plot = self.ax.plot(
-                self.nodes[0,:,0], self.nodes[0,:,1], '.g'
-                )[0]
+                self.nodes[0, :, 0], self.nodes[0, :, 1], '.g'
+            )[0]
 
         # picker
         self.picked_points = {}
-        for i in range(1, self.n_frames+1):
+        for i in range(1, self.n_frames + 1):
             self.picked_points[i] = []
-        
+
         self.picked_scatter = None
 
         # add undo button        left bot  width height
@@ -105,8 +105,8 @@ class FrameViewer(object):
             print(
                 'image {} picked at {}, {}'.format(
                     img_frame_num, img_x, img_y
-                    )
                 )
+            )
             self.picked_points[img_frame_num].append((img_x, img_y))
             self._update_picked()
 
@@ -125,19 +125,19 @@ class FrameViewer(object):
             p_x = [p[0] for p in self.picked_points[f]]
             p_y = [p[1] for p in self.picked_points[f]]
             self.picked_scatter = self.ax.scatter(p_x, p_y, marker=self.pick_marker)
-        
+
         self.fig.canvas.draw_idle()
 
     # what happens when slider is moved
     def _update_slider(self, val):
         f = self._frame_number()
         if self.frames is not None:
-            self.img.set_data(self.frames[f-1])
+            self.img.set_data(self.frames[f - 1])
 
         # draw transformed nodes and sensor paths
         if self.nodes is not None:
-            self.nodes_plot.set_xdata(self.nodes[f-1,:,0])
-            self.nodes_plot.set_ydata(self.nodes[f-1,:,1])
+            self.nodes_plot.set_xdata(self.nodes[f - 1, :, 0])
+            self.nodes_plot.set_ydata(self.nodes[f - 1, :, 1])
 
         self._update_picked()
         # self.fig.canvas.draw_idle()
