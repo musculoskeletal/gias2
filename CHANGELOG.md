@@ -1,5 +1,8 @@
 # GIAS2 Change log
 
+## 0.6.16
+- removed matplotlib as a requirement. User should install it it separately if they need 3D plotting functionalities
+
 ## 0.6.15
 - allow NPZ files to be loaded with object arrays to handle old PCA npz result files. This was disabled in numpy 1.18.
 - increased numpy dependency to latest version.
