@@ -87,7 +87,7 @@ _femurRightLTNode = 276
 def makeEvaluatorFemurHeadCentre(gf, flattened=False, side='left'):
     if flattened:
         headNodes = []
-        for e in _femurHeadElemFlat:
+        for e in _femurHeadElems:
             headNodes += list(gf.ensemble_field_function.mapper._element_to_ensemble_map[e].keys())
             headNodes = list(set(headNodes))
     else:

@@ -550,22 +550,6 @@ class geometryFit(object):
 
         return d
 
-    def _objCurvatureNonFixed(self, params):
-        """ finds the closest data point to each element point, and 
-        calcs the sum of squared diff of datapoint curvature and
-        element point current curvature
-        """
-        ep_coord, H, K = self.getEPVal(params)
-        H = filterCurv(H, self.cMin, self.cMax) * self.cScale
-        leastDist, leastArgs = self.dataTree.query(list(ep_coord.T), 1, p=2)
-        dataC = self.dataCurvature[leastArgs]
-        d = (H - dataC) ** 2.0
-
-        # add penalty for devation for p0
-        # ~ dparams = (params - self.p0)**2.0
-        # ~ d = hstack( (d, dparams) )
-        return d
-
     def _objCurvatureDistancePerCall1Both(self, params):
         dEPDP = self._objCurvatureDistancePerCall1EPDP(params)
         dDPEP = self._objCurvatureDistancePerCall1DPEP(params)
@@ -1439,7 +1423,7 @@ class tangentSmoother2(object):
 
         return
 
-    def _whichDeriv(elem, edge):
+    def _whichDeriv(self, elem, edge):
         """
         determine the derivative normal to the edge to calculate for a
         given element and edge.
@@ -1449,9 +1433,9 @@ class tangentSmoother2(object):
                   2: ((0, 0, 1), 1)}  # implement d wrt to area coordinates in basis
 
         if 'quad' in elem.type:
-            return quadMap(edge)
+            return quadMap[edge]
         elif 'tri' in elem.type:
-            return triMap(edge)
+            return triMap[edge]
 
     def _procEdge(self, D):
         """ for each pair in edgePoints, find the element and edge shared

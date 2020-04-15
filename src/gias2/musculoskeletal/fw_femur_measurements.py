@@ -17,7 +17,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 import copy
 import pickle
 
-import scipy
+import numpy as np
 from scipy.optimize import fmin
 from scipy.spatial import distance
 
@@ -27,11 +27,11 @@ from gias2.registration import alignment_analytic as alignment
 
 
 def _norm(v):
-    return scipy.divide(v, scipy.sqrt((scipy.array(v) ** 2.0).sum()))
+    return np.divide(v, np.sqrt((np.array(v) ** 2.0).sum()))
 
 
 def _mag(v):
-    return scipy.sqrt((scipy.array(v) ** 2.0).sum())
+    return np.sqrt((np.array(v) ** 2.0).sum())
 
 
 class _Plane3D(object):
@@ -42,7 +42,7 @@ class _Plane3D(object):
     def __init__(self, abcd=None, NP=None):
         if abcd != None:
             self.a, self.b, self.c, self.d = abcd
-            self.N = scipy.array([self.a, self.b, self.c])
+            self.N = np.array([self.a, self.b, self.c])
             self.P = None
         if NP != None:
             self.N, self.P = NP
@@ -65,21 +65,21 @@ class _Plane3D(object):
 
         # print p.shape
         # print (self.N*D).shape
-        pointOnPlane = p - self.N * D[:, scipy.newaxis]
+        pointOnPlane = p - self.N * D[:, np.newaxis]
 
         return abs(D), pointOnPlane
 
     def projectClosePoints(self, P, maxDist):
 
-        # distances = scipy.zeros(P.shape[0], dtype=float)
-        # projections = scipy.zeros([P.shape[0],2], dtype=float)
+        # distances = np.zeros(P.shape[0], dtype=float)
+        # projections = np.zeros([P.shape[0],2], dtype=float)
 
         distances, projections = self.distanceToPoints(P)
 
         # for i, p in enumerate(P):
         #   distances[i], projections[i] = self.distanceToPoint( p )
 
-        closeIndices = scipy.where(distances < maxDist)[0]
+        closeIndices = np.where(distances < maxDist)[0]
         closeProjections = projections[closeIndices]
 
         return closeProjections, closeIndices
@@ -211,12 +211,12 @@ class FemurMeasurements(object):
 
     def calcShaftAxis(self):
 
-        shaftEP = scipy.vstack([self.EP[self.EPMap[e], :] for e in self.shaftElems])
+        shaftEP = np.vstack([self.EP[self.EPMap[e], :] for e in self.shaftElems])
 
         # for elems in self.shaftElems:
-        #   shaftEPi.append( scipy.hstack([self.EPMap[e] for e in elems]) )
+        #   shaftEPi.append( np.hstack([self.EPMap[e] for e in elems]) )
 
-        # shaftEP = self.EP[ scipy.hstack( shaftEPi ) ]
+        # shaftEP = self.EP[ np.hstack( shaftEPi ) ]
 
         # initialise shaft axis
         self.shaftAxis = FT.Line3D([0.0, 0.0, 1.0], shaftEP.mean(0))
@@ -234,17 +234,17 @@ class FemurMeasurements(object):
         fits axis through neck elements and head elements
         """
 
-        neckEP = scipy.vstack([self.EP[self.EPMap[e], :] for e in self.neckElems])
-        headEP = scipy.vstack([self.EP[self.EPMap[e], :] for e in self.headElems])
-        EP = scipy.vstack([neckEP, headEP])
+        neckEP = np.vstack([self.EP[self.EPMap[e], :] for e in self.neckElems])
+        headEP = np.vstack([self.EP[self.EPMap[e], :] for e in self.headElems])
+        EP = np.vstack([neckEP, headEP])
 
         # neckEPi = []
         # for submesh, elems in self.neckElems:
-        #   neckEPi.append( scipy.hstack([self.EPMap[submesh][e] for e in elems]) )
+        #   neckEPi.append( np.hstack([self.EPMap[submesh][e] for e in elems]) )
 
-        # neckEP = self.EP[ scipy.hstack( neckEPi ) ]
-        # headEP = self.EP[ scipy.hstack(self.EPMap[self.regionName2ElementMap['head']]) ]
-        # EP = scipy.vstack( [neckEP, headEP] )
+        # neckEP = self.EP[ np.hstack( neckEPi ) ]
+        # headEP = self.EP[ np.hstack(self.EPMap[self.regionName2ElementMap['head']]) ]
+        # EP = np.vstack( [neckEP, headEP] )
 
         # initialise neck axis
         initialNeckAxis = FT.Line3D(headEP.mean(0) - neckEP.mean(0), neckEP.mean(0))
@@ -267,12 +267,12 @@ class FemurMeasurements(object):
 
     def _findNeckPlaneMinXSection(self, initialNeckAxis):
         # use neck EPs
-        neckEP = scipy.vstack([self.EP[self.EPMap[e], :] for e in self.neckLongElems])
+        neckEP = np.vstack([self.EP[self.EPMap[e], :] for e in self.neckLongElems])
 
         # neckEPi = []
         # for submesh, elems in self.neckLongElems:
-        #   neckEPi.append( scipy.hstack([self.EPMap[submesh][e] for e in elems]) )         
-        # neckEP = self.EP[ scipy.hstack( neckEPi ) ]
+        #   neckEPi.append( np.hstack([self.EPMap[submesh][e] for e in elems]) )
+        # neckEP = self.EP[ np.hstack( neckEPi ) ]
 
         axisPoints = []
         axisPointsT = []
@@ -281,8 +281,8 @@ class FemurMeasurements(object):
             axisPoints.append(p)
             axisPointsT.append(t)
 
-        # ~ axisPoints = scipy.array([self.neckAxis.findClosest(d)[0] for d in neckEP])
-        initPI = scipy.sqrt(((neckEP - axisPoints) ** 2.0).sum(1)).argmin()
+        # ~ axisPoints = np.array([self.neckAxis.findClosest(d)[0] for d in neckEP])
+        initPI = np.sqrt(((neckEP - axisPoints) ** 2.0).sum(1)).argmin()
         initP = axisPoints[initPI]
         initT = axisPointsT[initPI]
         searchP0 = initialNeckAxis.eval(min(axisPointsT) + 0.0)
@@ -294,12 +294,12 @@ class FemurMeasurements(object):
         # fine search
         # planePoints2, finalP2, finalN = neckXSectioner.findNeckMin( finalP1, initialNeckAxis.a )
 
-        neckEP = scipy.vstack([self.EP[self.EPMap[e], :] for e in self.neckElems])
+        neckEP = np.vstack([self.EP[self.EPMap[e], :] for e in self.neckElems])
 
         # neckEPi = []
         # for submesh, elems in self.neckElems:
-        #   neckEPi.append( scipy.hstack([self.EPMap[submesh][e] for e in elems]) )
-        # neckEP = self.EP[ scipy.hstack( neckEPi ) ]
+        #   neckEPi.append( np.hstack([self.EPMap[submesh][e] for e in elems]) )
+        # neckEP = self.EP[ np.hstack( neckEPi ) ]
 
         planePoints2, finalP2, finalN = neckXSectioner.findNeckMin(neckEP.mean(0), initialNeckAxis.a)
         # planePoints2, finalP2, finalN = neckXSectioner.findNeckMin( neckEP.mean(0), self.neckAxis.a )
@@ -307,7 +307,7 @@ class FemurMeasurements(object):
 
         if len(planePoints2) == 0:
             neckPlanePoints = planePoints1
-            neckPlaneNormal = scipy.array(initialNeckAxis.a)
+            neckPlaneNormal = np.array(initialNeckAxis.a)
             neckPlaneOrigin = finalP1
         else:
             neckPlanePoints = planePoints2
@@ -325,28 +325,28 @@ class FemurMeasurements(object):
         v1 = nodeCoords[self.condyleAlignmentNodes[0]] - nodeCoords[self.condyleAlignmentNodes[1]]
 
         z = self.shaftAxis.a
-        y = _norm(scipy.cross(_norm(v1), _norm(z)))
-        x = _norm(scipy.cross(y, _norm(z)))
+        y = _norm(np.cross(_norm(v1), _norm(z)))
+        x = _norm(np.cross(y, _norm(z)))
         CoM = self.GF.calc_CoM_2D([5, 5])
 
         self.xAxis = FT.Line3D(x, CoM)
         self.yAxis = FT.Line3D(y, CoM)
 
         if alignGF:
-            pAxes = scipy.array([x, y, z])
+            pAxes = np.array([x, y, z])
 
-            targetCoM = scipy.zeros(3)
-            targetPAxes = scipy.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=float)
+            targetCoM = np.zeros(3)
+            targetPAxes = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=float)
 
             T = alignment.calcAffine((CoM, pAxes), (targetCoM, targetPAxes))
-            self.GF.transformAffine(scipy.vstack((T, scipy.ones(4))))
+            self.GF.transformAffine(np.vstack((T, np.ones(4))))
             self.shaftAligned = True
 
     def calcHeadDiameter(self):
-        headEP = scipy.vstack([self.EP[self.EPMap[e], :] for e in self.headElems])
+        headEP = np.vstack([self.EP[self.EPMap[e], :] for e in self.headElems])
         rms, [cx, cy, cz, r] = FT.fitSphere(headEP)
         m = measurement('head_diameter', r * 2.0)
-        m.centre = scipy.array([cx, cy, cz])
+        m.centre = np.array([cx, cy, cz])
         self.measurements['head_diameter'] = m
         return m.value
 
@@ -354,9 +354,9 @@ class FemurMeasurements(object):
         """
         angle between shaftAxis and neckAxis
         """
-        nom = scipy.dot(self.neckAxis.a, self.shaftAxis.a)
+        nom = np.dot(self.neckAxis.a, self.shaftAxis.a)
         denom = _mag(self.neckAxis.a) * _mag(self.shaftAxis.a)
-        a = scipy.rad2deg(scipy.arccos(nom / denom))
+        a = np.rad2deg(np.arccos(nom / denom))
         if a < 90.0:
             a = 180.0 - a
         m = measurement('neck_shaft_angle', a)
@@ -366,12 +366,12 @@ class FemurMeasurements(object):
     def calcNeckWidth(self):
 
         # use neck EPs
-        neckEP = scipy.vstack([self.EP[self.EPMap[e], :] for e in self.neckLongElems])
+        neckEP = np.vstack([self.EP[self.EPMap[e], :] for e in self.neckLongElems])
 
         # neckEPi = []
         # for submesh, elems in self.neckLongElems:
-        #   neckEPi.append( scipy.hstack([self.EPMap[submesh][e] for e in elems]) )         
-        # neckEP = self.EP[ scipy.hstack( neckEPi ) ]
+        #   neckEPi.append( np.hstack([self.EPMap[submesh][e] for e in elems]) )
+        # neckEP = self.EP[ np.hstack( neckEPi ) ]
 
         axisPoints = []
         axisPointsT = []
@@ -380,8 +380,8 @@ class FemurMeasurements(object):
             axisPoints.append(p)
             axisPointsT.append(t)
 
-        # ~ axisPoints = scipy.array([self.neckAxis.findClosest(d)[0] for d in neckEP])
-        initPI = scipy.sqrt(((neckEP - axisPoints) ** 2.0).sum(1)).argmin()
+        # ~ axisPoints = np.array([self.neckAxis.findClosest(d)[0] for d in neckEP])
+        initPI = np.sqrt(((neckEP - axisPoints) ** 2.0).sum(1)).argmin()
         initP = axisPoints[initPI]
         initT = axisPointsT[initPI]
         searchP0 = self.neckAxis.eval(min(axisPointsT) + 5.0)
@@ -407,7 +407,7 @@ class FemurMeasurements(object):
         # diameter = distance between highest and lowest plane points
         neckSup = planePoints[planePoints[:, 2].argmax()]
         neckInf = planePoints[planePoints[:, 2].argmin()]
-        neckW = scipy.sqrt(((neckSup - neckInf) ** 2.0).sum())
+        neckW = np.sqrt(((neckSup - neckInf) ** 2.0).sum())
 
         m = measurement('neck_width', neckW)
         m.centre = self.neckAxis.b
@@ -423,14 +423,14 @@ class FemurMeasurements(object):
         as a first approximation, finds the closest EP in neck elements
         to the neck axis
         """
-        neckEP = scipy.vstack([self.EP[self.EPMap[e], :] for e in self.neckElems])
+        neckEP = np.vstack([self.EP[self.EPMap[e], :] for e in self.neckElems])
         # neckEPi = []
         # for submesh, elems in self.neckElems:
-        #   neckEPi.append( scipy.hstack([self.EPMap[submesh][e] for e in elems]) )
-        # neckEP = self.EP[ scipy.hstack( neckEPi ) ]
+        #   neckEPi.append( np.hstack([self.EPMap[submesh][e] for e in elems]) )
+        # neckEP = self.EP[ np.hstack( neckEPi ) ]
 
-        axisPoints = scipy.array([self.neckAxis.findClosest(d)[0] for d in neckEP])
-        dMin = scipy.sqrt(((neckEP - axisPoints) ** 2.0).sum(1)).min()
+        axisPoints = np.array([self.neckAxis.findClosest(d)[0] for d in neckEP])
+        dMin = np.sqrt(((neckEP - axisPoints) ** 2.0).sum(1)).min()
 
         m = measurement('neck_diameter', dMin * 2.0)
         self.measurements['neck_diameter'] = m
@@ -439,41 +439,41 @@ class FemurMeasurements(object):
     def calcFemoralAxisLength(self):
 
         # calc closest point to axis in head
-        headEPi = scipy.hstack([self.EPMap[e] for e in self.headElems])
-        headEP = scipy.vstack([self.EP[self.EPMap[e], :] for e in self.headElems])
-        # headEPi = scipy.hstack(self.EPMap[ self.regionName2ElementMap['head']])
+        headEPi = np.hstack([self.EPMap[e] for e in self.headElems])
+        headEP = np.vstack([self.EP[self.EPMap[e], :] for e in self.headElems])
+        # headEPi = np.hstack(self.EPMap[ self.regionName2ElementMap['head']])
         # headEP = self.EP[ headEPi ]
 
-        headD = scipy.array([self.neckAxis.calcDistanceFromPoint(p) for p in headEP])
+        headD = np.array([self.neckAxis.calcDistanceFromPoint(p) for p in headEP])
         # headIntercept = headEP[ headD.argmin() ]
         headIntercept = self.neckAxis.findClosest(headEP[headD.argmin()])[0]
 
         # calc closest point to axis in gtroc
-        gTrocEPi = scipy.hstack([self.EPMap[e] for e in self.gTrocElems])
-        gTrocEP = scipy.vstack([self.EP[self.EPMap[e], :] for e in self.gTrocElems])
-        # gTrocEPi = scipy.hstack(self.EPMap[ self.regionName2ElementMap['greatertrochanter']])
+        gTrocEPi = np.hstack([self.EPMap[e] for e in self.gTrocElems])
+        gTrocEP = np.vstack([self.EP[self.EPMap[e], :] for e in self.gTrocElems])
+        # gTrocEPi = np.hstack(self.EPMap[ self.regionName2ElementMap['greatertrochanter']])
         # gTrocEP = self.EP[ gTrocEPi ]
 
-        gTrocD = scipy.array([self.neckAxis.calcDistanceFromPoint(p) for p in gTrocEP])
+        gTrocD = np.array([self.neckAxis.calcDistanceFromPoint(p) for p in gTrocEP])
         # gTrocIntercept = gTrocEP[ gTrocD.argmin() ]
         gTrocIntercept = self.neckAxis.findClosest(gTrocEP[gTrocD.argmin()])[0]
 
-        m = measurement('femoral_axis_length', scipy.sqrt(((headIntercept - gTrocIntercept) ** 2.0).sum()))
-        m.headIntercept = (headEPi[headD.argmin()], scipy.array(headIntercept))
-        m.gTrocIntercept = (gTrocEPi[gTrocD.argmin()], scipy.array(gTrocIntercept))
+        m = measurement('femoral_axis_length', np.sqrt(((headIntercept - gTrocIntercept) ** 2.0).sum()))
+        m.headIntercept = (headEPi[headD.argmin()], np.array(headIntercept))
+        m.gTrocIntercept = (gTrocEPi[gTrocD.argmin()], np.array(gTrocIntercept))
         self.measurements['femoral_axis_length'] = m
         return m.value
 
     def calcFemoralLengthLong(self):
 
-        headEPi = scipy.hstack([self.EPMap[e] for e in self.headElems])
-        headEP = scipy.vstack([self.EP[self.EPMap[e], :] for e in self.headElems])
-        mCondEPi = scipy.hstack([self.EPMap[e] for e in self.mCondElems])
-        mCondEP = scipy.vstack([self.EP[self.EPMap[e], :] for e in self.mCondElems])
+        headEPi = np.hstack([self.EPMap[e] for e in self.headElems])
+        headEP = np.vstack([self.EP[self.EPMap[e], :] for e in self.headElems])
+        mCondEPi = np.hstack([self.EPMap[e] for e in self.mCondElems])
+        mCondEP = np.vstack([self.EP[self.EPMap[e], :] for e in self.mCondElems])
 
-        # headEPi = scipy.hstack(self.EPMap[ self.regionName2ElementMap['head']])
+        # headEPi = np.hstack(self.EPMap[ self.regionName2ElementMap['head']])
         # headEP = self.EP[ headEPi ]
-        # mCondEPi = scipy.hstack(self.EPMap[ self.regionName2ElementMap['medialcondyle']])
+        # mCondEPi = np.hstack(self.EPMap[ self.regionName2ElementMap['medialcondyle']])
         # mCondEP = self.EP[ mCondEPi ]
 
         # project eps on the shaft axis
@@ -508,14 +508,14 @@ class FemurMeasurements(object):
 
     def calcFemoralLengthShort(self):
 
-        gTrocEPi = scipy.hstack([self.EPMap[e] for e in self.gTrocElems])
-        gTrocEP = scipy.vstack([self.EP[self.EPMap[e], :] for e in self.gTrocElems])
-        lCondEPi = scipy.hstack([self.EPMap[e] for e in self.lCondElems])
-        lCondEP = scipy.vstack([self.EP[self.EPMap[e], :] for e in self.lCondElems])
+        gTrocEPi = np.hstack([self.EPMap[e] for e in self.gTrocElems])
+        gTrocEP = np.vstack([self.EP[self.EPMap[e], :] for e in self.gTrocElems])
+        lCondEPi = np.hstack([self.EPMap[e] for e in self.lCondElems])
+        lCondEP = np.vstack([self.EP[self.EPMap[e], :] for e in self.lCondElems])
 
-        # gTrocEPi = scipy.hstack(self.EPMap[ self.regionName2ElementMap['greatertrochanter']])
+        # gTrocEPi = np.hstack(self.EPMap[ self.regionName2ElementMap['greatertrochanter']])
         # gTrocEP = self.EP[ gTrocEPi ]
-        # lCondEPi = scipy.hstack(self.EPMap[ self.regionName2ElementMap['lateralcondyle']])
+        # lCondEPi = np.hstack(self.EPMap[ self.regionName2ElementMap['lateralcondyle']])
         # lCondEP = self.EP[ lCondEPi ]
 
         # project eps on the shaft axis
@@ -559,7 +559,7 @@ class FemurMeasurements(object):
         rms, [cx, cy, cz, r] = FT.fitSphere(ep)
 
         m = measurement('subtrochanteric_diameter', r * 2.0)
-        m.centre = scipy.array([cx, cy, cz])
+        m.centre = np.array([cx, cy, cz])
         self.measurements['subtrochanteric_diameter'] = m
         return m.value
 
@@ -575,8 +575,8 @@ class FemurMeasurements(object):
         width = projX.max() - projX.min()
 
         m = measurement('subtrochanteric_width', width)
-        m.p1 = scipy.array(ep[projX.argmax()])
-        m.p2 = scipy.array(ep[projX.argmin()])
+        m.p1 = np.array(ep[projX.argmax()])
+        m.p2 = np.array(ep[projX.argmin()])
         self.measurements['subtrochanteric_width'] = m
         return m.value
 
@@ -591,7 +591,7 @@ class FemurMeasurements(object):
         rms, [cx, cy, cz, r] = FT.fitSphere(ep)
 
         m = measurement('midshaft_diameter', r * 2.0)
-        m.centre = scipy.array([cx, cy, cz])
+        m.centre = np.array([cx, cy, cz])
         self.measurements['midshaft_diameter'] = m
         return m.value
 
@@ -611,8 +611,8 @@ class FemurMeasurements(object):
         width = projX.max() - projX.min()
 
         m = measurement('midshaft_width', width)
-        m.p1 = scipy.array(ep[projX.argmax()])
-        m.p2 = scipy.array(ep[projX.argmin()])
+        m.p1 = np.array(ep[projX.argmax()])
+        m.p2 = np.array(ep[projX.argmin()])
         self.measurements['midshaft_width'] = m
         return m.value
 
@@ -628,30 +628,30 @@ class FemurMeasurements(object):
         if not self.shaftAligned:
             self.alignToShaftAxis()
 
-        lCondEPi = scipy.hstack([self.EPMap[e] for e in self.lCondElems])
-        lCondEP = scipy.vstack([self.EP[self.EPMap[e], :] for e in self.lCondElems])
-        mCondEPi = scipy.hstack([self.EPMap[e] for e in self.mCondElems])
-        mCondEP = scipy.vstack([self.EP[self.EPMap[e], :] for e in self.mCondElems])
+        lCondEPi = np.hstack([self.EPMap[e] for e in self.lCondElems])
+        lCondEP = np.vstack([self.EP[self.EPMap[e], :] for e in self.lCondElems])
+        mCondEPi = np.hstack([self.EPMap[e] for e in self.mCondElems])
+        mCondEP = np.vstack([self.EP[self.EPMap[e], :] for e in self.mCondElems])
 
         # mCondEPi = []
         # for submesh, elems in self.epiCondylarMCondElems:
-        #   mCondEPi.append( scipy.hstack([self.EPMap[submesh][e] for e in elems]) )
+        #   mCondEPi.append( np.hstack([self.EPMap[submesh][e] for e in elems]) )
 
-        # mCondEPi = scipy.hstack( mCondEPi )
+        # mCondEPi = np.hstack( mCondEPi )
         # mCondEP = self.EP[ mCondEPi ]
         medialPoint = mCondEP[mCondEP[:, 0].argmax()]
 
         # lCondEPi = []
         # for submesh, elems in self.epiCondylarLCondElems:
-        #   lCondEPi.append( scipy.hstack([self.EPMap[submesh][e] for e in elems]) )
+        #   lCondEPi.append( np.hstack([self.EPMap[submesh][e] for e in elems]) )
 
-        # lCondEPi = scipy.hstack( lCondEPi )
+        # lCondEPi = np.hstack( lCondEPi )
         # lCondEP = self.EP[ lCondEPi ] 
         lateralPoint = lCondEP[lCondEP[:, 0].argmin()]
 
-        m = measurement('epicondylar_width', scipy.sqrt(((medialPoint - lateralPoint) ** 2.0).sum()))
-        m.p1 = (mCondEPi[mCondEP[:, 0].argmax()], scipy.array(medialPoint))
-        m.p2 = (lCondEPi[lCondEP[:, 0].argmin()], scipy.array(lateralPoint))
+        m = measurement('epicondylar_width', np.sqrt(((medialPoint - lateralPoint) ** 2.0).sum()))
+        m.p1 = (mCondEPi[mCondEP[:, 0].argmax()], np.array(medialPoint))
+        m.p2 = (lCondEPi[lCondEP[:, 0].argmin()], np.array(lateralPoint))
         self.measurements['epicondylar_width'] = m
 
         self.epicondylarAxis = FT.Line3D(medialPoint - lateralPoint, (medialPoint + lateralPoint) / 2.0)
@@ -667,29 +667,29 @@ class FemurMeasurements(object):
         if not self.shaftAligned:
             self.alignToShaftAxis()
 
-        lCondEPi = scipy.hstack([self.EPMap[e] for e in self.lCondElems])
-        lCondEP = scipy.vstack([self.EP[self.EPMap[e], :] for e in self.lCondElems])
-        mCondEPi = scipy.hstack([self.EPMap[e] for e in self.mCondElems])
-        mCondEP = scipy.vstack([self.EP[self.EPMap[e], :] for e in self.mCondElems])
+        lCondEPi = np.hstack([self.EPMap[e] for e in self.lCondElems])
+        lCondEP = np.vstack([self.EP[self.EPMap[e], :] for e in self.lCondElems])
+        mCondEPi = np.hstack([self.EPMap[e] for e in self.mCondElems])
+        mCondEP = np.vstack([self.EP[self.EPMap[e], :] for e in self.mCondElems])
 
         # mCondEPi = []
         # for submesh, elems in self.epiCondylarMCondElems:
-        #   mCondEPi.append( scipy.hstack([self.EPMap[submesh][e] for e in elems]) )
+        #   mCondEPi.append( np.hstack([self.EPMap[submesh][e] for e in elems]) )
 
-        # mCondEPi = scipy.hstack( mCondEPi )
+        # mCondEPi = np.hstack( mCondEPi )
         # mCondEP = self.EP[ mCondEPi ]
 
         # lCondEPi = []
         # for submesh, elems in self.epiCondylarLCondElems:
-        #   lCondEPi.append( scipy.hstack([self.EPMap[submesh][e] for e in elems]) )
+        #   lCondEPi.append( np.hstack([self.EPMap[submesh][e] for e in elems]) )
 
-        # lCondEPi = scipy.hstack( lCondEPi )
+        # lCondEPi = np.hstack( lCondEPi )
         # lCondEP = self.EP[ lCondEPi ] 
 
         d = distance.cdist(mCondEP, lCondEP, 'euclidean')
         dInd = d.argmax()
 
-        di = scipy.floor(dInd / d.shape[0])
+        di = np.floor(dInd / d.shape[0])
         dj = dInd - di * d.shape[0]
 
         medialPoint = mCondEP[di]
@@ -697,9 +697,9 @@ class FemurMeasurements(object):
         lateralPoint = lCondEP[dj]
         lateralPointI = lCondEPi[dj]
 
-        m = measurement('epicondylar_width', scipy.sqrt(((medialPoint - lateralPoint) ** 2.0).sum()))
-        m.p1 = (medialPointI, scipy.array(medialPoint))
-        m.p2 = (lateralPointI, scipy.array(lateralPoint))
+        m = measurement('epicondylar_width', np.sqrt(((medialPoint - lateralPoint) ** 2.0).sum()))
+        m.p1 = (medialPointI, np.array(medialPoint))
+        m.p2 = (lateralPointI, np.array(lateralPoint))
         self.measurements['epicondylar_width'] = m
 
         self.epicondylarAxis = FT.Line3D(medialPoint - lateralPoint, (medialPoint + lateralPoint) / 2.0)
@@ -721,19 +721,19 @@ class FemurMeasurements(object):
         if not self.shaftAligned:
             self.alignToShaftAxis()
 
-        lCondEPi = scipy.hstack([self.EPMap[e] for e in self.lCondElems])
-        lCondEP = scipy.vstack([self.EP[self.EPMap[e], :] for e in self.lCondElems])
-        mCondEPi = scipy.hstack([self.EPMap[e] for e in self.mCondElems])
-        mCondEP = scipy.vstack([self.EP[self.EPMap[e], :] for e in self.mCondElems])
+        lCondEPi = np.hstack([self.EPMap[e] for e in self.lCondElems])
+        lCondEP = np.vstack([self.EP[self.EPMap[e], :] for e in self.lCondElems])
+        mCondEPi = np.hstack([self.EPMap[e] for e in self.mCondElems])
+        mCondEP = np.vstack([self.EP[self.EPMap[e], :] for e in self.mCondElems])
 
-        # mCondEPi = scipy.hstack(self.EPMap[ self.regionName2ElementMap['medialcondyle']])
+        # mCondEPi = np.hstack(self.EPMap[ self.regionName2ElementMap['medialcondyle']])
         # mCondEP = self.EP[ mCondEPi ]
 
-        # lCondEPi = scipy.hstack(self.EPMap[ self.regionName2ElementMap['lateralcondyle']])
+        # lCondEPi = np.hstack(self.EPMap[ self.regionName2ElementMap['lateralcondyle']])
         # lCondEP = self.EP[ lCondEPi ]
 
-        # condyleEPi = scipy.hstack( [lCondEPi, mCondEPi] )
-        condyleEP = scipy.vstack([lCondEP, mCondEP])
+        condyleEPi = np.hstack( [lCondEPi, mCondEPi] )
+        condyleEP = np.vstack([lCondEP, mCondEP])
 
         boxCoM0 = condyleEP.mean(0)
         boxCoMOpt, boxVolume, boxDim, boxAxes = FT.fitBox(condyleEP, boxCoM0,
@@ -747,7 +747,7 @@ class FemurMeasurements(object):
         epMin = condyleEP[pMin[0]]
         epMax = condyleEP[pMax[0]]
 
-        width = scipy.sqrt(((epMin - epMax) ** 2.0).sum())
+        width = np.sqrt(((epMin - epMax) ** 2.0).sum())
 
         m = measurement('epicondylar_width', width)
         m.p1 = (condyleEPi[pMin[0]], condyleEP[pMin[0]])
@@ -763,7 +763,7 @@ class FemurMeasurements(object):
         p1 = nodeCoords[self.condyleAlignmentNodes[0]]
         p2 = nodeCoords[self.condyleAlignmentNodes[1]]
 
-        width = scipy.sqrt(((p1 - p2) ** 2.0).sum())
+        width = np.sqrt(((p1 - p2) ** 2.0).sum())
 
         epTree = FT.cKDTree(self.EP)
         p1i, p2i = epTree.query([p1, p2])[1]
@@ -780,16 +780,16 @@ class FemurMeasurements(object):
     def calcAnteversion(self):
 
         # create plane normal to shaft axis
-        px = FT.norm(scipy.cross(self.shaftAxis.a, [1, 0, 0]))
-        py = FT.norm(scipy.cross(self.shaftAxis.a, px))
+        px = FT.norm(np.cross(self.shaftAxis.a, [1, 0, 0]))
+        py = FT.norm(np.cross(self.shaftAxis.a, px))
         p = FT.Plane([0, 0, 0], self.shaftAxis.a, x=px, y=py)
         # p = FT.Plane([0,0,0], [0,0,1], x=[1,0,0], y=[0,1,0])
 
         # get vector connecting posterior extremes of condyles
-        lcEP = scipy.vstack([self.EP[self.EPMap[e], :] for e in self.lCondElems])
-        mcEP = scipy.vstack([self.EP[self.EPMap[e], :] for e in self.mCondElems])
-        # mcEP = self.EP[scipy.hstack(self.EPMap[self.regionName2ElementMap['medialcondyle']])]
-        # lcEP = self.EP[scipy.hstack(self.EPMap[self.regionName2ElementMap['lateralcondyle']])]
+        lcEP = np.vstack([self.EP[self.EPMap[e], :] for e in self.lCondElems])
+        mcEP = np.vstack([self.EP[self.EPMap[e], :] for e in self.mCondElems])
+        # mcEP = self.EP[np.hstack(self.EPMap[self.regionName2ElementMap['medialcondyle']])]
+        # lcEP = self.EP[np.hstack(self.EPMap[self.regionName2ElementMap['lateralcondyle']])]
         mcCP, mcCT = self.yAxis.findClosest(mcEP)
         mcP = mcEP[mcCT.argmin(), :]
         lcCP, lcCT = self.yAxis.findClosest(lcEP)
@@ -798,13 +798,13 @@ class FemurMeasurements(object):
 
         # project this vector on plane
         v1 = p.project2Plane2D(cv.a)
-        # v1 = scipy.array([1,0,0], dtype=float)
+        # v1 = np.array([1,0,0], dtype=float)
 
         # project neckAxis onto plane
         v2 = p.project2Plane2D(self.neckAxis.a)
 
         # calculate angle between projections
-        a = FT.angle(v1, v2) * 180.0 / scipy.pi
+        a = FT.angle(v1, v2) * 180.0 / np.pi
         if a > 90.0:
             a = 180.0 - a
 
@@ -840,22 +840,22 @@ class NeckMinXSectionFit(object):
         in neck
         """
 
-        # ~ self.a = scipy.array( initialN )
-        # ~ self.b = scipy.array( initialP )
+        # ~ self.a = np.array( initialN )
+        # ~ self.b = np.array( initialP )
         # ~ t = 0
         self.k = -1
         xtol = 1e-6
         ftol = 1e-6
 
-        # ~ X0 = scipy.hstack( (t, initialN) )
+        # ~ X0 = np.hstack( (t, initialN) )
         print('initP:', initialP)
         print('initN:', initialN)
 
-        X0 = scipy.hstack((initialP, initialN))
+        X0 = np.hstack((initialP, initialN))
         print('\nStarting neck search')
         if self.useCallback:
             callBack = self._callback
-            callback(X0)
+            callBack(X0)
         else:
             callBack = None
 
@@ -875,20 +875,20 @@ class NeckMinXSectionFit(object):
         in neck, given a fixed normal direction
         """
 
-        # ~ self.a = scipy.array( initialN )
-        # ~ self.b = scipy.array( initialP )
+        # ~ self.a = np.array( initialN )
+        # ~ self.b = np.array( initialP )
         # ~ t = 0
         self.k = -1
         xtol = 0.001
         ftol = 0.001
 
-        # ~ X0 = scipy.hstack( (t, initialN) )
+        # ~ X0 = np.hstack( (t, initialN) )
         self.planeN = N
         X0 = initialP
         print('\nStarting neck search')
         if self.useCallback:
             callBack = self._callbackFixedN
-            callback(X0)
+            callBack(X0)
         else:
             callBack = None
 
@@ -904,7 +904,7 @@ class NeckMinXSectionFit(object):
         in neck
         """
 
-        T = scipy.arange(0.0, 1.0 + res, res)
+        T = np.arange(0.0, 1.0 + res, res)
         line = FT.lineElement3D(p0, p1)
         self.planeN = _norm(p1 - p0)
 
@@ -913,7 +913,7 @@ class NeckMinXSectionFit(object):
             P = line.eval(t)
             areas.append(self._objFuncFixedN(P))
 
-        bestT = T[scipy.argmin(areas)]
+        bestT = T[np.argmin(areas)]
         bestP = line.eval(bestT)
 
         finalPlane = _Plane3D(NP=[self.planeN, bestP])
@@ -968,27 +968,27 @@ class NeckMinXSectionFit(object):
             # approximate area as area of ellipse characterised by principal
             # axes
             [b, a] = slice.calculatePrincipalAxes()[1]
-            area = scipy.pi * (0.5 * scipy.sqrt(a)) * (0.5 * scipy.sqrt(b))
+            area = np.pi * (0.5 * np.sqrt(a)) * (0.5 * np.sqrt(b))
 
         elif method == 3:
             # Approximate using sum of pixel radii from centre of slice
 
             # get all nonzero point indices
-            xi, yi = scipy.nonzero(slice.I)
+            xi, yi = np.nonzero(slice.I)
             # center
             xi = xi - slice.I.shape[0] / 2.0
             yi = yi - slice.I.shape[1] / 2.0
             nTotal = xi.shape[0]
 
             # convert all point indices into radial coordinates
-            R = scipy.sqrt(xi ** 2.0 + yi ** 2.0)
+            R = np.sqrt(xi ** 2.0 + yi ** 2.0)
             area = R.sum()
 
         elif method == 4:
             # approximate using sum of datapoint distance from plane P
-            R = scipy.sqrt(((planePoints - plane.P) ** 2.0).sum(1))
+            R = np.sqrt(((planePoints - plane.P) ** 2.0).sum(1))
             # area = R.sum()
-            area = R.mean() + scipy.sqrt(((plane.P - planePoints.mean(0)) ** 2.0).sum())
+            area = R.mean() + np.sqrt(((plane.P - planePoints.mean(0)) ** 2.0).sum())
             # print 'plane points:', len(planePoints), 'area:', area    
 
         return area
@@ -1015,29 +1015,29 @@ class NeckMinXSectionFit(object):
             # approximate area as area of ellipse characterised by principal
             # axes
             [b, a] = slice.calculatePrincipalAxes()[1]
-            area = scipy.pi * (0.5 * scipy.sqrt(a)) * (0.5 * scipy.sqrt(b))
+            area = np.pi * (0.5 * np.sqrt(a)) * (0.5 * np.sqrt(b))
 
         elif method == 3:
             # Approximate using sum of pixel radii from centre of slice
 
             # get all nonzero point indices
-            xi, yi = scipy.nonzero(slice.I)
+            xi, yi = np.nonzero(slice.I)
             # center
             xi = xi - slice.I.shape[0] / 2.0
             yi = yi - slice.I.shape[1] / 2.0
             nTotal = xi.shape[0]
 
             # convert all point indices into radial coordinates
-            R = scipy.sqrt(xi ** 2.0 + yi ** 2.0)
+            R = np.sqrt(xi ** 2.0 + yi ** 2.0)
             area = R.sum()
 
         elif method == 4:
             # approximate using sum of datapoint distance from plane P
-            R = scipy.sqrt(((planePoints - plane.P) ** 2.0).sum(1))
+            R = np.sqrt(((planePoints - plane.P) ** 2.0).sum(1))
             # area = R.sum()
-            # area = R.mean() + scipy.sqrt(((plane.P - planePoints.mean(0))**2.0).sum())
+            # area = R.mean() + np.sqrt(((plane.P - planePoints.mean(0))**2.0).sum())
             # print 'plane points:', len(planePoints), 'area:', area    
-            area = scipy.hstack([R, scipy.sqrt(((plane.P - planePoints.mean(0)) ** 2.0).sum())])
+            area = np.hstack([R, np.sqrt(((plane.P - planePoints.mean(0)) ** 2.0).sum())])
 
         return area
 
@@ -1062,40 +1062,34 @@ class NeckMinXSectionFit(object):
             # approximate area as area of ellipse characterised by principal
             # axes
             [b, a] = slice.calculatePrincipalAxes()[1]
-            area = scipy.pi * (0.5 * scipy.sqrt(a)) * (0.5 * scipy.sqrt(b))
+            area = np.pi * (0.5 * np.sqrt(a)) * (0.5 * np.sqrt(b))
 
         elif method == 3:
             # Approximate using sum of pixel radii from centre of slice
 
             # get all nonzero point indices
-            xi, yi = scipy.nonzero(slice.I)
+            xi, yi = np.nonzero(slice.I)
             # center
             xi = xi - slice.I.shape[0] / 2.0
             yi = yi - slice.I.shape[1] / 2.0
             nTotal = xi.shape[0]
 
             # convert all point indices into radial coordinates
-            R = scipy.sqrt(xi ** 2.0 + yi ** 2.0)
+            R = np.sqrt(xi ** 2.0 + yi ** 2.0)
             area = R.sum()
 
         elif method == 4:
             # approximate using sum of datapoint distance from plane P
-            R = scipy.sqrt(((planePoints - plane.P) ** 2.0).sum(1))
+            R = np.sqrt(((planePoints - plane.P) ** 2.0).sum(1))
             area = R.sum()
-            print(area)
-            # ~ pdb.set_trace()
 
         return area
 
     def _callback(self, xk):
         self.k += 1
-        print('it:%(it)i\t P: %(p0)8.5f %(p1)8.5f %(p2)8.5f\t N: %(n0)8.5f %(n1)8.5f %(n2)8.5f' \
-              % {'it': self.k, 'p0': xk[0], 'p1': xk[1], 'p2': xk[2], 'n0': xk[3], 'n1': xk[4], 'n2': xk[5]})
 
     def _callbackFixedN(self, xk):
         self.k += 1
-        print('it:%(it)i\t P: %(p0)8.5f %(p1)8.5f %(p2)8.5f\t' \
-              % {'it': self.k, 'p0': xk[0], 'p1': xk[1], 'p2': xk[2]})
 
     # ~ def calculateSlicePolar( self ):
     # ~ """ calculates the polar coordinates of pixels in slice centered
@@ -1103,15 +1097,15 @@ class NeckMinXSectionFit(object):
     # ~ """
     # ~
     # ~ # get all nonzero point indices
-    # ~ xi, yi = scipy.nonzero( self.I )
+    # ~ xi, yi = np.nonzero( self.I )
     # ~ # center
     # ~ xi = xi - self.CoM[0]
     # ~ yi = yi - self.CoM[1]
     # ~ nTotal = xi.shape[0]
     # ~
     # ~ # convert all point indices into radial coordinates
-    # ~ R = scipy.sqrt( xi**2.0 + yi**2.0 )      # r
-    # ~ theta = scipy.zeros( nTotal )
+    # ~ R = np.sqrt( xi**2.0 + yi**2.0 )      # r
+    # ~ theta = np.zeros( nTotal )
     # ~ for i in range( nTotal ):
     # ~ theta[i] = calcTheta( xi[i], yi[i] ) # theta
     # ~

@@ -19,15 +19,15 @@ import copy
 import json
 import os
 import shelve
-
-import scipy
+import logging
+import numpy
 
 from gias2.fieldwork.field import mapper
 from gias2.fieldwork.field.basis import basis
 from gias2.fieldwork.field.topology import element_types
 from gias2.fieldwork.field.topology import mesh
 
-
+log = logging.getLogger(__name__)
 # ~ from field_ctypes import ensemble_evaluators
 
 def eval_line_L3(B, P):
@@ -48,7 +48,7 @@ def eval_simplex_L3_L3(B, P):
 
 
 def eval_simplex_L4_L4_old(B, P):
-    return scipy.dot(P, B)
+    return numpy.dot(P, B)
 
 
 def eval_simplex_L4_L4(B, P):
@@ -143,7 +143,7 @@ def eval_quad_L4_L4_L4(B, P):
 
 
 def dot_Evaluator(B, P):
-    return scipy.dot(P, B)
+    return numpy.dot(P, B)
 
 
 class ensemble_field_function:
@@ -641,10 +641,6 @@ class ensemble_field_function:
         # Map parameters for f_new
         f_new.map_parameters()
 
-        if debug:
-            print(self.name)
-            pdb.set_trace()
-
         if f_new.get_number_of_ensemble_points() != self.get_number_of_ensemble_points():
             raise ValueError('number of ensemble points not equal in current and flattened mesh: ' + str(
                 self.get_number_of_ensemble_points()) + ' ' + str(f_new.get_number_of_ensemble_points()))
@@ -669,8 +665,8 @@ class ensemble_field_function:
         f_new.mapper.set_custom_ensemble_ordering(custom_map)
 
         if self.parameters is not None:
-            # new_params = scipy.zeros((f_new.mapper.get_number_of_ensemble_points(), self.parameters.shape[1]), dtype=float)
-            new_params = scipy.zeros_like(self.parameters, dtype=float)
+            # new_params = numpy.zeros((f_new.mapper.get_number_of_ensemble_points(), self.parameters.shape[1]), dtype=float)
+            new_params = numpy.zeros_like(self.parameters, dtype=float)
             for i_new, i_old in list(custom_map.items()):
                 new_params[i_new] = self.parameters[i_old]
 
@@ -760,7 +756,7 @@ class ensemble_field_function:
         basis_derivatives = {}
         eval_grid = {}
 
-        for element_number in scipy.sort(list(self.mesh.elements.keys())):
+        for element_number in numpy.sort(list(self.mesh.elements.keys())):
             # get element
             element = self.mesh.elements[element_number]
             # for each element, get element_parameters
@@ -773,12 +769,12 @@ class ensemble_field_function:
                 e_type = element.type
                 evaluator = self.evaluators[e_type]
                 try:
-                    # ~ element_field_values = scipy.dot( basis_values[e_type], element_parameters )
+                    # ~ element_field_values = numpy.dot( basis_values[e_type], element_parameters )
                     element_field_values = evaluator(basis_values[e_type], element_parameters)
 
                     if derivs:
-                        # ~ element_field_derivatives = scipy.array( [ scipy.dot( b.T, element_parameters ) for b in basis_derivatives[e_type] ] )
-                        element_field_derivatives = scipy.array(
+                        # ~ element_field_derivatives = numpy.array( [ numpy.dot( b.T, element_parameters ) for b in basis_derivatives[e_type] ] )
+                        element_field_derivatives = numpy.array(
                             [evaluator(b, element_parameters) for b in basis_derivatives[e_type]])
                     # ~ pdb.set_trace()
                 except KeyError:
@@ -798,7 +794,7 @@ class ensemble_field_function:
                         else:
                             raise NotImplementedError('derivs must be a tuple or -1')
 
-                        element_field_derivatives = scipy.array(
+                        element_field_derivatives = numpy.array(
                             [evaluator(b, element_parameters) for b in basis_derivatives[e_type]])
 
             else:
@@ -818,12 +814,12 @@ class ensemble_field_function:
 
         if derivs:
             if unpack:
-                return scipy.hstack(field_values), scipy.hstack(field_derivatives)
+                return numpy.hstack(field_values), numpy.hstack(field_derivatives)
             else:
                 return field_values, field_derivatives
         else:
             if unpack:
-                return scipy.hstack(field_values)
+                return numpy.hstack(field_values)
             else:
                 return field_values
 
@@ -855,7 +851,7 @@ class ensemble_field_function:
         basis_derivatives = {}
         eval_grid = {}
 
-        for element_number in scipy.sort(list(self.mesh.elements.keys())):
+        for element_number in numpy.sort(list(self.mesh.elements.keys())):
             # get element
             element = self.mesh.elements[element_number]
             # for each element, get element_parameters
@@ -869,7 +865,7 @@ class ensemble_field_function:
                 evaluator = self.evaluators[e_type]
                 try:
                     if derivs == -1:
-                        element_field_derivatives = scipy.array(
+                        element_field_derivatives = numpy.array(
                             [evaluator(b, element_parameters) for b in basis_derivatives[e_type]])
                     else:
                         element_field_derivatives = evaluator(basis_derivatives[e_type], element_parameters)
@@ -880,7 +876,7 @@ class ensemble_field_function:
                     if derivs == -1:
                         # ~ pdb.set_trace()
                         basis_derivatives[e_type] = self.basis[element.type].eval_derivatives(eval_grid[e_type].T, None)
-                        element_field_derivatives = scipy.array(
+                        element_field_derivatives = numpy.array(
                             [evaluator(b, element_parameters) for b in basis_derivatives[e_type]])
                     else:
                         basis_derivatives[e_type] = self.basis[element.type].eval_derivatives(eval_grid[e_type].T,
@@ -897,7 +893,7 @@ class ensemble_field_function:
 
         # ~ pdb.set_trace()
         if unpack:
-            return scipy.hstack(field_derivatives)
+            return numpy.hstack(field_derivatives)
         else:
             return field_derivatives
 
@@ -990,15 +986,15 @@ class ensemble_field_function:
                 if derivs is not None:
                     if derivs == -1:
                         element_deriv_basis_values = self.basis[element.type].eval_derivatives(xi.T, None)
-                        element_deriv_values = scipy.array([
+                        element_deriv_values = numpy.array([
                             self.evaluators[element.type](b, element_parameters) for b in element_deriv_basis_values
                         ])
-                        # ~ element_deriv_values = self._evaluate_element_derivatives( element.type, element_parameters, scipy.array(xi), None )
+                        # ~ element_deriv_values = self._evaluate_element_derivatives( element.type, element_parameters, numpy.array(xi), None )
                     else:
                         element_deriv_values = self.evaluators[element.type](
                             self.basis[element.type].eval_derivatives(xi.T, derivs), element_parameters
                         )
-                        # ~ element_deriv_values = self._evaluate_element_derivatives( element.type, element_parameters, scipy.array(xi), derivs )
+                        # ~ element_deriv_values = self._evaluate_element_derivatives( element.type, element_parameters, numpy.array(xi), derivs )
 
                     return element_field_values, element_deriv_values
 
@@ -1006,7 +1002,7 @@ class ensemble_field_function:
                     return element_field_values
             else:
                 # ~ raise RuntimeError, 'element is not true element'
-                element_field_values = scipy.hstack([
+                element_field_values = numpy.hstack([
                     self.subfields[element_number].evaluate_field_at_element_point(
                         elemNumber, xi[elemNumber], element_parameters, derivs
                     ) for elemNumber in list(xi.keys())
@@ -1033,11 +1029,11 @@ class ensemble_field_function:
         # ~ self.basis[element_type].set_element( element )
         # ~ #calculates centre point parameters based on other control points (Farin, 1983)
         # ~ b111 = -1.0/6.0 * ( element_parameters[0] + element_parameters[3] + element_parameters[6] ) + 0.25 * (element_parameters[1]+element_parameters[2]+element_parameters[4]+element_parameters[5]+element_parameters[7]+element_parameters[8])
-        # ~ element_parameters = scipy.hstack( [element_parameters, b111] )
+        # ~ element_parameters = numpy.hstack( [element_parameters, b111] )
         ## bezier testing ##
 
         basis_values = self.basis[element_type].eval(XI.T).T
-        eval_values = scipy.dot(basis_values, element_parameters)
+        eval_values = numpy.dot(basis_values, element_parameters)
 
         return eval_values
 
@@ -1046,13 +1042,13 @@ class ensemble_field_function:
 
         # a particular derivative
         if derivatives:
-            basis_values = scipy.array(
-                [self.basis[element_type].eval_derivatives(scipy.array(XI).T, d).T for d in derivatives])
-            eval_values = scipy.dot(basis_values, element_parameters)
+            basis_values = numpy.array(
+                [self.basis[element_type].eval_derivatives(numpy.array(XI).T, d).T for d in derivatives])
+            eval_values = numpy.dot(basis_values, element_parameters)
         # all derivatives
         else:
-            basis_values = self.basis[element_type].eval_derivatives(scipy.array(XI).T, None)
-            eval_values = scipy.array([scipy.dot(b.T, element_parameters) for b in basis_values])
+            basis_values = self.basis[element_type].eval_derivatives(numpy.array(XI).T, None)
+            eval_values = numpy.array([numpy.dot(b.T, element_parameters) for b in basis_values])
 
         return eval_values
 
@@ -1089,7 +1085,7 @@ class ensemble_field_function:
     # ~ """ calculates the x coord on the edge of an equilateral triangle
     # ~ give y
     # ~ """
-    # ~ a = scipy.sqrt(3.0)
+    # ~ a = numpy.sqrt(3.0)
     # ~ return ((y - b)/a)
     # ~
     # ~ #==================================================================#
@@ -1100,13 +1096,13 @@ class ensemble_field_function:
     # ~ int: interior bounds of the element ( (xmin, xmax), (ymin, ymax) )
     # ~ """
     # ~
-    # ~ e_points = scipy.array( [[],[]] )
-    # ~ y_divs = scipy.linspace( int[1][0], int[1][1], d[1] )
+    # ~ e_points = numpy.array( [[],[]] )
+    # ~ y_divs = numpy.linspace( int[1][0], int[1][1], d[1] )
     # ~ xn = d[0]
     # ~ for y_row in y_divs:
     # ~ x_edge = self._equi_evalx( y_row, int[1][1] )
-    # ~ x = scipy.linspace( x_edge,-x_edge, xn )
-    # ~ e_points = scipy.hstack( [e_points, scipy.array( [ x, [y_row]*xn] ) ] )
+    # ~ x = numpy.linspace( x_edge,-x_edge, xn )
+    # ~ e_points = numpy.hstack( [e_points, numpy.array( [ x, [y_row]*xn] ) ] )
     # ~ xn -= 1
     # ~ return e_points
 
@@ -1158,7 +1154,7 @@ class ensemble_field_function:
 # ~
 # ~ if not isinstance( phi, int ):
 # ~ # inner-product with basis
-# ~ field_value = scipy.dot( phi, u_vector )
+# ~ field_value = numpy.dot( phi, u_vector )
 # ~ if self.debug:
 # ~ print 'field_values:', field_values
 # ~ else:
@@ -1173,8 +1169,8 @@ class ensemble_field_function:
 # ======================================================================#
 
 # derivative mapping from cartesian to triangle edge directions
-cos45 = scipy.sqrt(2.0) / 2.0
-cart_map = scipy.array([[1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], \
+cos45 = numpy.sqrt(2.0) / 2.0
+cart_map = numpy.array([[1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], \
                         [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], \
                         [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], \
                         [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0], \
@@ -1209,26 +1205,25 @@ class element_point_evaluator:
         self.dimensions = self.element.dimensions
         self.basis = basis_function
 
-    def evaluate_at_element_point(element_coordinates):
-        """ Evaluates the objects element at the given element
-        coordinates. element_coordinates is a list.
+    def evaluate_at_element_point(self, element_coordinates):
+        """
+        Evaluates the objects element at the given element coordinates.
+
+        element_coordinates is a list.
         """
 
         # evaluate basis function
         basis_coeff = self.basis.eval(element_coordinates)
         if basis_coeff is not None:
             try:
-                field_value = scipy.dot(basis_coeff, self.parameters)
+                field_value = numpy.dot(basis_coeff, self.parameters)
                 return field_value
             except ValueError:
-                print(
-                    'ERROR: element_point_evaluator.evaluate_at_element_point: dot product failed, basis_coeff and parameters misaligned')
+                log.warning('dot product failed, basis_coeff and parameters misaligned')
                 return None
 
         else:
-            print(
-                'ERROR: element_point_evaluator.evaluate_at_element_point: unable to evaluate basis function at element coordinates:',
-                element_coordinates)
+            log.warning('unable to evaluate basis function at element coordinates: %s', element_coordinates)
             return None
 
 

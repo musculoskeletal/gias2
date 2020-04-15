@@ -14,15 +14,19 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import shelve
 
-import scipy
+import numpy
 from scipy.interpolate import splprep, splev, splint
 from scipy.linalg import svd
 from scipy.optimize import fmin, leastsq
 from scipy.spatial import cKDTree
 from scipy.spatial.distance import euclidean
 
+from gias2.common.geoprimitives import LineElement3D
 
 # ======================================================================#
+from gias2.common.math import norm
+
+
 class spline_parametric(object):
     """ Class for a spline curve fitted to a number of points in 3D for
     defining landmarks. Interpolates x,y,z given parametric variable u
@@ -73,7 +77,7 @@ class spline_parametric(object):
         d is the derivative order
         """
         x = splev(u, self.tck, der=d)
-        return scipy.array(x)
+        return numpy.array(x)
 
     # ==================================================================#
     def findClosest(self, p):
@@ -83,7 +87,7 @@ class spline_parametric(object):
 
         def obj(u):
             pLine = self.eval(u[0])
-            d = (scipy.subtract(p, pLine) ** 2.0).sum()
+            d = (numpy.subtract(p, pLine) ** 2.0).sum()
             return d
 
         u0 = [0.5]
@@ -97,9 +101,9 @@ class spline_parametric(object):
 
     # ==================================================================#
     # def draw( self, d, dp=0, figure=None, name='spline' ):
-    #   x,y,z = self.eval(scipy.linspace(0.0,1.0,d))
+    #   x,y,z = self.eval(numpy.linspace(0.0,1.0,d))
     #   if dp:
-    #       xp,yp,zp = self.eval(scipy.linspace(0.0,1.0,dp))
+    #       xp,yp,zp = self.eval(numpy.linspace(0.0,1.0,dp))
 
     #   if figure==None:
     #       figure = mlab.figure()
@@ -111,44 +115,41 @@ class spline_parametric(object):
     #   return figure
 
     # ==================================================================#
-    def fitRidge(self, image):
-
-        self.tck, self.u = ridgeFitterThing(image, self)
 
 
 def fitSplineCoeffDPEPObj(x, data, cShape, spline, nEP):
     spline.tck[1] = x.reshape(cShape)
-    EP = spline.eval(scipy.linspace(0.0, 1.0, nEP)).T
+    EP = spline.eval(numpy.linspace(0.0, 1.0, nEP)).T
     epTree = cKDTree(EP)
     d = epTree.query(list(data))[0]
-    # ~ print 'rms', scipy.sqrt( (d*d).mean() )
+    # ~ print 'rms', numpy.sqrt( (d*d).mean() )
     return d
 
 
 def fitSplineCoeffEPDPObj(x, cShape, spline, nEP, dataTree):
     spline.tck[1] = x.reshape(cShape)
-    EP = spline.eval(scipy.linspace(0.0, 1.0, nEP)).T
+    EP = spline.eval(numpy.linspace(0.0, 1.0, nEP)).T
     d = dataTree.query(list(EP))[0]
-    # ~ print 'rms', scipy.sqrt( (d*d).mean() )
+    # ~ print 'rms', numpy.sqrt( (d*d).mean() )
     return d
 
 
 def fitSplineCoeffPerDPEPObj(x, data, cShape, spline, nEP, k):
     temp = x.reshape(cShape)
-    spline.tck[1] = scipy.hstack((temp, temp[:, :k]))
-    EP = spline.eval(scipy.linspace(0.0, 1.0, nEP)).T
+    spline.tck[1] = numpy.hstack((temp, temp[:, :k]))
+    EP = spline.eval(numpy.linspace(0.0, 1.0, nEP)).T
     epTree = cKDTree(EP)
     d = epTree.query(list(data))[0]
-    # ~ print 'rms', scipy.sqrt( (d*d).mean() )
+    # ~ print 'rms', numpy.sqrt( (d*d).mean() )
     return d
 
 
 def fitSplineCoeffPerEPDPObj(x, cShape, spline, nEP, k, dataTree):
     temp = x.reshape(cShape)
-    spline.tck[1] = scipy.hstack((temp, temp[:, :k]))
-    EP = spline.eval(scipy.linspace(0.0, 1.0, nEP)).T
+    spline.tck[1] = numpy.hstack((temp, temp[:, :k]))
+    EP = spline.eval(numpy.linspace(0.0, 1.0, nEP)).T
     d = dataTree.query(list(EP))[0]
-    # ~ print 'rms', scipy.sqrt( (d*d).mean() )
+    # ~ print 'rms', numpy.sqrt( (d*d).mean() )
     return d
 
 
@@ -159,20 +160,20 @@ def fitSplineCoeffPer(spline, data, xtol=1e-6):
 
     k = spline.tck[2]
     # dont fit the last k coeffs
-    x0 = scipy.array(spline.tck[1])[:, :-k].ravel()
-    cShape = scipy.array(spline.tck[1])[:, :-k].shape
+    x0 = numpy.array(spline.tck[1])[:, :-k].ravel()
+    cShape = numpy.array(spline.tck[1])[:, :-k].shape
 
     def obj(x):
         temp = x.reshape(cShape)
-        spline.tck[1] = scipy.hstack((temp, temp[:, :k]))
-        P = scipy.array([spline.findClosest(d)[0] for d in data])
+        spline.tck[1] = numpy.hstack((temp, temp[:, :k]))
+        P = numpy.array([spline.findClosest(d)[0] for d in data])
         err = ((data - P) ** 2.0).sum(1)
-        # ~ print 'rms', scipy.sqrt( err.mean() )
+        # ~ print 'rms', numpy.sqrt( err.mean() )
         return err
 
     cOpt = leastsq(obj, x0, xtol=xtol)[0]
     temp = cOpt.reshape(cShape)
-    spline.tck[1] = list(scipy.hstack((temp, temp[:, :k])))
+    spline.tck[1] = list(numpy.hstack((temp, temp[:, :k])))
     return spline
 
 
@@ -184,12 +185,12 @@ def fitSplineCoeffPerDPEP(spline, data, xtol=1e-6):
 
     # dont fit the last k coeffs
     k = spline.tck[2]
-    x0 = scipy.array(spline.tck[1])[:, :-k].ravel()
-    cShape = scipy.array(spline.tck[1])[:, :-k].shape
+    x0 = numpy.array(spline.tck[1])[:, :-k].ravel()
+    cShape = numpy.array(spline.tck[1])[:, :-k].shape
 
     cOpt = leastsq(fitSplineCoeffPerDPEPObj, x0, args=(data, cShape, spline, nEP, k), xtol=xtol)[0]
     temp = cOpt.reshape(cShape)
-    spline.tck[1] = list(scipy.hstack((temp, temp[:, :k])))
+    spline.tck[1] = list(numpy.hstack((temp, temp[:, :k])))
     return spline
 
 
@@ -202,12 +203,12 @@ def fitSplineCoeffPerEPDP(spline, data, xtol=1e-6):
 
     # dont fit the last k coeffs
     k = spline.tck[2]
-    x0 = scipy.array(spline.tck[1])[:, :-k].ravel()
-    cShape = scipy.array(spline.tck[1])[:, :-k].shape
+    x0 = numpy.array(spline.tck[1])[:, :-k].ravel()
+    cShape = numpy.array(spline.tck[1])[:, :-k].shape
 
     cOpt = leastsq(fitSplineCoeffPerEPDPObj, x0, args=(cShape, spline, nEP, k, dataTree), xtol=xtol)[0]
     temp = cOpt.reshape(cShape)
-    spline.tck[1] = list(scipy.hstack((temp, temp[:, :k])))
+    spline.tck[1] = list(numpy.hstack((temp, temp[:, :k])))
     return spline
 
 
@@ -226,15 +227,15 @@ def sortPointsCircular(points, startI=None):
     if planeV[0][abs(planeV[0]).argmax()] < 0.0:
         planeV[0] *= -1.0
 
-    planeV[1] = scipy.cross(planeV[0], pAxes[:, 0])
+    planeV[1] = numpy.cross(planeV[0], pAxes[:, 0])
 
     # project points into plane
     planeX = projectDataOntoPlane(points, CoM, planeV[0], planeV[1]).T
     # find theta of points on the plane
-    t = scipy.arctan2(planeX[1], planeX[0])
-    t = scipy.where(t < 0.0, 2.0 * scipy.pi + t, t)
+    t = numpy.arctan2(planeX[1], planeX[0])
+    t = numpy.where(t < 0.0, 2.0 * numpy.pi + t, t)
     # rank points by theta
-    tArg = scipy.argsort(t)
+    tArg = numpy.argsort(t)
     return points[tArg]
 
 
@@ -250,14 +251,14 @@ def calcPrincipalMomentsOfInertia(d, mass):
     I13 = -(P[:, 0] * P[:, 2] * mass).sum()
     I23 = -(P[:, 1] * P[:, 2] * mass).sum()
 
-    I = scipy.array([[I11, I12, I13], [I12, I22, I23], [I13, I23, I33]])
+    I = numpy.array([[I11, I12, I13], [I12, I22, I23], [I13, I23, I33]])
     u, s, vh = svd(I)
     return (s.real, u.real)
 
 
 # ======================================================================#
 def projectDataOntoPlane(d, O, v0, v1):
-    return scipy.array([(scipy.dot(di - O, v0), scipy.dot(di - O, v1)) for di in d])
+    return numpy.array([(numpy.dot(di - O, v0), numpy.dot(di - O, v1)) for di in d])
 
 
 # ======================================================================#
@@ -266,7 +267,7 @@ class pointCrawlerImage(object):
     """ traces shortest path in a binary image between 2 point
     """
     blocksize = 15
-    blockShape = scipy.array([blocksize, blocksize, blocksize])
+    blockShape = numpy.array([blocksize, blocksize, blocksize])
     tol = 4.0
     maxIt = 50
     smooth = 5.0
@@ -289,14 +290,14 @@ class pointCrawlerImage(object):
 
         # starting-paths loop
         while (initialPath < len(initialPaths)):
-            path = [scipy.array(p1), ]
+            path = [numpy.array(p1), ]
             p = initialPaths[initialPath]
             d = euclidean(p, self.p2)
             it = 0
 
             # trace loop for each starting path
             while (d > self.tol) and (it < self.maxIt):
-                path.append(scipy.array(p))
+                path.append(numpy.array(p))
                 pOld = p
                 p = self._step(pOld)
                 if p != None:
@@ -309,8 +310,8 @@ class pointCrawlerImage(object):
                     break
 
             if d < self.tol:
-                path.append(scipy.array(self.p2))
-                goodPaths.append(scipy.array(path))
+                path.append(numpy.array(self.p2))
+                goodPaths.append(numpy.array(path))
 
             initialPath += 1
 
@@ -320,16 +321,16 @@ class pointCrawlerImage(object):
             print('ERROR: pointCrawler: trace unsuccessful, aborted')
             return None, None
         else:
-            shortestPathI = scipy.argmin([self._calcPathLength(p) for p in goodPaths])
+            shortestPathI = numpy.argmin([self._calcPathLength(p) for p in goodPaths])
             bestPath = goodPaths[shortestPathI]
             if len(bestPath) > 3:
-                line = spline_parametric(scipy.transpose(bestPath), smoothing=self.smooth, order=3)
+                line = spline_parametric(numpy.transpose(bestPath), smoothing=self.smooth, order=3)
                 return line, bestPath
             elif len(bestPath) == 3:
-                line = spline_parametric(scipy.transpose(bestPath), smoothing=self.smooth, order=2)
+                line = spline_parametric(numpy.transpose(bestPath), smoothing=self.smooth, order=2)
                 return line, bestPath
             elif len(bestPath) == 2:
-                line = lineElement3D(bestPath[0], path[1])
+                line = LineElement3D(bestPath[0], path[1])
                 return line, bestPath
             else:
                 print('ERROR: pointCrawler: length 1 path')
@@ -339,9 +340,9 @@ class pointCrawlerImage(object):
         """ from the starting location, find the n best next points
         """
         # line from centre to target point
-        l = lineElement3D(centre, self.p2)
+        l = LineElement3D(centre, self.p2)
         V, O = self._getSubVolume(centre)
-        coords = scipy.array(V.nonzero()).transpose() + O
+        coords = numpy.array(V.nonzero()).transpose() + O
         if len(coords) == 0:
             print('warning: no non-zero pixels')
             return None
@@ -356,7 +357,7 @@ class pointCrawlerImage(object):
 
             # index sort distances to get n best points
             bestPoints = []
-            bestPointIndices = scipy.argsort([l.findClosest(p)[1] for p in points])[::-1][:n]
+            bestPointIndices = numpy.argsort([l.findClosest(p)[1] for p in points])[::-1][:n]
             for i in bestPointIndices:
                 bestPoints.append(points[i])
 
@@ -367,9 +368,9 @@ class pointCrawlerImage(object):
         search block thats closest to self.p2
         """
         # line from centre to target point
-        l = lineElement3D(centre, self.p2)
+        l = LineElement3D(centre, self.p2)
         V, O = self._getSubVolume(centre)
-        coords = scipy.array(V.nonzero()).transpose() + O
+        coords = numpy.array(V.nonzero()).transpose() + O
         if len(coords) == 0:
             print('warning: no non-zero pixels')
             return None
@@ -383,12 +384,12 @@ class pointCrawlerImage(object):
                     points.append(coords[i])
 
             # find index of the point with the largest project on line
-            i = scipy.argmax([l.findClosest(p)[1] for p in points])
+            i = numpy.argmax([l.findClosest(p)[1] for p in points])
             return points[i]
 
     def _getSubVolume(self, centre):
-        corner = scipy.subtract(centre, self.blocksize / 2.0)
-        corner = scipy.where(corner < 0.0, 0.0, corner)
+        corner = numpy.subtract(centre, self.blocksize / 2.0)
+        corner = numpy.where(corner < 0.0, 0.0, corner)
         corner = corner.round().astype(int)
         return self.image[corner[0]: corner[0] + self.blocksize, \
                corner[1]: corner[1] + self.blocksize, \
@@ -405,7 +406,7 @@ class pointCrawlerImage(object):
 
 # ======================================================================#
 class ridgeFitter(object):
-    sliceShape = scipy.array((30, 30))
+    sliceShape = numpy.array((30, 30))
 
     def __init__(self, image, S, ):
         """ image: scan object with getSliceNormal method. S: spline
@@ -438,7 +439,7 @@ class ridgeFitter(object):
             newKnots.append(self.p1)
 
             # create new split interpolating new knots
-            self.splines.append(spline_parametric(scipy.transpose(newKnots), smoothing=smoothing, order=order))
+            self.splines.append(spline_parametric(numpy.transpose(newKnots), smoothing=smoothing, order=order))
             # ~ self.sliceShape = (self.sliceShape*0.8).astype(int)
 
         return self.splines[-1]
@@ -447,10 +448,10 @@ class ridgeFitter(object):
         """ returns the positions and direction vector of n points
         between 0.0 and 1.0 along the initial spline
         """
-        T = scipy.linspace(0.0, 1.0, n + 2)[1:-1]
+        T = numpy.linspace(0.0, 1.0, n + 2)[1:-1]
         ret = []
         for t in T:
-            value = scipy.array(self.S.eval(t, d=0))
+            value = numpy.array(self.S.eval(t, d=0))
             dir = norm(self.S.eval(t, d=1))
             ret.append((value, dir))
 
@@ -464,18 +465,18 @@ class ridgeFitter(object):
         apex = slice.slice2StackCS(sliceApex)
 
         # ~ # get non zero pixels to fit a quadratic spline
-        # ~ data = scipy.array( slice.I.nonzero() )
+        # ~ data = numpy.array( slice.I.nonzero() )
         # ~
         # ~ # sort by x (ind=1)
-        # ~ sortInd = scipy.argsort( data[0] )
-        # ~ newData = scipy.zeros( data.shape )
+        # ~ sortInd = numpy.argsort( data[0] )
+        # ~ newData = numpy.zeros( data.shape )
         # ~ for i in range( len(sortInd) ):
         # ~ newData[:,i] = data[:,sortInd[i]]
         # ~
         # ~ s = spline_parametric( newData, order=2, smoothing=1.0 )
         # ~
-        # ~ v = s.eval( scipy.linspace(0.0,1.0,100), d=0 )
-        # ~ d = s.eval( scipy.linspace(0.0,1.0,100), d=1 )
+        # ~ v = s.eval( numpy.linspace(0.0,1.0,100), d=0 )
+        # ~ d = s.eval( numpy.linspace(0.0,1.0,100), d=1 )
 
         # ~ print 'v: ',v
         # ~ print 'd: ',d
@@ -521,7 +522,7 @@ class pointCrawlerData(object):
 
         # starting-paths loop
         while (initialPath < len(initialPaths)):
-            path = [scipy.array(p1), ]
+            path = [numpy.array(p1), ]
             pathCloud = []
             p = initialPaths[initialPath]
             d = euclidean(p, self.p2)
@@ -529,7 +530,7 @@ class pointCrawlerData(object):
 
             # trace loop for each starting path
             while (d > self.tol) and (it < self.maxIt):
-                path.append(scipy.array(p))
+                path.append(numpy.array(p))
                 pOld = p
                 p, neighb = self._step(pOld)
                 pathCloud.append(neighb)
@@ -543,9 +544,9 @@ class pointCrawlerData(object):
                     break
 
             if d < self.tol:
-                path.append(scipy.array(self.p2))
-                goodPaths.append(scipy.array(path))
-                goodPathClouds.append(scipy.vstack(pathCloud))
+                path.append(numpy.array(self.p2))
+                goodPaths.append(numpy.array(path))
+                goodPathClouds.append(numpy.vstack(pathCloud))
 
             initialPath += 1
 
@@ -554,9 +555,9 @@ class pointCrawlerData(object):
         if len(pathLengths) == 0:
             raise RuntimeError('ERROR: pointCrawler: trace unsuccessful, aborted')
         else:
-            shortestPathI = scipy.argmin([self._calcPathLength(p) for p in goodPaths])
-            bestPath = scipy.array(goodPaths[shortestPathI])
-            # ~ bestPath = scipy.array(goodPaths[0])
+            shortestPathI = numpy.argmin([self._calcPathLength(p) for p in goodPaths])
+            bestPath = numpy.array(goodPaths[shortestPathI])
+            # ~ bestPath = numpy.array(goodPaths[0])
 
             # get unique points from the bestPatchCloud
             bestPathCloudUnique = []
@@ -569,7 +570,7 @@ class pointCrawlerData(object):
             #   from mayavi import mlab
             #   mlab.plot3d(bestPath[:,0], bestPath[:,1], bestPath[:,2])
 
-            return scipy.array(bestPath), bestPathCloudUnique
+            return numpy.array(bestPath), bestPathCloudUnique
 
     def _initialPathSearch(self, centre):
         """ from the starting location, find the n best next points
@@ -577,7 +578,7 @@ class pointCrawlerData(object):
         n = 10
         # get n closest neighbours
         nD, nI = self.dataTree.query(centre, n)
-        nI = nI[scipy.where(nD < self.rMaxNeighbours)]
+        nI = nI[numpy.where(nD < self.rMaxNeighbours)]
         try:
             nCoords = self.data[nI]
         except IndexError:
@@ -585,9 +586,9 @@ class pointCrawlerData(object):
             return None
         else:
             # line from centre to target point
-            l = lineElement3D(centre, self.p2)
+            l = LineElement3D(centre, self.p2)
             # sort neighbour points by largest projecting on l
-            nRankedI = scipy.argsort([l.findClosest(p)[1] for p in nCoords])[::-1]
+            nRankedI = numpy.argsort([l.findClosest(p)[1] for p in nCoords])[::-1]
             return nCoords[nRankedI]
             # ~ return nCoords[[nRankedI[0]]]
 
@@ -597,7 +598,7 @@ class pointCrawlerData(object):
         """
         # get n closest neighbours
         nD, nI = self.dataTree.query(centre, self.nNeighbours)
-        nI = nI[scipy.where(nD < self.rMaxNeighbours)]
+        nI = nI[numpy.where(nD < self.rMaxNeighbours)]
         try:
             nCoords = self.data[nI]
         except IndexError:
@@ -605,9 +606,9 @@ class pointCrawlerData(object):
             return None
         else:
             # line from centre to target point
-            l = lineElement3D(centre, self.p2)
+            l = LineElement3D(centre, self.p2)
             # find index of the point with the largest project on line
-            i = scipy.argmax([l.findClosest(p)[1] for p in nCoords])
+            i = numpy.argmax([l.findClosest(p)[1] for p in nCoords])
             return nCoords[i], nCoords
 
     def _calcPathLength(self, path):
@@ -646,12 +647,12 @@ def fitCurveEPDP(curve, data, pInit, debug=0):
         ep = []
         for pI in p:
             ep.append(curve.evaluate_field_in_mesh(evalD, parameters=pI))
-        ep = scipy.array(ep).T
+        ep = numpy.array(ep).T
 
         # for each ep, find dist to closest dp
-        err = scipy.array([((data - epI) ** 2.0).sum(1).min() for epI in ep])
+        err = numpy.array([((data - epI) ** 2.0).sum(1).min() for epI in ep])
         if debug:
-            print('curve fitting rms:', scipy.sqrt(err.mean()))
+            print('curve fitting rms:', numpy.sqrt(err.mean()))
         return err
 
     def objWithSmoothing(x):
@@ -669,22 +670,18 @@ def fitCurveEPDP(curve, data, pInit, debug=0):
             D1.append(d1)
             D2.append(d2)
 
-        ep = scipy.array(ep).T
-        D1 = scipy.array(D1).T.squeeze()
-        D2 = scipy.array(D2).T.squeeze()
+        ep = numpy.array(ep).T
+        D1 = numpy.array(D1).T.squeeze()
+        D2 = numpy.array(D2).T.squeeze()
         penalty = (D1 * D1).sum(1) * wD1 + (D2 * D2).sum(1) * wD2
 
         # for each ep, find dist to closest dp
-        err = scipy.array([((data - epI) ** 2.0).sum(1).min() for epI in ep])
-        try:
-            err += penalty
-        except ValueError:
-            print('err shape:', err.shape)
-            print('penalty shape:', penalty.shape)
-            pdb.set_trace()
+        err = numpy.array([((data - epI) ** 2.0).sum(1).min() for epI in ep])
+        err += penalty
+
 
         if debug:
-            print('curve fitting rms:', scipy.sqrt(err.mean()))
+            print('curve fitting rms:', numpy.sqrt(err.mean()))
         return err
 
     # ~ xOpt = leastsq( obj, x0, ftol=ftol, xtol=xtol, epsfcn=eps )[0]
@@ -722,12 +719,12 @@ def fitCurveDPEP(curve, data, pInit, debug=0):
         ep = []
         for pI in p:
             ep.append(curve.evaluate_field_in_mesh(evalD, parameters=pI))
-        ep = scipy.array(ep).T.squeeze()
+        ep = numpy.array(ep).T.squeeze()
         epTree = cKDTree(ep)
         # for each ep, find dist to closest dp
         err, i = epTree.query(list(data))
         if debug:
-            print('curve fitting rms:', scipy.sqrt(err.mean()))
+            print('curve fitting rms:', numpy.sqrt(err.mean()))
         return err
 
     def objWithSmoothing(x):
@@ -745,24 +742,19 @@ def fitCurveDPEP(curve, data, pInit, debug=0):
             D1.append(d1)
             D2.append(d2)
 
-        ep = scipy.array(ep).T.squeeze()
-        D1 = scipy.array(D1).T.squeeze()
-        D2 = scipy.array(D2).T.squeeze()
+        ep = numpy.array(ep).T.squeeze()
+        D1 = numpy.array(D1).T.squeeze()
+        D2 = numpy.array(D2).T.squeeze()
         penalty = (D1 * D1).sum(1) * wD1 + (D2 * D2).sum(1) * wD2
 
         # for each ep, find dist to closest dp
         # ~ pdb.set_trace()
         epTree = cKDTree(ep)
         err, i = epTree.query(list(data))
-        try:
-            err += penalty[i]
-        except ValueError:
-            print('err shape:', err.shape)
-            print('penalty shape:', penalty[i].shape)
-            pdb.set_trace()
+        err += penalty[i]
 
         if debug:
-            print('curve fitting rms:', scipy.sqrt(err.mean()))
+            print('curve fitting rms:', numpy.sqrt(err.mean()))
         return err
 
     # ~ xOpt = leastsq( obj, x0, ftol=ftol, xtol=xtol, epsfcn=eps )[0]

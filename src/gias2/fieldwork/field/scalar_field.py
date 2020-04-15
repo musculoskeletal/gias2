@@ -16,7 +16,7 @@ import copy
 import shelve
 
 import itertools
-import scipy
+import numpy
 import sys
 from scipy import sparse
 from scipy.optimize import leastsq
@@ -26,7 +26,7 @@ from gias2.fieldwork.field import ensemble_field_function as EFF
 
 
 def loadScalarField(filename, ensFilename=None, meshFilename=None, path=None):
-    if path != None:
+    if path is not None:
         filename = path + filename
 
     try:
@@ -51,7 +51,7 @@ class scalarField(object):
     def __init__(self, name, ensembleFieldFunction, parameters=None):
         self.name = name
         self.ensembleFieldFunction = ensembleFieldFunction
-        if parameters != None:
+        if parameters is not None:
             self.setFieldParameters(parameters)
         else:
             self.parameters = None
@@ -79,11 +79,11 @@ class scalarField(object):
     def setFieldParameters(self, p):
         nEnsemblePoints = self.ensembleFieldFunction.get_number_of_ensemble_points()
         if len(p) != nEnsemblePoints:
-            raise ValueError('ERROR: geometric_field.set_field_parameters: number of given parameters ( ' + str(
-                p_lengths[0]) + ') does not match number of field ensemble points ( ' + str(n_ensemble_points) + ')')
+            raise ValueError('mismatch in number of points {} and parameters {}'.format(
+                self.ensembleFieldFunction.get_number_of_ensemble_points(), len(p)))
         else:
             # if nothings wrong so far
-            self.fieldParameters = scipy.array(p, dtype=float)
+            self.fieldParameters = numpy.array(p, dtype=float)
 
     # ==================================================================#
     def getFieldParameters(self):
@@ -147,7 +147,7 @@ def makeScalarFieldEvaluatorSparse(S, evalD, matPoints=None):
         ep = S.evaluate_geometric_field(evalD)
         nEPs = ep.shape[1]
 
-    A = scipy.zeros((nEPs, f.get_number_of_ensemble_points()), dtype=float)
+    A = numpy.zeros((nEPs, f.get_number_of_ensemble_points()), dtype=float)
 
     if matPoints is not None:
         # ~ pdb.set_trace()
@@ -166,9 +166,9 @@ def makeScalarFieldEvaluatorSparse(S, evalD, matPoints=None):
         # calculate static basis values for the required evalD and assemble
         # matrix
         basisValues = {}
-        A = scipy.zeros((ep.shape[0], f.get_number_of_ensemble_points()), dtype=float)
+        A = numpy.zeros((ep.shape[0], f.get_number_of_ensemble_points()), dtype=float)
         row = 0
-        for elementNumber in scipy.sort(list(f.mesh.elements.keys())):
+        for elementNumber in numpy.sort(list(f.mesh.elements.keys())):
             # get element
             element = f.mesh.elements[elementNumber]
             # calculate basis values
@@ -180,10 +180,7 @@ def makeScalarFieldEvaluatorSparse(S, evalD, matPoints=None):
             b = basisValues[element.type]  # basis values
             emap = f.mapper._element_to_ensemble_map[elementNumber]  # element to ensemble map
             for n in range(b.shape[1]):
-                try:
-                    A[row:row + b.shape[0], emap[n][0][0]] = b[:, n]
-                except ValueError:
-                    pdb.set_trace()
+                A[row:row + b.shape[0], emap[n][0][0]] = b[:, n]
 
             row += b.shape[0]
 
@@ -212,9 +209,9 @@ def makeScalarFieldDerivativesEvaluatorSparse(S, evalD):
     # calculate static basis values for the required evalD and assemble
     # matrices
     basisValues = {}
-    A = [scipy.zeros((ep.shape[0], f.get_number_of_ensemble_points()), dtype=float) for i in range(epd.shape[0])]
+    A = [numpy.zeros((ep.shape[0], f.get_number_of_ensemble_points()), dtype=float) for i in range(epd.shape[0])]
     row = 0
-    for elementNumber in scipy.sort(list(f.mesh.elements.keys())):
+    for elementNumber in numpy.sort(list(f.mesh.elements.keys())):
         # get element
         element = f.mesh.elements[elementNumber]
         # calculate basis values
@@ -227,10 +224,7 @@ def makeScalarFieldDerivativesEvaluatorSparse(S, evalD):
         emap = f.mapper._element_to_ensemble_map[elementNumber]  # element to ensemble map
         for d in range(b.shape[0]):
             for n in range(b.shape[1]):
-                try:
-                    A[d][row:row + b.shape[2], emap[n][0][0]] = b[d, n, :]
-                except ValueError:
-                    pdb.set_trace()
+                A[d][row:row + b.shape[2], emap[n][0][0]] = b[d, n, :]
 
         row += b.shape[2]
 
@@ -247,10 +241,10 @@ def makeScalarFieldDerivativesEvaluatorSparse(S, evalD):
     # ~ DDx2 = (ddx2*Pd).T
     # ~ Dx1x2 = (dx1x2*Pd).T
     # ~
-    # ~ return scipy.array([Dx1,Dx2,DDx1,DDx2,Dx1x2]).swapaxes(0,1)
+    # ~ return numpy.array([Dx1,Dx2,DDx1,DDx2,Dx1x2]).swapaxes(0,1)
 
     # stack all derivative A matrices
-    AStackedSparse = sparse.csc_matrix(scipy.vstack(A))
+    AStackedSparse = sparse.csc_matrix(numpy.vstack(A))
     nDerivs = len(A)
 
     def evaluator(P):
@@ -265,7 +259,7 @@ def makeScalarFieldDerivativesEvaluatorSparse(S, evalD):
 
 # ======================================================================#
 def norm(x):
-    return x / scipy.sqrt((x ** 2.0).sum(1))[:, scipy.newaxis]
+    return x / numpy.sqrt((x ** 2.0).sum(1))[:, numpy.newaxis]
 
 
 class normalSmoother(object):
@@ -290,7 +284,7 @@ class normalSmoother(object):
             if len(self.en2el[p]) == 2:
                 E = list(self.en2el[p].items())  # element points mapped to by ensemble point p
                 self.edgePoints.append(((E[0][0], list(E[0][1].keys())[0]), (
-                E[1][0], list(E[1][1].keys())[0])))  # ((element1, elementnode1), (element2, elementnode2))
+                    E[1][0], list(E[1][1].keys())[0])))  # ((element1, elementnode1), (element2, elementnode2))
             # vertex nodes
             elif len(self.en2el[p]) > 2:
                 pass
@@ -318,11 +312,9 @@ class normalSmoother(object):
             if len(edgeList1) > 1 or len(edgeList2) > 2:
                 pass
             else:
-                try:
-                    (ei1, pi1, edge1) = edgeList1[0]
-                    (ei2, pi2, edge2) = edgeList2[0]
-                except IndexError:
-                    pdb.set_trace()
+                (ei1, pi1, edge1) = edgeList1[0]
+                (ei2, pi2, edge2) = edgeList2[0]
+
                 # ignore repeat element edges
                 if ((ep1[0], ei1) in doneEdges) and ((ep2[0], ei2)) in doneEdges:
                     pass
@@ -330,11 +322,11 @@ class normalSmoother(object):
                     # check if element edges are reversed
                     ### assumes no hanging nodes and same number of nodes per edge!!! ###
                     if pi1 != pi2:
-                        eval1 = edge1.get_elem_coord(scipy.linspace(0.0, 1.0, D))
-                        eval2 = edge2.get_elem_coord(scipy.linspace(1.0, 0.0, D))
+                        eval1 = edge1.get_elem_coord(numpy.linspace(0.0, 1.0, D))
+                        eval2 = edge2.get_elem_coord(numpy.linspace(1.0, 0.0, D))
                     else:
-                        eval1 = edge1.get_elem_coord(scipy.linspace(0.0, 1.0, D))
-                        eval2 = edge2.get_elem_coord(scipy.linspace(0.0, 1.0, D))
+                        eval1 = edge1.get_elem_coord(numpy.linspace(0.0, 1.0, D))
+                        eval2 = edge2.get_elem_coord(numpy.linspace(0.0, 1.0, D))
 
                     # get basis values for these
                     basis1 = [self.F.basis[e1.type].eval_derivatives(eval1.T, d).T for d in ((1, 0), (0, 1))]
@@ -358,10 +350,10 @@ class normalSmoother(object):
         self._procEdge(D)
 
         # make derivatives evaluation matrices
-        A1dxi1 = scipy.zeros((self.nPairs, self.F.get_number_of_ensemble_points()), dtype=float)
-        A1dxi2 = scipy.zeros((self.nPairs, self.F.get_number_of_ensemble_points()), dtype=float)
-        A2dxi1 = scipy.zeros((self.nPairs, self.F.get_number_of_ensemble_points()), dtype=float)
-        A2dxi2 = scipy.zeros((self.nPairs, self.F.get_number_of_ensemble_points()), dtype=float)
+        A1dxi1 = numpy.zeros((self.nPairs, self.F.get_number_of_ensemble_points()), dtype=float)
+        A1dxi2 = numpy.zeros((self.nPairs, self.F.get_number_of_ensemble_points()), dtype=float)
+        A2dxi1 = numpy.zeros((self.nPairs, self.F.get_number_of_ensemble_points()), dtype=float)
+        A2dxi2 = numpy.zeros((self.nPairs, self.F.get_number_of_ensemble_points()), dtype=float)
         row1 = 0
         row2 = 0
 
@@ -389,8 +381,8 @@ class normalSmoother(object):
         sA2dxi1 = sparse.csc_matrix(A2dxi1)
         sA2dxi2 = sparse.csc_matrix(A2dxi2)
 
-        V1 = scipy.ones([self.nPairs, 3], dtype=float)
-        V2 = scipy.ones([self.nPairs, 3], dtype=float)
+        V1 = numpy.ones([self.nPairs, 3], dtype=float)
+        V2 = numpy.ones([self.nPairs, 3], dtype=float)
 
         def obj(x):
 
@@ -436,13 +428,13 @@ def fitScalarFieldEPDP(SF, data, evalD, ftol=None, xtol=None, epsfcn=None, maxit
         v = evaluator(x)
         d = data - v
         d *= d
-        # ~ print 'it:', it, ' rms:', scipy.sqrt( d.mean() )
-        print('rms:', scipy.sqrt(d.mean()))
+        # ~ print 'it:', it, ' rms:', numpy.sqrt( d.mean() )
+        print('rms:', numpy.sqrt(d.mean()))
         # ~ it+=1
         return d * d
 
     pOpt = leastsq(obj, SF.fieldParameters.copy().ravel(), ftol=ftol, xtol=xtol, epsfcn=epsfcn, maxfev=maxfev)[0][:,
-           scipy.newaxis]
+           numpy.newaxis]
     SF.setFieldParameters(pOpt)
     return pOpt, SF
 
@@ -461,13 +453,13 @@ def fitScalarFieldDPEP(SF, data, evalD, dpepi, ftol=None, xtol=None, epsfcn=None
         v = evaluator(x)[dpepi]
         d = data - v
         d *= d
-        # ~ print 'it:', it, ' rms:', scipy.sqrt( d.mean() )
-        print('rms:', scipy.sqrt(d.mean()))
+        # ~ print 'it:', it, ' rms:', numpy.sqrt( d.mean() )
+        print('rms:', numpy.sqrt(d.mean()))
         # ~ it+=1
         return d
 
     pOpt = leastsq(obj, SF.fieldParameters.copy().ravel(), ftol=ftol, xtol=xtol, epsfcn=epsfcn, maxfev=maxfev)[0][:,
-           scipy.newaxis]
+           numpy.newaxis]
     SF.setFieldParameters(pOpt)
     return pOpt, SF
 
@@ -490,7 +482,7 @@ class fitGeomFieldToScalar(object):
             geoNodeCoord = self.G.field_parameters.squeeze().T
             self.dataGTree = cKDTree(self.dataG)
             closestDI = self.dataGTree.query(list(geoNodeCoord))[1]
-            p0 = self.dataS[closestDI][:, scipy.newaxis]
+            p0 = self.dataS[closestDI][:, numpy.newaxis]
 
         # create a new field curvField to fit on the mesh ensemble
         self.SF = scalarField(fieldName, self.G.ensemble_field_function, parameters=p0)
@@ -540,7 +532,7 @@ def makeSobelovPenalty2D(S, evalD, w):
     def obj(p):
         D1, D2, D11, D22, D12 = SDEval(p)
 
-        S = scipy.sqrt(w[0] * D1 * D1 + w[1] * D11 * D11 + w[2] * D2 * D2 + w[3] * D22 * D22 + w[4] * D12 * D12)
+        S = numpy.sqrt(w[0] * D1 * D1 + w[1] * D11 * D11 + w[2] * D2 * D2 + w[3] * D22 * D22 + w[4] * D12 * D12)
 
         return S
 
@@ -557,7 +549,7 @@ def makeMaskedDataObj(S, evalD, maskedData, sobW=None, sobD=None, nW=None, nD=No
         def obj(x):
             v = evaluator(x)
             d = maskedData - v
-            sys.stdout.write('\rit: %(it)05i rms: %(rms)8.6f' % {'it': next(c), 'rms': scipy.sqrt((d * d).mean())})
+            sys.stdout.write('\rit: %(it)05i rms: %(rms)8.6f' % {'it': next(c), 'rms': numpy.sqrt((d * d).mean())})
             sys.stdout.flush()
             return d
 
@@ -570,9 +562,9 @@ def makeMaskedDataObj(S, evalD, maskedData, sobW=None, sobD=None, nW=None, nD=No
                 v = evaluator(x)
                 dData = abs(maskedData - v)
                 dSob = sobObj(x)
-                d = scipy.hstack([dData, dSob])
+                d = numpy.hstack([dData, dSob])
                 sys.stdout.write(
-                    '\rit: %(it)05i rms: %(rms)8.6f' % {'it': next(c), 'rms': scipy.sqrt((dData * dData).mean())})
+                    '\rit: %(it)05i rms: %(rms)8.6f' % {'it': next(c), 'rms': numpy.sqrt((dData * dData).mean())})
                 sys.stdout.flush()
                 return d
 
@@ -585,12 +577,12 @@ def makeMaskedDataObj(S, evalD, maskedData, sobW=None, sobD=None, nW=None, nD=No
             def obj(x):
                 v = evaluator(x)
                 dData = abs(maskedData - v)
-                # ~ d = scipy.hstack( [d*d, sobObj(x)] )
+                # ~ d = numpy.hstack( [d*d, sobObj(x)] )
                 dSob = sobObj(x)
                 dN = nObj(x)
-                d = scipy.hstack([dData, dSob, dN])
+                d = numpy.hstack([dData, dSob, dN])
                 sys.stdout.write(
-                    '\rit: %(it)05i rms: %(rms)8.6f' % {'it': next(c), 'rms': scipy.sqrt((dData * dData).mean())})
+                    '\rit: %(it)05i rms: %(rms)8.6f' % {'it': next(c), 'rms': numpy.sqrt((dData * dData).mean())})
                 sys.stdout.flush()
                 return d
 
@@ -608,6 +600,6 @@ def fitGeomFieldToMaskedScalar(G, GD, maskedData, fieldName=None, sobW=None, sob
     field = fieldFitter.initialiseScalarField(fieldName=fieldName)
     fieldObj = makeMaskedDataObj(field, GD, maskedData, sobW=sobW, sobD=sobD, nW=nW, nD=nD)
     fieldPOpt = leastsq(fieldObj, field.getFieldParameters().ravel(), xtol=xtol)
-    field.setFieldParameters(fieldPOpt[0][:, scipy.newaxis])
-    fittedRMS = scipy.sqrt(fieldObj(fieldPOpt[0]).mean())
+    field.setFieldParameters(fieldPOpt[0][:, numpy.newaxis])
+    fittedRMS = numpy.sqrt(fieldObj(fieldPOpt[0]).mean())
     return field, fieldPOpt, fittedRMS

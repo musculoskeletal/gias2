@@ -12,7 +12,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
 
-import scipy
+import numpy as np
 from mayavi import mlab
 from tvtk.api import tvtk
 
@@ -135,7 +135,7 @@ class point_picker_3(object):
         """ clears the list of picked points and defines how many points
         to pick before calling the parent's _picking_done method """
 
-        self.picked_points = scipy.zeros((n, 3))
+        self.picked_points = np.zeros((n, 3))
         self.picked_plot = None
         self.n = n
         self.pickedn = 0
@@ -223,7 +223,7 @@ class point_picker_3D(object):
         """
 
         obj = tvtk.to_tvtk(obj)
-        self.pickedPoints.append(scipy.array(obj.pick_position))
+        self.pickedPoints.append(np.array(obj.pick_position))
         mlab.points3d([obj.pick_position[0]], [obj.pick_position[1]], [obj.pick_position[2]], mode='sphere',
                       color=(1, 1, 0), scale_factor=0.2)
 
@@ -384,13 +384,13 @@ class element_adder_data(object):
         self.picker.undo_pick()
 
     def _add_element_callback(self, picked_points):
-        p = scipy.array(picked_points).transpose()[:, :, scipy.newaxis]
+        p = np.array(picked_points).transpose()[:, :, np.newaxis]
         if self.gf.add_element_with_parameters(self.element, p):
             print('element added')
         return 1
 
     def _modify_point_callback(self, picked_points):
-        p = scipy.array(picked_points[0])[:, scipy.newaxis]
+        p = np.array(picked_points[0])[:, np.newaxis]
         self.gf.modify_geometric_point(self.mod_point, p)
         return 1
 
@@ -398,13 +398,13 @@ class element_adder_data(object):
 
         # check for close points to existing geometric points
         proxTol = 0.5
-        picked_points = scipy.array(picked_points)
-        gp = scipy.array(self.gf.get_all_point_positions())
+        picked_points = np.array(picked_points)
+        gp = np.array(self.gf.get_all_point_positions())
         if len(gp) > 0:
             for i, p in enumerate(picked_points):
                 dist = ((gp - p) ** 2.0).sum(1)
                 if dist.min() <= proxTol:
-                    picked_points[i] = gp[scipy.argmin(dist)]
+                    picked_points[i] = gp[np.argmin(dist)]
         try:
             pathPoints, pathCloud = self.crawler.trace(picked_points[0], picked_points[1], debug=0)
         except RuntimeError:
@@ -416,17 +416,17 @@ class element_adder_data(object):
             # assume lagrange
             if len(pathPoints) > nNodes:
                 # put initial nodes along path
-                p0 = scipy.zeros((3, nNodes))
+                p0 = np.zeros((3, nNodes))
                 for i in range(nNodes):
                     p0[:, i] = pathPoints[round((i / float(nNodes - 1)) * (len(pathPoints) - 1))]
 
-                p0 = p0[:, :, scipy.newaxis]
+                p0 = p0[:, :, np.newaxis]
             else:
                 # evenly distribute nodes between 2 ends, ignoring path         
-                p0x = scipy.linspace(picked_points[0][0], picked_points[1][0], nNodes)
-                p0y = scipy.linspace(picked_points[0][1], picked_points[1][1], nNodes)
-                p0z = scipy.linspace(picked_points[0][2], picked_points[1][2], nNodes)
-                p0 = scipy.array([p0x, p0y, p0z])[:, :, scipy.newaxis]
+                p0x = np.linspace(picked_points[0][0], picked_points[1][0], nNodes)
+                p0y = np.linspace(picked_points[0][1], picked_points[1][1], nNodes)
+                p0z = np.linspace(picked_points[0][2], picked_points[1][2], nNodes)
+                p0 = np.array([p0x, p0y, p0z])[:, :, np.newaxis]
 
             # fit curve
             # ~ fittedNodes = spline_tools.fitCurveEPDP( self.curve, pathPoints, p0, debug=1 )
@@ -463,7 +463,7 @@ class element_adder_data(object):
         self.picker.do_callback = 1
 
     def moveNode(self, node, p):
-        self.gf.modify_geometric_point(node, scipy.array(p)[:, scipy.newaxis])
+        self.gf.modify_geometric_point(node, np.array(p)[:, np.newaxis])
         self._refresh()
 
     def _refresh(self):

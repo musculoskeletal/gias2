@@ -14,7 +14,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import copy
 
-import scipy
+import numpy
 
 from gias2.common import transform3D
 from gias2.musculoskeletal import fw_femur_measurements
@@ -25,7 +25,7 @@ from gias2.musculoskeletal import model_alignment
 
 
 def normaliseVector(v):
-    return v / scipy.linalg.norm(v)
+    return v / numpy.linalg.norm(v)
 
 
 def alignTibiaFibulaMeshParametersAnatomicSingle(tib, fib):
@@ -41,8 +41,8 @@ def alignTibiaFibulaMeshParametersAnatomicSingle(tib, fib):
 
     alignedTibParams, T = model_alignment.alignAnatomicTibiaFibulaGroodSuntay(tibNodes, MM, LM, MC, LC, True)
     alignedFibParams, T = model_alignment.alignAnatomicTibiaFibulaGroodSuntay(fibNodes, MM, LM, MC, LC, True)
-    alignedTibParams = alignedTibParams.T[:, :, scipy.newaxis]
-    alignedFibParams = alignedFibParams.T[:, :, scipy.newaxis]
+    alignedTibParams = alignedTibParams.T[:, :, numpy.newaxis]
+    alignedFibParams = alignedFibParams.T[:, :, numpy.newaxis]
     return alignedTibParams, alignedFibParams, T
 
 
@@ -61,7 +61,7 @@ def alignTibiaFibulaMeshParametersAnatomic(tibs, fibs):
 
 
 def calcAngle(v1, v2):
-    return scipy.arccos(scipy.dot(v1, v2) / (scipy.linalg.norm(v1) * scipy.linalg.norm(v2)))
+    return numpy.arccos(numpy.dot(v1, v2) / (numpy.linalg.norm(v1) * numpy.linalg.norm(v2)))
 
 
 def alignPelvisRightFemurAnatomic(pelvisG, rightFemurG):
@@ -104,13 +104,13 @@ def alignPelvisRightFemurAnatomic(pelvisG, rightFemurG):
     """
     # align femur z's X-Z projection to the Z axis - rotate about Y
     rFz = _calcFemurZ(rightFemurG)
-    thetaY = calcAngle( scipy.array([rFz[2], rFz[0]]), scipy.array([1.0,0.0]))
-    rightFemurG.transformRotateAboutP( scipy.array([0.0,thetaY,0.0]), HJC )
+    thetaY = calcAngle( numpy.array([rFz[2], rFz[0]]), numpy.array([1.0,0.0]))
+    rightFemurG.transformRotateAboutP( numpy.array([0.0,thetaY,0.0]), HJC )
 
     # calculate angle between femur z's global Y-Z projection and the Y axis - rotate about X
     rFz = _calcFemurZ(rightFemurG)
-    thetaX = calcAngle( scipy.array([rFz[2], rFz[1]]), scipy.array([0.0,1.0]))
-    rightFemurG.transformRotateAboutP( scipy.array([thetaX,0.0,0.0]), HJC )
+    thetaX = calcAngle( numpy.array([rFz[2], rFz[1]]), numpy.array([0.0,1.0]))
+    rightFemurG.transformRotateAboutP( numpy.array([thetaX,0.0,0.0]), HJC )
     """
 
     # align femur anatomic coord system to global
@@ -120,13 +120,13 @@ def alignPelvisRightFemurAnatomic(pelvisG, rightFemurG):
     mc = rightFemurG.calc_CoM_2D(d, elem=fmd.assemblyElementsNumbers['medialcondyle'])
     oF = (mc + lc) / 2.0
     zF = normaliseVector(head - oF)
-    yF = normaliseVector(scipy.cross(zF, (lc - oF)))
-    xF = normaliseVector(scipy.cross(yF, zF))
+    yF = normaliseVector(numpy.cross(zF, (lc - oF)))
+    xF = normaliseVector(numpy.cross(yF, zF))
 
     oF = rFH.centre
 
-    u = scipy.array([oF, oF - yF, oF - zF, oF + xF])
-    ut = scipy.array([oF, oF + [1.0, 0, 0], oF + [0, 1.0, 0], oF + [0, 0, 1.0]])
+    u = numpy.array([oF, oF - yF, oF - zF, oF + xF])
+    ut = numpy.array([oF, oF + [1.0, 0, 0], oF + [0, 1.0, 0], oF + [0, 0, 1.0]])
     femurAlignT = transform3D.directAffine(u, ut)
     rightFemurG.transformAffine(femurAlignT)
 
@@ -166,13 +166,13 @@ def alignAnatomicTibiaFibulaGroodSuntay(X, MM, LM, MC, LC, returnT=False):
     IM = (MM + LM) / 2.0
 
     z = normaliseVector(IC - IM)
-    y = normaliseVector(scipy.cross(z, MC - LC))
-    x = normaliseVector(scipy.cross(y, z))
+    y = normaliseVector(numpy.cross(z, MC - LC))
+    x = normaliseVector(numpy.cross(y, z))
 
-    u = scipy.array([IC, IC + x, IC + y, IC + z])
-    ut = scipy.array([[0, 0, 0], \
-                      [1, 0, 0], \
-                      [0, 1, 0], \
+    u = numpy.array([IC, IC + x, IC + y, IC + z])
+    ut = numpy.array([[0, 0, 0],
+                      [1, 0, 0],
+                      [0, 1, 0],
                       [0, 0, 1]])
 
     t = transform3D.directAffine(u, ut)

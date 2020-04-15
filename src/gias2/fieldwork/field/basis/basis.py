@@ -10,79 +10,23 @@ License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
 """
 
-from scipy import array, dot, kron, zeros, ones, sqrt, where, newaxis
+from numpy import array, dot, kron, zeros, ones, sqrt, where, newaxis
 from scipy.linalg import det
 
 # basis matrices of implemented bases for tensor product basis 
-basis_matrices_map = {'linear_lagrange': array([[1.0, -1.0], \
-                                                [0.0, 1.0]]), \
-                      'quadratic_lagrange': array([[1.0, -3.0, 2.0], \
-                                                   [0.0, 4.0, -4.0], \
-                                                   [0.0, -1.0, 2.0]]), \
-                      'cubic_lagrange': 0.5 * array([[2.0, -11.0, 18.0, -9.0], \
-                                                     [0.0, 18.0, -45.0, 27.0], \
-                                                     [0.0, -9.0, 36.0, -27.0], \
-                                                     [0.0, 2.0, -9.0, 9.0]]), \
-                      'cubic_hermite': array([[1.0, 0.0, -3.0, 2.0], \
-                                              [0.0, 1.0, -2.0, 1.0], \
-                                              [0.0, 0.0, 3.0, -2.0], \
+basis_matrices_map = {'linear_lagrange': array([[1.0, -1.0],
+                                                [0.0, 1.0]]),
+                      'quadratic_lagrange': array([[1.0, -3.0, 2.0],
+                                                   [0.0, 4.0, -4.0],
+                                                   [0.0, -1.0, 2.0]]),
+                      'cubic_lagrange': 0.5 * array([[2.0, -11.0, 18.0, -9.0],
+                                                     [0.0, 18.0, -45.0, 27.0],
+                                                     [0.0, -9.0, 36.0, -27.0],
+                                                     [0.0, 2.0, -9.0, 9.0]]),
+                      'cubic_hermite': array([[1.0, 0.0, -3.0, 2.0],
+                                              [0.0, 1.0, -2.0, 1.0],
+                                              [0.0, 0.0, 3.0, -2.0],
                                               [0.0, 0.0, -1.0, 1.0]])}
-
-
-# =======================================================================#
-def make_basis_deprec(dimensions, basis_types):
-    """ Constructor function for making a basis object
-    basis_types should be a list or tuple of strings
-    """
-
-    global implemented_bases
-
-    if basis_types[0] == 'simplex_linear_lagrange_2d':
-        B = simplex_linear_lagrange_2d()
-    elif basis_types[0] == 'simplex_quadratic_lagrange_2d':
-        B = simplex_quadratic_lagrange_2d()
-    elif basis_types[0] == 'simplex_cubic_lagrange_2d':
-        B = simplex_cubic_lagrange_2d()
-    elif basis_types[0] == 'simplex_quadratic_hermite_2d_area':
-        B = simplex_quadratic_hermite_2d_area()
-    elif basis_types[0] == 'simplex_cubic_hermite_2d_area':
-        B = simplex_cubic_hermite_2d_area()
-    elif basis_types[0] == 'simplex_cubic_hermite_2d':
-        B = simplex_cubic_hermite_2d()
-    elif basis_types[0] == 'simplex_cubic_hermite_2d_equi':
-        B = simplex_cubic_hermite_2d_equi()
-    elif basis_types[0] == 'simplex_quadric_hermite_2d_equi':
-        B = simplex_quadric_hermite_2d_equi()
-    elif basis_types[0] == 'simplex_bezier_2d':
-        B = simplex_bezier_2d()
-    elif basis_types[0] == 'quad_cubic_lagrange':
-        B = quad_cubic_cubic()
-    elif basis_types[0] == 'quad_cubic_lagrange_3d':
-        B = quad_cubic_cubic_cubic()
-    elif basis_types[0] == 'quad_quartic_lagrange_3d':
-        B = quad_quartic_quartic_quartic()
-    else:
-        # tensor product
-        # check for right number of basis_types for specified dimensionality
-        if len(basis_types) != dimensions:
-            print('ERROR: wrong number of basis_types for dimensions')
-            return 0
-        else:
-            basis_matrices = []
-            final_type = ''
-            for type in basis_types:
-                try:
-                    basis_matrices.append(basis_matrices_map[type])
-                except KeyError:
-                    print('unrecognised basis type', str(type))
-                    raise InputError
-                else:
-                    final_type += ' ' + type
-
-        # instantiate basis object
-        B = tensor_product_basis(dimensions, basis_matrices, type)
-
-    return B
 
 
 # ======================================================================#
@@ -102,20 +46,20 @@ def L1dd(x):
 
 def L2(x):
     x2 = x * x
-    return array([1.0 - 3.0 * x + 2.0 * x2, \
-                  + 4.0 * x - 4.0 * x2, \
+    return array([1.0 - 3.0 * x + 2.0 * x2,
+                  + 4.0 * x - 4.0 * x2,
                   - x + 2.0 * x2])
 
 
 def L2d(x):
-    return array([- 3.0 + 4.0 * x, \
-                  + 4.0 - 8.0 * x, \
+    return array([- 3.0 + 4.0 * x,
+                  + 4.0 - 8.0 * x,
                   - 1.0 + 4.0 * x])
 
 
 def L2dd(x):
-    return array([[4.0] * len(x), \
-                  [-8.0] * len(x), \
+    return array([[4.0] * len(x),
+                  [-8.0] * len(x),
                   [4.0] * len(x)])
 
 
@@ -153,9 +97,9 @@ def L3d(x):
     # ~
     # ~ return array([b0,b1,b2,b3])
 
-    return 0.5 * array([-27.0 * x2 + 36.0 * x - 11.0, \
-                        81.0 * x2 - 90.0 * x + 18.0, \
-                        -81.0 * x2 + 72.0 * x - 9.0, \
+    return 0.5 * array([-27.0 * x2 + 36.0 * x - 11.0,
+                        81.0 * x2 - 90.0 * x + 18.0,
+                        -81.0 * x2 + 72.0 * x - 9.0,
                         27.0 * x2 - 18.0 * x + 2.0])
 
 
@@ -167,9 +111,9 @@ def L3dd(x):
     # ~
     # ~ return array([b0,b1,b2,b3])
     # ~
-    return array([-27.0 * x + 18.0, \
-                  81.0 * x - 45.0, \
-                  -81.0 * x + 36.0, \
+    return array([-27.0 * x + 18.0,
+                  81.0 * x - 45.0,
+                  -81.0 * x + 36.0,
                   27.0 * x - 9.0])
 
 
@@ -194,10 +138,10 @@ def L4(x):
     return array([b0, b1, b2, b3, b4])
 
     # ~ return array([\
-    # ~ sc*(32*x4-80*x3+70*x2-25*x+3), \
-    # ~ sc*(-128*x4+288*x3-208*x2+48*x), \
-    # ~ sc*(192*x4-384*x3+228*x2-36*x), \
-    # ~ sc*(-128*x4+224*x3-112*x2+16*x), \
+    # ~ sc*(32*x4-80*x3+70*x2-25*x+3),
+    # ~ sc*(-128*x4+288*x3-208*x2+48*x),
+    # ~ sc*(192*x4-384*x3+228*x2-36*x),
+    # ~ sc*(-128*x4+224*x3-112*x2+16*x),
     # ~ sc*(32*x4-48*x3+22*x2-3*x)])
 
 
@@ -220,11 +164,11 @@ def L4d(x):
 
     return array([b0, b1, b2, b3, b4])
 
-    # ~ return array([ \
-    # ~ sc*(128*x3-240*x2+140*x-25), \
-    # ~ sc*(-512*x3+864*x2-416*x+48), \
-    # ~ sc*(768*x3-1152*x2+456*x-36), \
-    # ~ sc*(-512*x3+672*x2-224*x+16), \
+    # ~ return array([
+    # ~ sc*(128*x3-240*x2+140*x-25),
+    # ~ sc*(-512*x3+864*x2-416*x+48),
+    # ~ sc*(768*x3-1152*x2+456*x-36),
+    # ~ sc*(-512*x3+672*x2-224*x+16),
     # ~ sc*(128*x3-144*x2+44*x-3)])
 
 
@@ -246,11 +190,11 @@ def L4dd(x):
 
     return array([b0, b1, b2, b3, b4])
 
-    # ~ return array([ \
-    # ~ sc*(384*x2-480*x+140), \
-    # ~ sc*(-1536*x2+1728*x-416), \
-    # ~ sc*(2304*x2-2304*x+456), \
-    # ~ sc*(-1536*x2+1344*x-224), \
+    # ~ return array([
+    # ~ sc*(384*x2-480*x+140),
+    # ~ sc*(-1536*x2+1728*x-416),
+    # ~ sc*(2304*x2-2304*x+456),
+    # ~ sc*(-1536*x2+1344*x-224),
     # ~ sc*(384*x2-288*x+44)])
 
 
@@ -310,7 +254,7 @@ class line_L2(object):
     def eval_derivatives(self, x, deriv=None):
         """ if deriv==None, evaluate all derivatives
         """
-        get_derivatives = {(1,): self.eval_dx0, \
+        get_derivatives = {(1,): self.eval_dx0,
                            (2,): self.eval_dx0x0}
 
         if deriv:
@@ -344,7 +288,7 @@ class line_L3(object):
     def eval_derivatives(self, x, deriv=None):
         """ if deriv==None, evaluate all derivatives
         """
-        get_derivatives = {(1,): self.eval_dx0, \
+        get_derivatives = {(1,): self.eval_dx0,
                            (2,): self.eval_dx0x0}
 
         if deriv:
@@ -378,7 +322,7 @@ class line_L4(object):
     def eval_derivatives(self, x, deriv=None):
         """ if deriv==None, evaluate all derivatives
         """
-        get_derivatives = {(1,): self.eval_dx0, \
+        get_derivatives = {(1,): self.eval_dx0,
                            (2,): self.eval_dx0x0}
 
         if deriv:
@@ -407,9 +351,9 @@ class quad_L2_L2(object):
         self.tol = 1.0e-12
 
     def tensor(self, Phi1, Phi2):
-        Phi = array([ \
-            Phi1[0] * Phi2[0], Phi1[1] * Phi2[0], Phi1[2] * Phi2[0], \
-            Phi1[0] * Phi2[1], Phi1[1] * Phi2[1], Phi1[2] * Phi2[1], \
+        Phi = array([
+            Phi1[0] * Phi2[0], Phi1[1] * Phi2[0], Phi1[2] * Phi2[0],
+            Phi1[0] * Phi2[1], Phi1[1] * Phi2[1], Phi1[2] * Phi2[1],
             Phi1[0] * Phi2[2], Phi1[1] * Phi2[2], Phi1[2] * Phi2[2]])
 
         return where(abs(Phi) < self.tol, 0.0, Phi)
@@ -420,10 +364,10 @@ class quad_L2_L2(object):
     def eval_derivatives(self, x, deriv=None):
         """ if deriv==None, evaluate all derivatives
         """
-        get_derivatives = {(1, 0): self.eval_dx0, \
-                           (0, 1): self.eval_dx1, \
-                           (2, 0): self.eval_dx0x0, \
-                           (0, 2): self.eval_dx1x1, \
+        get_derivatives = {(1, 0): self.eval_dx0,
+                           (0, 1): self.eval_dx1,
+                           (2, 0): self.eval_dx0x0,
+                           (0, 2): self.eval_dx1x1,
                            (1, 1): self.eval_dx0x1}
 
         if deriv:
@@ -462,10 +406,10 @@ class quad_L3_L3(object):
         self.tol = 1.0e-12
 
     def tensor(self, Phi1, Phi2):
-        Phi = array([ \
-            Phi1[0] * Phi2[0], Phi1[1] * Phi2[0], Phi1[2] * Phi2[0], Phi1[3] * Phi2[0], \
-            Phi1[0] * Phi2[1], Phi1[1] * Phi2[1], Phi1[2] * Phi2[1], Phi1[3] * Phi2[1], \
-            Phi1[0] * Phi2[2], Phi1[1] * Phi2[2], Phi1[2] * Phi2[2], Phi1[3] * Phi2[2], \
+        Phi = array([
+            Phi1[0] * Phi2[0], Phi1[1] * Phi2[0], Phi1[2] * Phi2[0], Phi1[3] * Phi2[0],
+            Phi1[0] * Phi2[1], Phi1[1] * Phi2[1], Phi1[2] * Phi2[1], Phi1[3] * Phi2[1],
+            Phi1[0] * Phi2[2], Phi1[1] * Phi2[2], Phi1[2] * Phi2[2], Phi1[3] * Phi2[2],
             Phi1[0] * Phi2[3], Phi1[1] * Phi2[3], Phi1[2] * Phi2[3], Phi1[3] * Phi2[3]])
 
         return where(abs(Phi) < self.tol, 0.0, Phi)
@@ -476,10 +420,10 @@ class quad_L3_L3(object):
     def eval_derivatives(self, x, deriv=None):
         """ if deriv==None, evaluate all derivatives
         """
-        get_derivatives = {(1, 0): self.eval_dx0, \
-                           (0, 1): self.eval_dx1, \
-                           (2, 0): self.eval_dx0x0, \
-                           (0, 2): self.eval_dx1x1, \
+        get_derivatives = {(1, 0): self.eval_dx0,
+                           (0, 1): self.eval_dx1,
+                           (2, 0): self.eval_dx0x0,
+                           (0, 2): self.eval_dx1x1,
                            (1, 1): self.eval_dx0x1}
 
         if deriv:
@@ -518,18 +462,18 @@ class quad_L2_L2_L2(object):
         self.tol = 1.0e-12
 
     def tensor(self, p1, p2, p3):
-        p = array([ \
-            p1[0] * p2[0] * p3[0], p1[1] * p2[0] * p3[0], p1[2] * p2[0] * p3[0], \
-            p1[0] * p2[1] * p3[0], p1[1] * p2[1] * p3[0], p1[2] * p2[1] * p3[0], \
-            p1[0] * p2[2] * p3[0], p1[1] * p2[2] * p3[0], p1[2] * p2[2] * p3[0], \
- \
-            p1[0] * p2[0] * p3[1], p1[1] * p2[0] * p3[1], p1[2] * p2[0] * p3[1], \
-            p1[0] * p2[1] * p3[1], p1[1] * p2[1] * p3[1], p1[2] * p2[1] * p3[1], \
-            p1[0] * p2[2] * p3[1], p1[1] * p2[2] * p3[1], p1[2] * p2[2] * p3[1], \
- \
-            p1[0] * p2[0] * p3[2], p1[1] * p2[0] * p3[2], p1[2] * p2[0] * p3[2], \
-            p1[0] * p2[1] * p3[2], p1[1] * p2[1] * p3[2], p1[2] * p2[1] * p3[2], \
-            p1[0] * p2[2] * p3[2], p1[1] * p2[2] * p3[2], p1[2] * p2[2] * p3[2], \
+        p = array([
+            p1[0] * p2[0] * p3[0], p1[1] * p2[0] * p3[0], p1[2] * p2[0] * p3[0],
+            p1[0] * p2[1] * p3[0], p1[1] * p2[1] * p3[0], p1[2] * p2[1] * p3[0],
+            p1[0] * p2[2] * p3[0], p1[1] * p2[2] * p3[0], p1[2] * p2[2] * p3[0],
+
+            p1[0] * p2[0] * p3[1], p1[1] * p2[0] * p3[1], p1[2] * p2[0] * p3[1],
+            p1[0] * p2[1] * p3[1], p1[1] * p2[1] * p3[1], p1[2] * p2[1] * p3[1],
+            p1[0] * p2[2] * p3[1], p1[1] * p2[2] * p3[1], p1[2] * p2[2] * p3[1],
+
+            p1[0] * p2[0] * p3[2], p1[1] * p2[0] * p3[2], p1[2] * p2[0] * p3[2],
+            p1[0] * p2[1] * p3[2], p1[1] * p2[1] * p3[2], p1[2] * p2[1] * p3[2],
+            p1[0] * p2[2] * p3[2], p1[1] * p2[2] * p3[2], p1[2] * p2[2] * p3[2],
             ])
 
         return where(abs(p) < self.tol, 0.0, p)
@@ -541,15 +485,15 @@ class quad_L2_L2_L2(object):
         """ if deriv==None, evaluate all derivatives
         """
         ### no cross derivatives yet
-        get_derivatives = {(1, 0, 0): self.eval_dx0, \
-                           (0, 1, 0): self.eval_dx1, \
-                           (0, 0, 1): self.eval_dx2, \
-                           (2, 0, 0): self.eval_dx0x0, \
-                           (0, 2, 0): self.eval_dx1x1, \
-                           (0, 0, 2): self.eval_dx2x2, \
-                           (1, 1, 0): self.eval_dx0x1, \
-                           (1, 0, 1): self.eval_dx0x2, \
-                           (0, 1, 1): self.eval_dx1x2, \
+        get_derivatives = {(1, 0, 0): self.eval_dx0,
+                           (0, 1, 0): self.eval_dx1,
+                           (0, 0, 1): self.eval_dx2,
+                           (2, 0, 0): self.eval_dx0x0,
+                           (0, 2, 0): self.eval_dx1x1,
+                           (0, 0, 2): self.eval_dx2x2,
+                           (1, 1, 0): self.eval_dx0x1,
+                           (1, 0, 1): self.eval_dx0x2,
+                           (0, 1, 1): self.eval_dx1x2,
                            (1, 1, 1): self.eval_dx0x1x2
                            }
 
@@ -559,10 +503,10 @@ class quad_L2_L2_L2(object):
             except KeyError:
                 raise Warning('derivative ' + str(deriv) + ' not supported')
         else:
-            d = array([get_derivatives[(1, 0, 0)](x), get_derivatives[(0, 1, 0)](x), get_derivatives[(0, 0, 1)](x), \
-                       get_derivatives[(2, 0, 0)](x), get_derivatives[(0, 2, 0)](x), get_derivatives[(0, 0, 2)](x), \
-                       get_derivatives[(1, 1, 0)](x), get_derivatives[(1, 0, 1)](x), get_derivatives[(0, 1, 1)](x), \
-                       get_derivatives[(1, 1, 1)](x), \
+            d = array([get_derivatives[(1, 0, 0)](x), get_derivatives[(0, 1, 0)](x), get_derivatives[(0, 0, 1)](x),
+                       get_derivatives[(2, 0, 0)](x), get_derivatives[(0, 2, 0)](x), get_derivatives[(0, 0, 2)](x),
+                       get_derivatives[(1, 1, 0)](x), get_derivatives[(1, 0, 1)](x), get_derivatives[(0, 1, 1)](x),
+                       get_derivatives[(1, 1, 1)](x),
                        ])
 
         return d
@@ -607,26 +551,26 @@ class quad_L3_L3_L3(object):
         self.tol = 1.0e-12
 
     def tensor(self, p1, p2, p3):
-        p = array([ \
-            p1[0] * p2[0] * p3[0], p1[1] * p2[0] * p3[0], p1[2] * p2[0] * p3[0], p1[3] * p2[0] * p3[0], \
-            p1[0] * p2[1] * p3[0], p1[1] * p2[1] * p3[0], p1[2] * p2[1] * p3[0], p1[3] * p2[1] * p3[0], \
-            p1[0] * p2[2] * p3[0], p1[1] * p2[2] * p3[0], p1[2] * p2[2] * p3[0], p1[3] * p2[2] * p3[0], \
-            p1[0] * p2[3] * p3[0], p1[1] * p2[3] * p3[0], p1[2] * p2[3] * p3[0], p1[3] * p2[3] * p3[0], \
- \
-            p1[0] * p2[0] * p3[1], p1[1] * p2[0] * p3[1], p1[2] * p2[0] * p3[1], p1[3] * p2[0] * p3[1], \
-            p1[0] * p2[1] * p3[1], p1[1] * p2[1] * p3[1], p1[2] * p2[1] * p3[1], p1[3] * p2[1] * p3[1], \
-            p1[0] * p2[2] * p3[1], p1[1] * p2[2] * p3[1], p1[2] * p2[2] * p3[1], p1[3] * p2[2] * p3[1], \
-            p1[0] * p2[3] * p3[1], p1[1] * p2[3] * p3[1], p1[2] * p2[3] * p3[1], p1[3] * p2[3] * p3[1], \
- \
-            p1[0] * p2[0] * p3[2], p1[1] * p2[0] * p3[2], p1[2] * p2[0] * p3[2], p1[3] * p2[0] * p3[2], \
-            p1[0] * p2[1] * p3[2], p1[1] * p2[1] * p3[2], p1[2] * p2[1] * p3[2], p1[3] * p2[1] * p3[2], \
-            p1[0] * p2[2] * p3[2], p1[1] * p2[2] * p3[2], p1[2] * p2[2] * p3[2], p1[3] * p2[2] * p3[2], \
-            p1[0] * p2[3] * p3[2], p1[1] * p2[3] * p3[2], p1[2] * p2[3] * p3[2], p1[3] * p2[3] * p3[2], \
- \
-            p1[0] * p2[0] * p3[3], p1[1] * p2[0] * p3[3], p1[2] * p2[0] * p3[3], p1[3] * p2[0] * p3[3], \
-            p1[0] * p2[1] * p3[3], p1[1] * p2[1] * p3[3], p1[2] * p2[1] * p3[3], p1[3] * p2[1] * p3[3], \
-            p1[0] * p2[2] * p3[3], p1[1] * p2[2] * p3[3], p1[2] * p2[2] * p3[3], p1[3] * p2[2] * p3[3], \
-            p1[0] * p2[3] * p3[3], p1[1] * p2[3] * p3[3], p1[2] * p2[3] * p3[3], p1[3] * p2[3] * p3[3], \
+        p = array([
+            p1[0] * p2[0] * p3[0], p1[1] * p2[0] * p3[0], p1[2] * p2[0] * p3[0], p1[3] * p2[0] * p3[0],
+            p1[0] * p2[1] * p3[0], p1[1] * p2[1] * p3[0], p1[2] * p2[1] * p3[0], p1[3] * p2[1] * p3[0],
+            p1[0] * p2[2] * p3[0], p1[1] * p2[2] * p3[0], p1[2] * p2[2] * p3[0], p1[3] * p2[2] * p3[0],
+            p1[0] * p2[3] * p3[0], p1[1] * p2[3] * p3[0], p1[2] * p2[3] * p3[0], p1[3] * p2[3] * p3[0],
+
+            p1[0] * p2[0] * p3[1], p1[1] * p2[0] * p3[1], p1[2] * p2[0] * p3[1], p1[3] * p2[0] * p3[1],
+            p1[0] * p2[1] * p3[1], p1[1] * p2[1] * p3[1], p1[2] * p2[1] * p3[1], p1[3] * p2[1] * p3[1],
+            p1[0] * p2[2] * p3[1], p1[1] * p2[2] * p3[1], p1[2] * p2[2] * p3[1], p1[3] * p2[2] * p3[1],
+            p1[0] * p2[3] * p3[1], p1[1] * p2[3] * p3[1], p1[2] * p2[3] * p3[1], p1[3] * p2[3] * p3[1],
+
+            p1[0] * p2[0] * p3[2], p1[1] * p2[0] * p3[2], p1[2] * p2[0] * p3[2], p1[3] * p2[0] * p3[2],
+            p1[0] * p2[1] * p3[2], p1[1] * p2[1] * p3[2], p1[2] * p2[1] * p3[2], p1[3] * p2[1] * p3[2],
+            p1[0] * p2[2] * p3[2], p1[1] * p2[2] * p3[2], p1[2] * p2[2] * p3[2], p1[3] * p2[2] * p3[2],
+            p1[0] * p2[3] * p3[2], p1[1] * p2[3] * p3[2], p1[2] * p2[3] * p3[2], p1[3] * p2[3] * p3[2],
+
+            p1[0] * p2[0] * p3[3], p1[1] * p2[0] * p3[3], p1[2] * p2[0] * p3[3], p1[3] * p2[0] * p3[3],
+            p1[0] * p2[1] * p3[3], p1[1] * p2[1] * p3[3], p1[2] * p2[1] * p3[3], p1[3] * p2[1] * p3[3],
+            p1[0] * p2[2] * p3[3], p1[1] * p2[2] * p3[3], p1[2] * p2[2] * p3[3], p1[3] * p2[2] * p3[3],
+            p1[0] * p2[3] * p3[3], p1[1] * p2[3] * p3[3], p1[2] * p2[3] * p3[3], p1[3] * p2[3] * p3[3],
             ])
 
         # ~ try:
@@ -641,15 +585,15 @@ class quad_L3_L3_L3(object):
         """ if deriv==None, evaluate all derivatives
         """
         ### no cross derivatives yet
-        get_derivatives = {(1, 0, 0): self.eval_dx0, \
-                           (0, 1, 0): self.eval_dx1, \
-                           (0, 0, 1): self.eval_dx2, \
-                           (2, 0, 0): self.eval_dx0x0, \
-                           (0, 2, 0): self.eval_dx1x1, \
-                           (0, 0, 2): self.eval_dx2x2, \
-                           (1, 1, 0): self.eval_dx0x1, \
-                           (1, 0, 1): self.eval_dx0x2, \
-                           (0, 1, 1): self.eval_dx1x2, \
+        get_derivatives = {(1, 0, 0): self.eval_dx0,
+                           (0, 1, 0): self.eval_dx1,
+                           (0, 0, 1): self.eval_dx2,
+                           (2, 0, 0): self.eval_dx0x0,
+                           (0, 2, 0): self.eval_dx1x1,
+                           (0, 0, 2): self.eval_dx2x2,
+                           (1, 1, 0): self.eval_dx0x1,
+                           (1, 0, 1): self.eval_dx0x2,
+                           (0, 1, 1): self.eval_dx1x2,
                            (1, 1, 1): self.eval_dx0x1x2
                            }
 
@@ -659,10 +603,10 @@ class quad_L3_L3_L3(object):
             except KeyError:
                 raise Warning('derivative ' + str(deriv) + ' not supported')
         else:
-            d = array([get_derivatives[(1, 0, 0)](x), get_derivatives[(0, 1, 0)](x), get_derivatives[(0, 0, 1)](x), \
-                       get_derivatives[(2, 0, 0)](x), get_derivatives[(0, 2, 0)](x), get_derivatives[(0, 0, 2)](x), \
-                       get_derivatives[(1, 1, 0)](x), get_derivatives[(1, 0, 1)](x), get_derivatives[(0, 1, 1)](x), \
-                       get_derivatives[(1, 1, 1)](x), \
+            d = array([get_derivatives[(1, 0, 0)](x), get_derivatives[(0, 1, 0)](x), get_derivatives[(0, 0, 1)](x),
+                       get_derivatives[(2, 0, 0)](x), get_derivatives[(0, 2, 0)](x), get_derivatives[(0, 0, 2)](x),
+                       get_derivatives[(1, 1, 0)](x), get_derivatives[(1, 0, 1)](x), get_derivatives[(0, 1, 1)](x),
+                       get_derivatives[(1, 1, 1)](x),
                        ])
 
         return d
@@ -708,12 +652,12 @@ class quad_L4_L4(object):
         self.tol = 1.0e-12
 
     def tensor(self, p1, p2):
-        p = array([ \
-            p1[0] * p2[0], p1[1] * p2[0], p1[2] * p2[0], p1[3] * p2[0], p1[4] * p2[0], \
-            p1[0] * p2[1], p1[1] * p2[1], p1[2] * p2[1], p1[3] * p2[1], p1[4] * p2[1], \
-            p1[0] * p2[2], p1[1] * p2[2], p1[2] * p2[2], p1[3] * p2[2], p1[4] * p2[2], \
-            p1[0] * p2[3], p1[1] * p2[3], p1[2] * p2[3], p1[3] * p2[3], p1[4] * p2[3], \
-            p1[0] * p2[4], p1[1] * p2[4], p1[2] * p2[4], p1[3] * p2[4], p1[4] * p2[4], \
+        p = array([
+            p1[0] * p2[0], p1[1] * p2[0], p1[2] * p2[0], p1[3] * p2[0], p1[4] * p2[0],
+            p1[0] * p2[1], p1[1] * p2[1], p1[2] * p2[1], p1[3] * p2[1], p1[4] * p2[1],
+            p1[0] * p2[2], p1[1] * p2[2], p1[2] * p2[2], p1[3] * p2[2], p1[4] * p2[2],
+            p1[0] * p2[3], p1[1] * p2[3], p1[2] * p2[3], p1[3] * p2[3], p1[4] * p2[3],
+            p1[0] * p2[4], p1[1] * p2[4], p1[2] * p2[4], p1[3] * p2[4], p1[4] * p2[4],
             ])
         return where(abs(p) < self.tol, 0.0, p)
 
@@ -724,11 +668,11 @@ class quad_L4_L4(object):
         """ if deriv==None, evaluate all derivatives
         """
         ### no cross derivatives yet
-        get_derivatives = {(1, 0): self.eval_dx0, \
-                           (0, 1): self.eval_dx1, \
-                           (2, 0): self.eval_dx0x0, \
-                           (0, 2): self.eval_dx1x1, \
-                           (1, 1): self.eval_dx0x1, \
+        get_derivatives = {(1, 0): self.eval_dx0,
+                           (0, 1): self.eval_dx1,
+                           (2, 0): self.eval_dx0x0,
+                           (0, 2): self.eval_dx1x1,
+                           (1, 1): self.eval_dx0x1,
                            }
 
         if deriv:
@@ -743,8 +687,8 @@ class quad_L4_L4(object):
             x10 = L4(x[1])
             x11 = L4d(x[1])
             x12 = L4dd(x[1])
-            d = array([self.tensor(x01, x10), self.tensor(x00, x11), \
-                       self.tensor(x02, x10), self.tensor(x00, x12), \
+            d = array([self.tensor(x01, x10), self.tensor(x00, x11),
+                       self.tensor(x02, x10), self.tensor(x00, x12),
                        self.tensor(x01, x11)])
 
             # ~ d = array( [ get_derivatives[(1,0)](x),get_derivatives[(0,1)](x),\
@@ -778,11 +722,11 @@ class quad_L4_L3(object):
         self.tol = 1.0e-12
 
     def tensor(self, p1, p2):
-        p = array([ \
-            p1[0] * p2[0], p1[1] * p2[0], p1[2] * p2[0], p1[3] * p2[0], p1[4] * p2[0], \
-            p1[0] * p2[1], p1[1] * p2[1], p1[2] * p2[1], p1[3] * p2[1], p1[4] * p2[1], \
-            p1[0] * p2[2], p1[1] * p2[2], p1[2] * p2[2], p1[3] * p2[2], p1[4] * p2[2], \
-            p1[0] * p2[3], p1[1] * p2[3], p1[2] * p2[3], p1[3] * p2[3], p1[4] * p2[3], \
+        p = array([
+            p1[0] * p2[0], p1[1] * p2[0], p1[2] * p2[0], p1[3] * p2[0], p1[4] * p2[0],
+            p1[0] * p2[1], p1[1] * p2[1], p1[2] * p2[1], p1[3] * p2[1], p1[4] * p2[1],
+            p1[0] * p2[2], p1[1] * p2[2], p1[2] * p2[2], p1[3] * p2[2], p1[4] * p2[2],
+            p1[0] * p2[3], p1[1] * p2[3], p1[2] * p2[3], p1[3] * p2[3], p1[4] * p2[3],
             ])
         return where(abs(p) < self.tol, 0.0, p)
 
@@ -793,11 +737,11 @@ class quad_L4_L3(object):
         """ if deriv==None, evaluate all derivatives
         """
         ### no cross derivatives yet
-        get_derivatives = {(1, 0): self.eval_dx0, \
-                           (0, 1): self.eval_dx1, \
-                           (2, 0): self.eval_dx0x0, \
-                           (0, 2): self.eval_dx1x1, \
-                           (1, 1): self.eval_dx0x1, \
+        get_derivatives = {(1, 0): self.eval_dx0,
+                           (0, 1): self.eval_dx1,
+                           (2, 0): self.eval_dx0x0,
+                           (0, 2): self.eval_dx1x1,
+                           (1, 1): self.eval_dx0x1,
                            }
 
         if deriv:
@@ -812,8 +756,8 @@ class quad_L4_L3(object):
             x10 = L3(x[1])
             x11 = L3d(x[1])
             x12 = L3dd(x[1])
-            d = array([self.tensor(x01, x10), self.tensor(x00, x11), \
-                       self.tensor(x02, x10), self.tensor(x00, x12), \
+            d = array([self.tensor(x01, x10), self.tensor(x00, x11),
+                       self.tensor(x02, x10), self.tensor(x00, x12),
                        self.tensor(x01, x11)])
 
             # ~ d = array( [ get_derivatives[(1,0)](x),get_derivatives[(0,1)](x),\
@@ -847,61 +791,61 @@ class quad_L4_L4_L4(object):
         self.tol = 1.0e-12
 
     def tensor(self, p1, p2, p3):
-        p = array([ \
+        p = array([
             p1[0] * p2[0] * p3[0], p1[1] * p2[0] * p3[0], p1[2] * p2[0] * p3[0], p1[3] * p2[0] * p3[0],
-            p1[4] * p2[0] * p3[0], \
+            p1[4] * p2[0] * p3[0],
             p1[0] * p2[1] * p3[0], p1[1] * p2[1] * p3[0], p1[2] * p2[1] * p3[0], p1[3] * p2[1] * p3[0],
-            p1[4] * p2[1] * p3[0], \
+            p1[4] * p2[1] * p3[0],
             p1[0] * p2[2] * p3[0], p1[1] * p2[2] * p3[0], p1[2] * p2[2] * p3[0], p1[3] * p2[2] * p3[0],
-            p1[4] * p2[2] * p3[0], \
+            p1[4] * p2[2] * p3[0],
             p1[0] * p2[3] * p3[0], p1[1] * p2[3] * p3[0], p1[2] * p2[3] * p3[0], p1[3] * p2[3] * p3[0],
-            p1[4] * p2[3] * p3[0], \
+            p1[4] * p2[3] * p3[0],
             p1[0] * p2[4] * p3[0], p1[1] * p2[4] * p3[0], p1[2] * p2[4] * p3[0], p1[3] * p2[4] * p3[0],
-            p1[4] * p2[4] * p3[0], \
- \
+            p1[4] * p2[4] * p3[0],
+
             p1[0] * p2[0] * p3[1], p1[1] * p2[0] * p3[1], p1[2] * p2[0] * p3[1], p1[3] * p2[0] * p3[1],
-            p1[4] * p2[0] * p3[1], \
+            p1[4] * p2[0] * p3[1],
             p1[0] * p2[1] * p3[1], p1[1] * p2[1] * p3[1], p1[2] * p2[1] * p3[1], p1[3] * p2[1] * p3[1],
-            p1[4] * p2[1] * p3[1], \
+            p1[4] * p2[1] * p3[1],
             p1[0] * p2[2] * p3[1], p1[1] * p2[2] * p3[1], p1[2] * p2[2] * p3[1], p1[3] * p2[2] * p3[1],
-            p1[4] * p2[2] * p3[1], \
+            p1[4] * p2[2] * p3[1],
             p1[0] * p2[3] * p3[1], p1[1] * p2[3] * p3[1], p1[2] * p2[3] * p3[1], p1[3] * p2[3] * p3[1],
-            p1[4] * p2[3] * p3[1], \
+            p1[4] * p2[3] * p3[1],
             p1[0] * p2[4] * p3[1], p1[1] * p2[4] * p3[1], p1[2] * p2[4] * p3[1], p1[3] * p2[4] * p3[1],
-            p1[4] * p2[4] * p3[1], \
- \
+            p1[4] * p2[4] * p3[1],
+
             p1[0] * p2[0] * p3[2], p1[1] * p2[0] * p3[2], p1[2] * p2[0] * p3[2], p1[3] * p2[0] * p3[2],
-            p1[4] * p2[0] * p3[2], \
+            p1[4] * p2[0] * p3[2],
             p1[0] * p2[1] * p3[2], p1[1] * p2[1] * p3[2], p1[2] * p2[1] * p3[2], p1[3] * p2[1] * p3[2],
-            p1[4] * p2[1] * p3[2], \
+            p1[4] * p2[1] * p3[2],
             p1[0] * p2[2] * p3[2], p1[1] * p2[2] * p3[2], p1[2] * p2[2] * p3[2], p1[3] * p2[2] * p3[2],
-            p1[4] * p2[2] * p3[2], \
+            p1[4] * p2[2] * p3[2],
             p1[0] * p2[3] * p3[2], p1[1] * p2[3] * p3[2], p1[2] * p2[3] * p3[2], p1[3] * p2[3] * p3[2],
-            p1[4] * p2[3] * p3[2], \
+            p1[4] * p2[3] * p3[2],
             p1[0] * p2[4] * p3[2], p1[1] * p2[4] * p3[2], p1[2] * p2[4] * p3[2], p1[3] * p2[4] * p3[2],
-            p1[4] * p2[4] * p3[2], \
- \
+            p1[4] * p2[4] * p3[2],
+
             p1[0] * p2[0] * p3[3], p1[1] * p2[0] * p3[3], p1[2] * p2[0] * p3[3], p1[3] * p2[0] * p3[3],
-            p1[4] * p2[0] * p3[3], \
+            p1[4] * p2[0] * p3[3],
             p1[0] * p2[1] * p3[3], p1[1] * p2[1] * p3[3], p1[2] * p2[1] * p3[3], p1[3] * p2[1] * p3[3],
-            p1[4] * p2[1] * p3[3], \
+            p1[4] * p2[1] * p3[3],
             p1[0] * p2[2] * p3[3], p1[1] * p2[2] * p3[3], p1[2] * p2[2] * p3[3], p1[3] * p2[2] * p3[3],
-            p1[4] * p2[2] * p3[3], \
+            p1[4] * p2[2] * p3[3],
             p1[0] * p2[3] * p3[3], p1[1] * p2[3] * p3[3], p1[2] * p2[3] * p3[3], p1[3] * p2[3] * p3[3],
-            p1[4] * p2[3] * p3[3], \
+            p1[4] * p2[3] * p3[3],
             p1[0] * p2[4] * p3[3], p1[1] * p2[4] * p3[3], p1[2] * p2[4] * p3[3], p1[3] * p2[4] * p3[3],
-            p1[4] * p2[4] * p3[3], \
- \
+            p1[4] * p2[4] * p3[3],
+
             p1[0] * p2[0] * p3[4], p1[1] * p2[0] * p3[4], p1[2] * p2[0] * p3[4], p1[3] * p2[0] * p3[4],
-            p1[4] * p2[0] * p3[4], \
+            p1[4] * p2[0] * p3[4],
             p1[0] * p2[1] * p3[4], p1[1] * p2[1] * p3[4], p1[2] * p2[1] * p3[4], p1[3] * p2[1] * p3[4],
-            p1[4] * p2[1] * p3[4], \
+            p1[4] * p2[1] * p3[4],
             p1[0] * p2[2] * p3[4], p1[1] * p2[2] * p3[4], p1[2] * p2[2] * p3[4], p1[3] * p2[2] * p3[4],
-            p1[4] * p2[2] * p3[4], \
+            p1[4] * p2[2] * p3[4],
             p1[0] * p2[3] * p3[4], p1[1] * p2[3] * p3[4], p1[2] * p2[3] * p3[4], p1[3] * p2[3] * p3[4],
-            p1[4] * p2[3] * p3[4], \
+            p1[4] * p2[3] * p3[4],
             p1[0] * p2[4] * p3[4], p1[1] * p2[4] * p3[4], p1[2] * p2[4] * p3[4], p1[3] * p2[4] * p3[4],
-            p1[4] * p2[4] * p3[4], \
+            p1[4] * p2[4] * p3[4],
             ])
 
         return where(abs(p) < self.tol, 0.0, p)
@@ -913,15 +857,15 @@ class quad_L4_L4_L4(object):
         """ if deriv==None, evaluate all derivatives
         """
         ### no cross derivatives yet
-        get_derivatives = {(1, 0, 0): self.eval_dx0, \
-                           (0, 1, 0): self.eval_dx1, \
-                           (0, 0, 1): self.eval_dx2, \
-                           (2, 0, 0): self.eval_dx0x0, \
-                           (0, 2, 0): self.eval_dx1x1, \
-                           (0, 0, 2): self.eval_dx2x2, \
-                           (1, 1, 0): self.eval_dx0x1, \
-                           (1, 0, 1): self.eval_dx0x2, \
-                           (0, 1, 1): self.eval_dx1x2, \
+        get_derivatives = {(1, 0, 0): self.eval_dx0,
+                           (0, 1, 0): self.eval_dx1,
+                           (0, 0, 1): self.eval_dx2,
+                           (2, 0, 0): self.eval_dx0x0,
+                           (0, 2, 0): self.eval_dx1x1,
+                           (0, 0, 2): self.eval_dx2x2,
+                           (1, 1, 0): self.eval_dx0x1,
+                           (1, 0, 1): self.eval_dx0x2,
+                           (0, 1, 1): self.eval_dx1x2,
                            (1, 1, 1): self.eval_dx0x1x2
                            }
 
@@ -931,10 +875,10 @@ class quad_L4_L4_L4(object):
             except KeyError:
                 raise Warning('derivative ' + str(deriv) + ' not supported')
         else:
-            d = array([get_derivatives[(1, 0, 0)](x), get_derivatives[(0, 1, 0)](x), get_derivatives[(0, 0, 1)](x), \
-                       get_derivatives[(2, 0, 0)](x), get_derivatives[(0, 2, 0)](x), get_derivatives[(0, 0, 2)](x), \
-                       get_derivatives[(1, 1, 0)](x), get_derivatives[(1, 0, 1)](x), get_derivatives[(0, 1, 1)](x), \
-                       get_derivatives[(1, 1, 1)](x), \
+            d = array([get_derivatives[(1, 0, 0)](x), get_derivatives[(0, 1, 0)](x), get_derivatives[(0, 0, 1)](x),
+                       get_derivatives[(2, 0, 0)](x), get_derivatives[(0, 2, 0)](x), get_derivatives[(0, 0, 2)](x),
+                       get_derivatives[(1, 1, 0)](x), get_derivatives[(1, 0, 1)](x), get_derivatives[(0, 1, 1)](x),
+                       get_derivatives[(1, 1, 1)](x),
                        ])
 
         return d
@@ -979,24 +923,24 @@ class quad_L4_L3_L1(object):
         self.tol = 1.0e-12
 
     def tensor(self, p1, p2, p3):
-        p = array([ \
+        p = array([
             p1[0] * p2[0] * p3[0], p1[1] * p2[0] * p3[0], p1[2] * p2[0] * p3[0], p1[3] * p2[0] * p3[0],
-            p1[4] * p2[0] * p3[0], \
+            p1[4] * p2[0] * p3[0],
             p1[0] * p2[1] * p3[0], p1[1] * p2[1] * p3[0], p1[2] * p2[1] * p3[0], p1[3] * p2[1] * p3[0],
-            p1[4] * p2[1] * p3[0], \
+            p1[4] * p2[1] * p3[0],
             p1[0] * p2[2] * p3[0], p1[1] * p2[2] * p3[0], p1[2] * p2[2] * p3[0], p1[3] * p2[2] * p3[0],
-            p1[4] * p2[2] * p3[0], \
+            p1[4] * p2[2] * p3[0],
             p1[0] * p2[3] * p3[0], p1[1] * p2[3] * p3[0], p1[2] * p2[3] * p3[0], p1[3] * p2[3] * p3[0],
-            p1[4] * p2[3] * p3[0], \
- \
+            p1[4] * p2[3] * p3[0],
+
             p1[0] * p2[0] * p3[1], p1[1] * p2[0] * p3[1], p1[2] * p2[0] * p3[1], p1[3] * p2[0] * p3[1],
-            p1[4] * p2[0] * p3[1], \
+            p1[4] * p2[0] * p3[1],
             p1[0] * p2[1] * p3[1], p1[1] * p2[1] * p3[1], p1[2] * p2[1] * p3[1], p1[3] * p2[1] * p3[1],
-            p1[4] * p2[1] * p3[1], \
+            p1[4] * p2[1] * p3[1],
             p1[0] * p2[2] * p3[1], p1[1] * p2[2] * p3[1], p1[2] * p2[2] * p3[1], p1[3] * p2[2] * p3[1],
-            p1[4] * p2[2] * p3[1], \
+            p1[4] * p2[2] * p3[1],
             p1[0] * p2[3] * p3[1], p1[1] * p2[3] * p3[1], p1[2] * p2[3] * p3[1], p1[3] * p2[3] * p3[1],
-            p1[4] * p2[3] * p3[1], \
+            p1[4] * p2[3] * p3[1],
             ])
 
         return where(abs(p) < self.tol, 0.0, p)
@@ -1008,15 +952,15 @@ class quad_L4_L3_L1(object):
         """ if deriv==None, evaluate all derivatives
         """
         ### no cross derivatives yet
-        get_derivatives = {(1, 0, 0): self.eval_dx0, \
-                           (0, 1, 0): self.eval_dx1, \
-                           (0, 0, 1): self.eval_dx2, \
-                           (2, 0, 0): self.eval_dx0x0, \
-                           (0, 2, 0): self.eval_dx1x1, \
-                           (0, 0, 2): self.eval_dx2x2, \
-                           (1, 1, 0): self.eval_dx0x1, \
-                           (1, 0, 1): self.eval_dx0x2, \
-                           (0, 1, 1): self.eval_dx1x2, \
+        get_derivatives = {(1, 0, 0): self.eval_dx0,
+                           (0, 1, 0): self.eval_dx1,
+                           (0, 0, 1): self.eval_dx2,
+                           (2, 0, 0): self.eval_dx0x0,
+                           (0, 2, 0): self.eval_dx1x1,
+                           (0, 0, 2): self.eval_dx2x2,
+                           (1, 1, 0): self.eval_dx0x1,
+                           (1, 0, 1): self.eval_dx0x2,
+                           (0, 1, 1): self.eval_dx1x2,
                            (1, 1, 1): self.eval_dx0x1x2
                            }
 
@@ -1026,10 +970,10 @@ class quad_L4_L3_L1(object):
             except KeyError:
                 raise Warning('derivative ' + str(deriv) + ' not supported')
         else:
-            d = array([get_derivatives[(1, 0, 0)](x), get_derivatives[(0, 1, 0)](x), get_derivatives[(0, 0, 1)](x), \
-                       get_derivatives[(2, 0, 0)](x), get_derivatives[(0, 2, 0)](x), get_derivatives[(0, 0, 2)](x), \
-                       get_derivatives[(1, 1, 0)](x), get_derivatives[(1, 0, 1)](x), get_derivatives[(0, 1, 1)](x), \
-                       get_derivatives[(1, 1, 1)](x), \
+            d = array([get_derivatives[(1, 0, 0)](x), get_derivatives[(0, 1, 0)](x), get_derivatives[(0, 0, 1)](x),
+                       get_derivatives[(2, 0, 0)](x), get_derivatives[(0, 2, 0)](x), get_derivatives[(0, 0, 2)](x),
+                       get_derivatives[(1, 1, 0)](x), get_derivatives[(1, 0, 1)](x), get_derivatives[(0, 1, 1)](x),
+                       get_derivatives[(1, 1, 1)](x),
                        ])
 
     def eval_dx0(self, x):
@@ -1072,28 +1016,28 @@ class quad_L4_L4_L1(object):
         self.tol = 1.0e-12
 
     def tensor(self, p1, p2, p3):
-        p = array([ \
+        p = array([
             p1[0] * p2[0] * p3[0], p1[1] * p2[0] * p3[0], p1[2] * p2[0] * p3[0], p1[3] * p2[0] * p3[0],
-            p1[4] * p2[0] * p3[0], \
+            p1[4] * p2[0] * p3[0],
             p1[0] * p2[1] * p3[0], p1[1] * p2[1] * p3[0], p1[2] * p2[1] * p3[0], p1[3] * p2[1] * p3[0],
-            p1[4] * p2[1] * p3[0], \
+            p1[4] * p2[1] * p3[0],
             p1[0] * p2[2] * p3[0], p1[1] * p2[2] * p3[0], p1[2] * p2[2] * p3[0], p1[3] * p2[2] * p3[0],
-            p1[4] * p2[2] * p3[0], \
+            p1[4] * p2[2] * p3[0],
             p1[0] * p2[3] * p3[0], p1[1] * p2[3] * p3[0], p1[2] * p2[3] * p3[0], p1[3] * p2[3] * p3[0],
-            p1[4] * p2[3] * p3[0], \
+            p1[4] * p2[3] * p3[0],
             p1[0] * p2[4] * p3[0], p1[1] * p2[4] * p3[0], p1[2] * p2[4] * p3[0], p1[3] * p2[4] * p3[0],
-            p1[4] * p2[4] * p3[0], \
- \
+            p1[4] * p2[4] * p3[0],
+
             p1[0] * p2[0] * p3[1], p1[1] * p2[0] * p3[1], p1[2] * p2[0] * p3[1], p1[3] * p2[0] * p3[1],
-            p1[4] * p2[0] * p3[1], \
+            p1[4] * p2[0] * p3[1],
             p1[0] * p2[1] * p3[1], p1[1] * p2[1] * p3[1], p1[2] * p2[1] * p3[1], p1[3] * p2[1] * p3[1],
-            p1[4] * p2[1] * p3[1], \
+            p1[4] * p2[1] * p3[1],
             p1[0] * p2[2] * p3[1], p1[1] * p2[2] * p3[1], p1[2] * p2[2] * p3[1], p1[3] * p2[2] * p3[1],
-            p1[4] * p2[2] * p3[1], \
+            p1[4] * p2[2] * p3[1],
             p1[0] * p2[3] * p3[1], p1[1] * p2[3] * p3[1], p1[2] * p2[3] * p3[1], p1[3] * p2[3] * p3[1],
-            p1[4] * p2[3] * p3[1], \
+            p1[4] * p2[3] * p3[1],
             p1[0] * p2[4] * p3[1], p1[1] * p2[4] * p3[1], p1[2] * p2[4] * p3[1], p1[3] * p2[4] * p3[1],
-            p1[4] * p2[4] * p3[1], \
+            p1[4] * p2[4] * p3[1],
             ])
 
         return where(abs(p) < self.tol, 0.0, p)
@@ -1105,15 +1049,15 @@ class quad_L4_L4_L1(object):
         """ if deriv==None, evaluate all derivatives
         """
         ### no cross derivatives yet
-        get_derivatives = {(1, 0, 0): self.eval_dx0, \
-                           (0, 1, 0): self.eval_dx1, \
-                           (0, 0, 1): self.eval_dx2, \
-                           (2, 0, 0): self.eval_dx0x0, \
-                           (0, 2, 0): self.eval_dx1x1, \
-                           (0, 0, 2): self.eval_dx2x2, \
-                           (1, 1, 0): self.eval_dx0x1, \
-                           (1, 0, 1): self.eval_dx0x2, \
-                           (0, 1, 1): self.eval_dx1x2, \
+        get_derivatives = {(1, 0, 0): self.eval_dx0,
+                           (0, 1, 0): self.eval_dx1,
+                           (0, 0, 1): self.eval_dx2,
+                           (2, 0, 0): self.eval_dx0x0,
+                           (0, 2, 0): self.eval_dx1x1,
+                           (0, 0, 2): self.eval_dx2x2,
+                           (1, 1, 0): self.eval_dx0x1,
+                           (1, 0, 1): self.eval_dx0x2,
+                           (0, 1, 1): self.eval_dx1x2,
                            (1, 1, 1): self.eval_dx0x1x2
                            }
 
@@ -1123,10 +1067,10 @@ class quad_L4_L4_L1(object):
             except KeyError:
                 raise Warning('derivative ' + str(deriv) + ' not supported')
         else:
-            d = array([get_derivatives[(1, 0, 0)](x), get_derivatives[(0, 1, 0)](x), get_derivatives[(0, 0, 1)](x), \
-                       get_derivatives[(2, 0, 0)](x), get_derivatives[(0, 2, 0)](x), get_derivatives[(0, 0, 2)](x), \
-                       get_derivatives[(1, 1, 0)](x), get_derivatives[(1, 0, 1)](x), get_derivatives[(0, 1, 1)](x), \
-                       get_derivatives[(1, 1, 1)](x), \
+            d = array([get_derivatives[(1, 0, 0)](x), get_derivatives[(0, 1, 0)](x), get_derivatives[(0, 0, 1)](x),
+                       get_derivatives[(2, 0, 0)](x), get_derivatives[(0, 2, 0)](x), get_derivatives[(0, 0, 2)](x),
+                       get_derivatives[(1, 1, 0)](x), get_derivatives[(1, 0, 1)](x), get_derivatives[(0, 1, 1)](x),
+                       get_derivatives[(1, 1, 1)](x),
                        ])
 
     def eval_dx0(self, x):
@@ -1170,19 +1114,19 @@ class simplex_2d(object):
     v0 = [0.0, 0.0]
     v1 = [1.0, 0.0]
     v2 = [0.0, 1.0]
-    D = 0.5 * det([[1.0, v0[0], v0[1]], \
-                   [1.0, v1[0], v1[1]], \
+    D = 0.5 * det([[1.0, v0[0], v0[1]],
+                   [1.0, v1[0], v1[1]],
                    [1.0, v2[0], v2[1]]])
     D2 = 2.0 * D
     # cartesian -> area coordinate coefficients
-    a = array([v1[0] * v2[1] - v2[0] * v1[1], \
-               v2[0] * v0[1] - v0[0] * v2[1], \
+    a = array([v1[0] * v2[1] - v2[0] * v1[1],
+               v2[0] * v0[1] - v0[0] * v2[1],
                v0[0] * v1[1] - v1[0] * v0[1]])
-    b = array([v1[1] - v2[1], \
-               v2[1] - v0[1], \
+    b = array([v1[1] - v2[1],
+               v2[1] - v0[1],
                v0[1] - v1[1]])
-    c = array([v2[0] - v1[0], \
-               v0[0] - v2[0], \
+    c = array([v2[0] - v1[0],
+               v0[0] - v2[0],
                v1[0] - v0[0]])
 
     def _cart2areaOld(self, x):
@@ -1273,10 +1217,10 @@ class simplex_L2_L2(simplex_2d):
         """ if deriv==None, evaluate all derivatives
         """
 
-        get_derivatives = {(1, 0): self.eval_dx0, \
-                           (0, 1): self.eval_dx1, \
-                           (2, 0): self.eval_dx0x0, \
-                           (0, 2): self.eval_dx1x1, \
+        get_derivatives = {(1, 0): self.eval_dx0,
+                           (0, 1): self.eval_dx1,
+                           (2, 0): self.eval_dx0x0,
+                           (0, 2): self.eval_dx1x1,
                            (1, 1): self.eval_dx0x1}
 
         if deriv:
@@ -1361,15 +1305,15 @@ class simplex_L3_L3(simplex_2d):
 
     def eval(self, x):
         T0, T1, T2 = self._cart2area(x)
-        phi = array([T0 * (self.D2 - 3.0 * T0) * (self.D4 - 3.0 * T0) / self.D16, \
-                     self.D916 * T0 * T1 * (self.D2 - 3 * T0), \
-                     self.D916 * T0 * T1 * (self.D2 - 3 * T1), \
-                     T1 * (self.D2 - 3.0 * T1) * (self.D4 - 3.0 * T1) / self.D16, \
-                     self.D916 * T0 * T2 * (self.D2 - 3 * T0), \
-                     self.D27 * T0 * T1 * T2, \
-                     self.D916 * T1 * T2 * (self.D2 - 3 * T1), \
-                     self.D916 * T0 * T2 * (self.D2 - 3 * T2), \
-                     self.D916 * T1 * T2 * (self.D2 - 3 * T2), \
+        phi = array([T0 * (self.D2 - 3.0 * T0) * (self.D4 - 3.0 * T0) / self.D16,
+                     self.D916 * T0 * T1 * (self.D2 - 3 * T0),
+                     self.D916 * T0 * T1 * (self.D2 - 3 * T1),
+                     T1 * (self.D2 - 3.0 * T1) * (self.D4 - 3.0 * T1) / self.D16,
+                     self.D916 * T0 * T2 * (self.D2 - 3 * T0),
+                     self.D27 * T0 * T1 * T2,
+                     self.D916 * T1 * T2 * (self.D2 - 3 * T1),
+                     self.D916 * T0 * T2 * (self.D2 - 3 * T2),
+                     self.D916 * T1 * T2 * (self.D2 - 3 * T2),
                      T2 * (self.D2 - 3.0 * T2) * (self.D4 - 3.0 * T2) / self.D16])
 
         return where(abs(phi) < self.tol, 0.0, phi)
@@ -1379,10 +1323,10 @@ class simplex_L3_L3(simplex_2d):
         """ if deriv==None, evaluate all derivatives
         """
 
-        get_derivatives = {(1, 0): self.eval_dx0, \
-                           (0, 1): self.eval_dx1, \
-                           (2, 0): self.eval_dx0x0, \
-                           (0, 2): self.eval_dx1x1, \
+        get_derivatives = {(1, 0): self.eval_dx0,
+                           (0, 1): self.eval_dx1,
+                           (2, 0): self.eval_dx0x0,
+                           (0, 2): self.eval_dx1x1,
                            (1, 1): self.eval_dx0x1}
 
         if deriv:
@@ -1400,22 +1344,22 @@ class simplex_L3_L3(simplex_2d):
         T0, T1, T2 = self._cart2area(x)
 
         phi = array([(self.b[0] * (self.D2 - 3.0 * T0) * (self.D4 - 3.0 * T0) - 3.0 * self.b[0] * T0 * (
-                    self.D4 - 3.0 * T0) - 3.0 * self.b[0] * T0 * (self.D2 - 3.0 * T0)) / self.D16, \
+                    self.D4 - 3.0 * T0) - 3.0 * self.b[0] * T0 * (self.D2 - 3.0 * T0)) / self.D16,
                      self.D916 * self.b[0] * T1 * (self.D2 - 3.0 * T0) + self.D916 * self.b[1] * T0 * (
-                                 self.D2 - 3.0 * T0) + 0.5 * self.D27 * self.b[0] * T0 * T1, \
+                                 self.D2 - 3.0 * T0) + 0.5 * self.D27 * self.b[0] * T0 * T1,
                      self.D916 * self.b[0] * T1 * (self.D2 - 3.0 * T1) + self.D916 * self.b[1] * T0 * (
-                                 self.D2 - 3.0 * T1) + 0.5 * self.D27 * self.b[1] * T0 * T1, \
+                                 self.D2 - 3.0 * T1) + 0.5 * self.D27 * self.b[1] * T0 * T1,
                      (self.b[1] * (self.D2 - 3.0 * T1) * (self.D4 - 3.0 * T1) - 3.0 * self.b[1] * T1 * (
-                                 self.D4 - 3.0 * T1) - 3.0 * self.b[1] * T1 * (self.D2 - 3.0 * T1)) / self.D16, \
+                                 self.D4 - 3.0 * T1) - 3.0 * self.b[1] * T1 * (self.D2 - 3.0 * T1)) / self.D16,
                      self.D916 * self.b[0] * T2 * (self.D2 - 3.0 * T0) + self.D916 * self.b[2] * T0 * (
-                                 self.D2 - 3.0 * T0) + 0.5 * self.D27 * self.b[0] * T0 * T2, \
-                     self.D27 * (self.b[0] * T1 * T2 + self.b[1] * T0 * T2 + self.b[2] * T0 * T1), \
+                                 self.D2 - 3.0 * T0) + 0.5 * self.D27 * self.b[0] * T0 * T2,
+                     self.D27 * (self.b[0] * T1 * T2 + self.b[1] * T0 * T2 + self.b[2] * T0 * T1),
                      self.D916 * self.b[1] * T2 * (self.D2 - 3.0 * T1) + self.D916 * self.b[2] * T1 * (
-                                 self.D2 - 3.0 * T1) + 0.5 * self.D27 * self.b[1] * T1 * T2, \
+                                 self.D2 - 3.0 * T1) + 0.5 * self.D27 * self.b[1] * T1 * T2,
                      self.D916 * self.b[0] * T2 * (self.D2 - 3.0 * T2) + self.D916 * self.b[2] * T0 * (
-                                 self.D2 - 3.0 * T2) + 0.5 * self.D27 * self.b[2] * T0 * T2, \
+                                 self.D2 - 3.0 * T2) + 0.5 * self.D27 * self.b[2] * T0 * T2,
                      self.D916 * self.b[1] * T2 * (self.D2 - 3.0 * T2) + self.D916 * self.b[2] * T1 * (
-                                 self.D2 - 3.0 * T2) + 0.5 * self.D27 * self.b[2] * T1 * T2, \
+                                 self.D2 - 3.0 * T2) + 0.5 * self.D27 * self.b[2] * T1 * T2,
                      (self.b[2] * (self.D2 - 3.0 * T2) * (self.D4 - 3.0 * T2) - 3.0 * self.b[2] * T2 * (
                                  self.D4 - 3.0 * T2) - 3.0 * self.b[2] * T2 * (self.D2 - 3.0 * T2)) / self.D16])
 
@@ -1426,22 +1370,22 @@ class simplex_L3_L3(simplex_2d):
         T0, T1, T2 = self._cart2area(x)
 
         phi = array([(self.c[0] * (self.D2 - 3.0 * T0) * (self.D4 - 3.0 * T0) - 3.0 * self.c[0] * T0 * (
-                    self.D4 - 3.0 * T0) - 3.0 * self.c[0] * T0 * (self.D2 - 3.0 * T0)) / self.D16, \
+                    self.D4 - 3.0 * T0) - 3.0 * self.c[0] * T0 * (self.D2 - 3.0 * T0)) / self.D16,
                      self.D916 * self.c[0] * T1 * (self.D2 - 3.0 * T0) + self.D916 * self.c[1] * T0 * (
-                                 self.D2 - 3.0 * T0) + 0.5 * self.D27 * self.c[0] * T0 * T1, \
+                                 self.D2 - 3.0 * T0) + 0.5 * self.D27 * self.c[0] * T0 * T1,
                      self.D916 * self.c[0] * T1 * (self.D2 - 3.0 * T1) + self.D916 * self.c[1] * T0 * (
-                                 self.D2 - 3.0 * T1) + 0.5 * self.D27 * self.c[1] * T0 * T1, \
+                                 self.D2 - 3.0 * T1) + 0.5 * self.D27 * self.c[1] * T0 * T1,
                      (self.c[1] * (self.D2 - 3.0 * T1) * (self.D4 - 3.0 * T1) - 3.0 * self.c[1] * T1 * (
-                                 self.D4 - 3.0 * T1) - 3.0 * self.c[1] * T1 * (self.D2 - 3.0 * T1)) / self.D16, \
+                                 self.D4 - 3.0 * T1) - 3.0 * self.c[1] * T1 * (self.D2 - 3.0 * T1)) / self.D16,
                      self.D916 * self.c[0] * T2 * (self.D2 - 3.0 * T0) + self.D916 * self.c[2] * T0 * (
-                                 self.D2 - 3.0 * T0) + 0.5 * self.D27 * self.c[0] * T0 * T2, \
-                     self.D27 * (self.c[0] * T1 * T2 + self.c[1] * T0 * T2 + self.c[2] * T0 * T1), \
+                                 self.D2 - 3.0 * T0) + 0.5 * self.D27 * self.c[0] * T0 * T2,
+                     self.D27 * (self.c[0] * T1 * T2 + self.c[1] * T0 * T2 + self.c[2] * T0 * T1),
                      self.D916 * self.c[1] * T2 * (self.D2 - 3.0 * T1) + self.D916 * self.c[2] * T1 * (
-                                 self.D2 - 3.0 * T1) + 0.5 * self.D27 * self.c[1] * T1 * T2, \
+                                 self.D2 - 3.0 * T1) + 0.5 * self.D27 * self.c[1] * T1 * T2,
                      self.D916 * self.c[0] * T2 * (self.D2 - 3.0 * T2) + self.D916 * self.c[2] * T0 * (
-                                 self.D2 - 3.0 * T2) + 0.5 * self.D27 * self.c[2] * T0 * T2, \
+                                 self.D2 - 3.0 * T2) + 0.5 * self.D27 * self.c[2] * T0 * T2,
                      self.D916 * self.c[1] * T2 * (self.D2 - 3.0 * T2) + self.D916 * self.c[2] * T1 * (
-                                 self.D2 - 3.0 * T2) + 0.5 * self.D27 * self.c[2] * T1 * T2, \
+                                 self.D2 - 3.0 * T2) + 0.5 * self.D27 * self.c[2] * T1 * T2,
                      (self.c[2] * (self.D2 - 3.0 * T2) * (self.D4 - 3.0 * T2) - 3.0 * self.c[2] * T2 * (
                                  self.D4 - 3.0 * T2) - 3.0 * self.c[2] * T2 * (self.D2 - 3.0 * T2)) / self.D16])
 
@@ -1452,23 +1396,23 @@ class simplex_L3_L3(simplex_2d):
         T0, T1, T2 = self._cart2area(x)
 
         phi = array([self.D38 * self.b[0] * self.b[0] * (self.D4 - 3.0 * T0) + self.D38 * self.b[0] * self.b[0] * (
-                    self.D2 - 3.0 * T0) - self.D98 * self.b[0] * self.b[0] * T0, \
+                    self.D2 - 3.0 * T0) - self.D98 * self.b[0] * self.b[0] * T0,
                      self.D98 * self.b[0] * self.b[1] * (self.D2 - 3.0 * T0) + self.D27 * self.b[0] * self.b[
-                         0] * T1 + self.D27 * self.b[0] * self.b[1] * T0, \
+                         0] * T1 + self.D27 * self.b[0] * self.b[1] * T0,
                      self.D98 * self.b[0] * self.b[1] * (self.D2 - 3.0 * T1) + self.D27 * self.b[0] * self.b[
-                         1] * T1 + self.D27 * self.b[1] * self.b[1] * T0, \
+                         1] * T1 + self.D27 * self.b[1] * self.b[1] * T0,
                      self.D38 * self.b[1] * self.b[1] * (self.D4 - 3.0 * T1) + self.D38 * self.b[1] * self.b[1] * (
-                                 self.D2 - 3.0 * T1) - self.D98 * self.b[1] * self.b[1] * T1, \
+                                 self.D2 - 3.0 * T1) - self.D98 * self.b[1] * self.b[1] * T1,
                      self.D98 * self.b[0] * self.b[2] * (self.D2 - 3.0 * T0) + self.D27 * self.b[0] * self.b[
-                         0] * T2 + self.D27 * self.b[0] * self.b[2] * T0, \
+                         0] * T2 + self.D27 * self.b[0] * self.b[2] * T0,
                      2.0 * self.D27 * self.b[0] * self.b[1] * T2 + 2.0 * self.D27 * self.b[0] * self.b[
-                         2] * T1 + 2.0 * self.D27 * self.b[1] * self.b[2] * T0, \
+                         2] * T1 + 2.0 * self.D27 * self.b[1] * self.b[2] * T0,
                      self.D98 * self.b[1] * self.b[2] * (self.D2 - 3.0 * T1) + self.D27 * self.b[1] * self.b[
-                         1] * T2 + self.D27 * self.b[1] * self.b[2] * T1, \
+                         1] * T2 + self.D27 * self.b[1] * self.b[2] * T1,
                      self.D98 * self.b[0] * self.b[2] * (self.D2 - 3.0 * T2) + self.D27 * self.b[0] * self.b[
-                         2] * T2 + self.D27 * self.b[2] * self.b[2] * T0, \
+                         2] * T2 + self.D27 * self.b[2] * self.b[2] * T0,
                      self.D98 * self.b[1] * self.b[2] * (self.D2 - 3.0 * T2) + self.D27 * self.b[1] * self.b[
-                         2] * T2 + self.D27 * self.b[2] * self.b[2] * T1, \
+                         2] * T2 + self.D27 * self.b[2] * self.b[2] * T1,
                      self.D38 * self.b[2] * self.b[2] * (self.D4 - 3.0 * T2) + self.D38 * self.b[2] * self.b[2] * (
                                  self.D2 - 3.0 * T2) - self.D98 * self.b[2] * self.b[2] * T2])
 
@@ -1479,23 +1423,23 @@ class simplex_L3_L3(simplex_2d):
         T0, T1, T2 = self._cart2area(x)
 
         phi = array([self.D38 * self.c[0] * self.c[0] * (self.D4 - 3.0 * T0) + self.D38 * self.c[0] * self.c[0] * (
-                    self.D2 - 3.0 * T0) - self.D98 * self.c[0] * self.c[0] * T0, \
+                    self.D2 - 3.0 * T0) - self.D98 * self.c[0] * self.c[0] * T0,
                      self.D98 * self.c[0] * self.c[1] * (self.D2 - 3.0 * T0) + self.D27 * self.c[0] * self.c[
-                         0] * T1 + self.D27 * self.c[0] * self.c[1] * T0, \
+                         0] * T1 + self.D27 * self.c[0] * self.c[1] * T0,
                      self.D98 * self.c[0] * self.c[1] * (self.D2 - 3.0 * T1) + self.D27 * self.c[0] * self.c[
-                         1] * T1 + self.D27 * self.c[1] * self.c[1] * T0, \
+                         1] * T1 + self.D27 * self.c[1] * self.c[1] * T0,
                      self.D38 * self.c[1] * self.c[1] * (self.D4 - 3.0 * T1) + self.D38 * self.c[1] * self.c[1] * (
-                                 self.D2 - 3.0 * T1) - self.D98 * self.c[1] * self.c[1] * T1, \
+                                 self.D2 - 3.0 * T1) - self.D98 * self.c[1] * self.c[1] * T1,
                      self.D98 * self.c[0] * self.c[2] * (self.D2 - 3.0 * T0) + self.D27 * self.c[0] * self.c[
-                         0] * T2 + self.D27 * self.c[0] * self.c[2] * T0, \
+                         0] * T2 + self.D27 * self.c[0] * self.c[2] * T0,
                      2.0 * self.D27 * self.c[0] * self.c[1] * T2 + 2.0 * self.D27 * self.c[0] * self.c[
-                         2] * T1 + 2.0 * self.D27 * self.c[1] * self.c[2] * T0, \
+                         2] * T1 + 2.0 * self.D27 * self.c[1] * self.c[2] * T0,
                      self.D98 * self.c[1] * self.c[2] * (self.D2 - 3.0 * T1) + self.D27 * self.c[1] * self.c[
-                         1] * T2 + self.D27 * self.c[1] * self.c[2] * T1, \
+                         1] * T2 + self.D27 * self.c[1] * self.c[2] * T1,
                      self.D98 * self.c[0] * self.c[2] * (self.D2 - 3.0 * T2) + self.D27 * self.c[0] * self.c[
-                         2] * T2 + self.D27 * self.c[2] * self.c[2] * T0, \
+                         2] * T2 + self.D27 * self.c[2] * self.c[2] * T0,
                      self.D98 * self.c[1] * self.c[2] * (self.D2 - 3.0 * T2) + self.D27 * self.c[1] * self.c[
-                         2] * T2 + self.D27 * self.c[2] * self.c[2] * T1, \
+                         2] * T2 + self.D27 * self.c[2] * self.c[2] * T1,
                      self.D38 * self.c[2] * self.c[2] * (self.D4 - 3.0 * T2) + self.D38 * self.c[2] * self.c[2] * (
                                  self.D2 - 3.0 * T2) - self.D98 * self.c[2] * self.c[2] * T2])
 
@@ -1506,30 +1450,30 @@ class simplex_L3_L3(simplex_2d):
         T0, T1, T2 = self._cart2area(x)
 
         phi = array([self.D38 * self.b[0] * self.c[0] * (self.D4 - 3.0 * T0) + self.D38 * self.b[0] * self.c[0] * (
-                    self.D2 - 3.0 * T0) - self.D98 * self.b[0] * self.c[0] * T0, \
+                    self.D2 - 3.0 * T0) - self.D98 * self.b[0] * self.c[0] * T0,
                      0.5 * self.D98 * self.b[0] * self.c[1] * (self.D2 - 3.0 * T0) + 0.5 * self.D98 * self.b[1] *
                      self.c[0] * (self.D2 - 3.0 * T0) + self.D27 * self.b[0] * self.c[0] * T1 + 0.5 * self.D27 * self.b[
-                         0] * self.c[1] * T0 + 0.5 * self.D27 * self.b[1] * self.c[0] * T0, \
+                         0] * self.c[1] * T0 + 0.5 * self.D27 * self.b[1] * self.c[0] * T0,
                      0.5 * self.D98 * self.b[0] * self.c[1] * (self.D2 - 3.0 * T1) + 0.5 * self.D98 * self.b[1] *
                      self.c[0] * (self.D2 - 3.0 * T1) + self.D27 * self.b[0] * self.c[1] * T1 + 0.5 * self.D27 * self.b[
-                         1] * self.c[0] * T1 + 0.5 * self.D27 * self.b[1] * self.c[1] * T0, \
+                         1] * self.c[0] * T1 + 0.5 * self.D27 * self.b[1] * self.c[1] * T0,
                      self.D38 * self.b[1] * self.c[1] * (self.D4 - 3.0 * T1) + self.D38 * self.b[1] * self.c[1] * (
-                                 self.D2 - 3.0 * T1) - self.D98 * self.b[1] * self.c[1] * T1, \
+                                 self.D2 - 3.0 * T1) - self.D98 * self.b[1] * self.c[1] * T1,
                      0.5 * self.D98 * self.b[0] * self.c[2] * (self.D2 - 3.0 * T0) + 0.5 * self.D98 * self.b[2] *
                      self.c[0] * (self.D2 - 3.0 * T0) + self.D27 * self.b[0] * self.c[0] * T2 + 0.5 * self.D27 * self.b[
-                         0] * self.c[2] * T0 + 0.5 * self.D27 * self.b[2] * self.c[0] * T0, \
+                         0] * self.c[2] * T0 + 0.5 * self.D27 * self.b[2] * self.c[0] * T0,
                      self.D27 * self.b[0] * self.c[1] * T2 + self.D27 * self.b[1] * self.c[0] * T2 + self.D27 * self.b[
                          0] * self.c[2] * T1 + self.D27 * self.b[2] * self.c[0] * T1 + self.D27 * self.b[1] * self.c[
-                         2] * T0 + self.D27 * self.b[2] * self.c[1] * T0, \
+                         2] * T0 + self.D27 * self.b[2] * self.c[1] * T0,
                      0.5 * self.D98 * self.b[1] * self.c[2] * (self.D2 - 3.0 * T1) + 0.5 * self.D98 * self.b[2] *
                      self.c[1] * (self.D2 - 3.0 * T1) + self.D27 * self.b[1] * self.c[1] * T2 + 0.5 * self.D27 * self.b[
-                         1] * self.c[2] * T1 + 0.5 * self.D27 * self.b[2] * self.c[1] * T1, \
+                         1] * self.c[2] * T1 + 0.5 * self.D27 * self.b[2] * self.c[1] * T1,
                      0.5 * self.D98 * self.b[0] * self.c[2] * (self.D2 - 3.0 * T2) + 0.5 * self.D98 * self.b[2] *
                      self.c[0] * (self.D2 - 3.0 * T2) + self.D27 * self.b[0] * self.c[2] * T2 + 0.5 * self.D27 * self.b[
-                         2] * self.c[0] * T2 + 0.5 * self.D27 * self.b[2] * self.c[2] * T0, \
+                         2] * self.c[0] * T2 + 0.5 * self.D27 * self.b[2] * self.c[2] * T0,
                      0.5 * self.D98 * self.b[1] * self.c[2] * (self.D2 - 3.0 * T2) + 0.5 * self.D98 * self.b[2] *
                      self.c[1] * (self.D2 - 3.0 * T2) + self.D27 * self.b[1] * self.c[2] * T2 + 0.5 * self.D27 * self.b[
-                         2] * self.c[1] * T2 + 0.5 * self.D27 * self.b[2] * self.c[2] * T1, \
+                         2] * self.c[1] * T2 + 0.5 * self.D27 * self.b[2] * self.c[2] * T1,
                      self.D38 * self.b[2] * self.c[2] * (self.D4 - 3.0 * T2) + self.D38 * self.b[2] * self.c[2] * (
                                  self.D2 - 3.0 * T2) - self.D98 * self.b[2] * self.c[2] * T2])
 
@@ -1558,13 +1502,13 @@ class simplex_L4_L1(simplex_2d):
 
     def eval(self, x):
         L0, L1, L2 = self._cart2area(x)
-        phi = array([ \
-            (32 / 3.) * (L0 - 0.75) * (L0 - 0.5) * (L0 - 0.25) * L0, \
-            (128 / 3.) * (L0 - 0.5) * (L0 - 0.25) * L0 * L1, \
-            64 * (L0 - 0.25) * L0 * (L1 - 0.25) * L1, \
-            (128 / 3.) * L0 * (L1 - 0.5) * (L1 - 0.25) * L1, \
-            (32 / 3.) * (L1 - 0.75) * (L1 - 0.5) * (L1 - 0.25) * L1, \
-            L2 ** 4.0, \
+        phi = array([
+            (32 / 3.) * (L0 - 0.75) * (L0 - 0.5) * (L0 - 0.25) * L0,
+            (128 / 3.) * (L0 - 0.5) * (L0 - 0.25) * L0 * L1,
+            64 * (L0 - 0.25) * L0 * (L1 - 0.25) * L1,
+            (128 / 3.) * L0 * (L1 - 0.5) * (L1 - 0.25) * L1,
+            (32 / 3.) * (L1 - 0.75) * (L1 - 0.5) * (L1 - 0.25) * L1,
+            L2 ** 4.0,
             ])
         return where(abs(phi) < self.tol, 0.0, phi)
 
@@ -1572,10 +1516,10 @@ class simplex_L4_L1(simplex_2d):
         """ if deriv==None, evaluate all derivatives
         """
 
-        get_derivatives = {(1, 0): self.eval_dx0, \
-                           (0, 1): self.eval_dx1, \
-                           (2, 0): self.eval_dx0x0, \
-                           (0, 2): self.eval_dx1x1, \
+        get_derivatives = {(1, 0): self.eval_dx0,
+                           (0, 1): self.eval_dx1,
+                           (2, 0): self.eval_dx0x0,
+                           (0, 2): self.eval_dx1x1,
                            (1, 1): self.eval_dx0x1}
 
         if deriv:
@@ -1584,10 +1528,10 @@ class simplex_L4_L1(simplex_2d):
             except KeyError:
                 raise Warning('derivative ' + str(deriv) + ' not supported')
         else:
-            d = array([get_derivatives[(1, 0)](x), \
-                       get_derivatives[(0, 1)](x), \
-                       get_derivatives[(2, 0)](x), \
-                       get_derivatives[(0, 2)](x), \
+            d = array([get_derivatives[(1, 0)](x),
+                       get_derivatives[(0, 1)](x),
+                       get_derivatives[(2, 0)](x),
+                       get_derivatives[(0, 2)](x),
                        get_derivatives[(1, 1)](x)])
 
         return d
@@ -1628,22 +1572,22 @@ class simplex_L4_L4(simplex_2d):
 
     def eval(self, x):
         L1, L2, L3 = self._cart2area(x)
-        phi = array([ \
-            (32 / 3.) * (L1 - 0.75) * (L1 - 0.5) * (L1 - 0.25) * L1, \
-            (128 / 3.) * (L1 - 0.5) * (L1 - 0.25) * L1 * L2, \
-            64 * (L1 - 0.25) * L1 * (L2 - 0.25) * L2, \
-            (128 / 3.) * L1 * (L2 - 0.5) * (L2 - 0.25) * L2, \
-            (32 / 3.) * (L2 - 0.75) * (L2 - 0.5) * (L2 - 0.25) * L2, \
-            (128 / 3.) * (L1 - 0.5) * (L1 - 0.25) * L1 * L3, \
-            128 * (L1 - 0.25) * L1 * L2 * L3, \
-            128 * L1 * (L2 - 0.25) * L2 * L3, \
-            (128 / 3.) * (L2 - 0.5) * (L2 - 0.25) * L2 * L3, \
-            64 * (L1 - 0.25) * L1 * (L3 - 0.25) * L3, \
-            128 * L1 * L2 * (L3 - 0.25) * L3, \
-            64 * (L2 - 0.25) * L2 * (L3 - 0.25) * L3, \
-            (128 / 3.) * L1 * (L3 - 0.5) * (L3 - 0.25) * L3, \
-            (128 / 3.) * L2 * (L3 - 0.5) * (L3 - 0.25) * L3, \
-            (32 / 3.) * (L3 - 0.75) * (L3 - 0.5) * (L3 - 0.25) * L3 \
+        phi = array([
+            (32 / 3.) * (L1 - 0.75) * (L1 - 0.5) * (L1 - 0.25) * L1,
+            (128 / 3.) * (L1 - 0.5) * (L1 - 0.25) * L1 * L2,
+            64 * (L1 - 0.25) * L1 * (L2 - 0.25) * L2,
+            (128 / 3.) * L1 * (L2 - 0.5) * (L2 - 0.25) * L2,
+            (32 / 3.) * (L2 - 0.75) * (L2 - 0.5) * (L2 - 0.25) * L2,
+            (128 / 3.) * (L1 - 0.5) * (L1 - 0.25) * L1 * L3,
+            128 * (L1 - 0.25) * L1 * L2 * L3,
+            128 * L1 * (L2 - 0.25) * L2 * L3,
+            (128 / 3.) * (L2 - 0.5) * (L2 - 0.25) * L2 * L3,
+            64 * (L1 - 0.25) * L1 * (L3 - 0.25) * L3,
+            128 * L1 * L2 * (L3 - 0.25) * L3,
+            64 * (L2 - 0.25) * L2 * (L3 - 0.25) * L3,
+            (128 / 3.) * L1 * (L3 - 0.5) * (L3 - 0.25) * L3,
+            (128 / 3.) * L2 * (L3 - 0.5) * (L3 - 0.25) * L3,
+            (32 / 3.) * (L3 - 0.75) * (L3 - 0.5) * (L3 - 0.25) * L3
             ])
         return where(abs(phi) < self.tol, 0.0, phi)
 
@@ -1651,10 +1595,10 @@ class simplex_L4_L4(simplex_2d):
         """ if deriv==None, evaluate all derivatives
         """
 
-        get_derivatives = {(1, 0): self.eval_dx0, \
-                           (0, 1): self.eval_dx1, \
-                           (2, 0): self.eval_dx0x0, \
-                           (0, 2): self.eval_dx1x1, \
+        get_derivatives = {(1, 0): self.eval_dx0,
+                           (0, 1): self.eval_dx1,
+                           (2, 0): self.eval_dx0x0,
+                           (0, 2): self.eval_dx1x1,
                            (1, 1): self.eval_dx0x1}
 
         if deriv:
@@ -1663,10 +1607,10 @@ class simplex_L4_L4(simplex_2d):
             except KeyError:
                 raise Warning('derivative ' + str(deriv) + ' not supported')
         else:
-            d = array([get_derivatives[(1, 0)](x), \
-                       get_derivatives[(0, 1)](x), \
-                       get_derivatives[(2, 0)](x), \
-                       get_derivatives[(0, 2)](x), \
+            d = array([get_derivatives[(1, 0)](x),
+                       get_derivatives[(0, 1)](x),
+                       get_derivatives[(2, 0)](x),
+                       get_derivatives[(0, 2)](x),
                        get_derivatives[(1, 1)](x)])
 
         return d
@@ -3017,10 +2961,10 @@ class prism_sL4_sL1_qL4:
             sp[0] * p3[1], sp[1] * p3[1], sp[2] * p3[1], sp[3] * p3[1], sp[4] * p3[1],
             sp[5] * p3[1],
 
-            sp[0] * p3[2], sp[1] * p3[2], sp[2] * p3[2], sp[3] * p3[2], sp[4] * p3[2], \
+            sp[0] * p3[2], sp[1] * p3[2], sp[2] * p3[2], sp[3] * p3[2], sp[4] * p3[2],
             sp[5] * p3[2],
 
-            sp[0] * p3[3], sp[1] * p3[3], sp[2] * p3[3], sp[3] * p3[3], sp[4] * p3[3], \
+            sp[0] * p3[3], sp[1] * p3[3], sp[2] * p3[3], sp[3] * p3[3], sp[4] * p3[3],
             sp[5] * p3[3],
 
             sp[0] * p3[4], sp[1] * p3[4], sp[2] * p3[4], sp[3] * p3[4], sp[4] * p3[4],

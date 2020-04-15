@@ -78,7 +78,7 @@ class MayaviViewerObjectsContainer(object):
     def getObjectNamesOfType(self, typeName):
         ret = []
         for name, o in list(self._objects.items()):
-            if o.typeName == t:
+            if o.typeName == typeName:
                 ret.append(name)
 
         return ret

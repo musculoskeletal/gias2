@@ -14,20 +14,20 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 ################################################################################
 # Create some data
-import scipy
+import numpy
 
 elements = 3
 height = 10
 radius = [10, 11, 12]
-theta = scipy.linspace(0.0, 2.0 * scipy.pi, elements * 2 + 1)
-zcoords = scipy.linspace(0.0, height, 3)
+theta = numpy.linspace(0.0, 2.0 * numpy.pi, elements * 2 + 1)
+zcoords = numpy.linspace(0.0, height, 3)
 xparam = []
 yparam = []
 zparam = []
 
 for row in range(3):
-    xcoords = radius[row] * scipy.cos(theta)
-    ycoords = radius[row] * scipy.sin(theta)
+    xcoords = radius[row] * numpy.cos(theta)
+    ycoords = radius[row] * numpy.sin(theta)
     for i in range(len(xcoords) - 1):
         xparam.append([xcoords[i]])
         yparam.append([ycoords[i]])
@@ -35,7 +35,7 @@ for row in range(3):
 
 ################################################################################
 # Plot the data
-from enthought.mayavi import mlab
+from mayavi import mlab
 
 # A first plot in 3D
 fig = mlab.figure(1)
@@ -49,7 +49,7 @@ for i in range(len(labels)):
 ################################################################################
 # Some logic to select 'mesh' and the data index when picking.
 # observer for the figure's point picker object
-from enthought.tvtk.api import tvtk
+from tvtk.api import tvtk
 
 
 # ~ def picker_callback(picker_obj, evt):

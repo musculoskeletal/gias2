@@ -14,10 +14,10 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import shelve
 
-import scipy
+import numpy
 import sys
 import vtk
-from scipy.linalg import svd, eigh
+from numpy.linalg import svd, eigh
 
 from gias2.common import transform3D
 from gias2.mesh import inp
@@ -63,12 +63,12 @@ def vrml2SimpleMesh(VRMLFilename):
         numberOfPoints = polydata.GetNumberOfPoints()
         numberOfCells = polydata.GetNumberOfCells()
 
-        points = scipy.array([polydata.GetPoint(pi) for pi in range(numberOfPoints)])
+        points = numpy.array([polydata.GetPoint(pi) for pi in range(numberOfPoints)])
 
         polys = polydata.GetPolys().GetData()
         polysSize = polys.GetSize()
-        # ~ polysData = scipy.array([polys.GetValue(i) for i in xrange(polysSize)])
-        polysData = scipy.array([polys.GetValue(i) for i in range(numberOfCells * 4)])
+        # ~ polysData = numpy.array([polys.GetValue(i) for i in xrange(polysSize)])
+        polysData = numpy.array([polys.GetValue(i) for i in range(numberOfCells * 4)])
         tri = polysData.reshape((-1, 4))[:, 1:4]
 
         simpleMeshes.append(SimpleMesh(points, tri))
@@ -85,12 +85,12 @@ def stl2SimpleMesh(STLFilename):
     numberOfPoints = polydata.GetNumberOfPoints()
     numberOfCells = polydata.GetNumberOfCells()
 
-    points = scipy.array([polydata.GetPoint(pi) for pi in range(numberOfPoints)])
+    points = numpy.array([polydata.GetPoint(pi) for pi in range(numberOfPoints)])
 
     polys = polydata.GetPolys().GetData()
     polysSize = polys.GetSize()
-    # ~ polysData = scipy.array([polys.GetValue(i) for i in xrange(polysSize)])
-    polysData = scipy.array([polys.GetValue(i) for i in range(numberOfCells * 4)])
+    # ~ polysData = numpy.array([polys.GetValue(i) for i in xrange(polysSize)])
+    polysData = numpy.array([polys.GetValue(i) for i in range(numberOfCells * 4)])
     tri = polysData.reshape((-1, 4))[:, 1:4]
 
     sm = SimpleMesh(points, tri)
@@ -100,13 +100,13 @@ def stl2SimpleMesh(STLFilename):
 
 class SimpleMesh(object):
     def __init__(self, v=None, f=None, H=None, K=None, k1=None, k2=None, E=None, data=None):
-        self.v = scipy.array(v)
-        self.f = scipy.array(f)
-        self.H = scipy.array(H)
-        self.K = scipy.array(K)
-        self.k1 = scipy.array(k1)
-        self.k2 = scipy.array(k2)
-        self.E = scipy.array(E)
+        self.v = numpy.array(v)
+        self.f = numpy.array(f)
+        self.H = numpy.array(H)
+        self.K = numpy.array(K)
+        self.k1 = numpy.array(k1)
+        self.k2 = numpy.array(k2)
+        self.E = numpy.array(E)
         self.data = data
         self.faceNormals = None
         self.hasFaceNormals = False
@@ -303,11 +303,11 @@ class SimpleMesh(object):
 
     def calcFaceProperties(self):
 
-        faceVertices = scipy.array([self.v[F] for F in self.f])
+        faceVertices = numpy.array([self.v[F] for F in self.f])
 
         v1 = faceVertices[:, 1, :] - faceVertices[:, 0, :]
         v2 = faceVertices[:, 2, :] - faceVertices[:, 0, :]
-        v1v2 = scipy.cross(v1, v2)
+        v1v2 = numpy.cross(v1, v2)
         self.faceNormals = normalise2(v1v2)
         self.hasFaceNormals = True
         self.faceAreas = 0.5 * mag2(v1v2)
@@ -336,8 +336,8 @@ class SimpleMesh(object):
         fArea = self.faceAreas
         AMax = self.faceAreas.max()
 
-        V = scipy.zeros((3, 3), dtype=float)
-        self.vertexNormals = scipy.zeros((self.v.shape[0], 3), dtype=float)
+        V = numpy.zeros((3, 3), dtype=float)
+        self.vertexNormals = numpy.zeros((self.v.shape[0], 3), dtype=float)
 
         # for each vertex get neighbourhood faces 
         for vi, v in enumerate(self.v):
@@ -347,33 +347,33 @@ class SimpleMesh(object):
             if not nFaces:
                 raise RuntimeWarning('no faces: vertex').with_traceback(v.ID)
 
-            fBaryV = scipy.array([fBary[f] for f in neighFaces])
-            fNormalV = scipy.array([fNormal[i] for i in neighFaces])
-            fAreaV = scipy.array([fArea[i] for i in neighFaces])
+            fBaryV = numpy.array([fBary[f] for f in neighFaces])
+            fNormalV = numpy.array([fNormal[i] for i in neighFaces])
+            fAreaV = numpy.array([fArea[i] for i in neighFaces])
 
             # calc votes
             vc = normalise2(fBaryV - v)
             cosTheta = fNormalV[:, 0] * vc[:, 0] + fNormalV[:, 1] * vc[:, 1] + fNormalV[:, 2] * vc[:, 2]
             # ~ pdb.set_trace()
-            NI = fNormalV - 2.0 * vc * cosTheta[:, scipy.newaxis]
-            NI = scipy.where(scipy.isfinite(NI), NI, 0.0)
+            NI = fNormalV - 2.0 * vc * cosTheta[:, numpy.newaxis]
+            NI = numpy.where(numpy.isfinite(NI), NI, 0.0)
 
             # calc vote weights
             gV = mag2(fBaryV - v)
-            WI = (fAreaV / AMax) * scipy.exp(-gV / sigma)
+            WI = (fAreaV / AMax) * numpy.exp(-gV / sigma)
 
             # form covariance matrix V, and do eigendecomp 
             V[:, :] = 0.0
             WI = WI / WI.sum()  # normalise weights to sum to 1
             for i, n in enumerate(NI):
-                V += WI[i] * scipy.kron(n, n[:, scipy.newaxis])
+                V += WI[i] * numpy.kron(n, n[:, numpy.newaxis])
 
             try:
                 l, e = eigh(V)
             except ValueError:
                 print('WARNING: singular V for vertex', vi)
-                l = scipy.zeros(3)
-                e = scipy.eye(3)
+                l = numpy.zeros(3)
+                e = numpy.eye(3)
             else:
                 l, e = _sortEigDesc(l, e)
 
@@ -416,7 +416,7 @@ class SimpleMesh(object):
         """
 
         print('filtering normals...')
-        aligned = scipy.zeros(len(self.v), dtype=bool)
+        aligned = numpy.zeros(len(self.v), dtype=bool)
         # front = set([0])
         front = set([self.f.min(), ])
         aligned[self.f.min()] = True
@@ -427,7 +427,7 @@ class SimpleMesh(object):
 
             v = front.pop()
             # get vertices immediately ahead of the front
-            nvs = scipy.array([vid for vid in self.vertices1Ring[v] if not aligned[vid]], dtype=int)
+            nvs = numpy.array([vid for vid in self.vertices1Ring[v] if not aligned[vid]], dtype=int)
             # dot product normals to find inverted neighbours
             d = self.vertexNormals[nvs].dot(self.vertexNormals[v])
             self.vertexNormals[nvs[d < 0.0]] *= -1.0
@@ -437,14 +437,14 @@ class SimpleMesh(object):
         return
 
     def calcBoundingBox(self):
-        self.boundingBox = scipy.array([self.v.min(0), self.v.max(0)]).T
+        self.boundingBox = numpy.array([self.v.min(0), self.v.max(0)]).T
         return self.boundingBox
 
     def calcCoM(self):
 
         a = self.faceAreas
         x = self.faceBarycenters
-        self.CoM = (x * a[:, scipy.newaxis]).sum(0) / sum(a)
+        self.CoM = (x * a[:, numpy.newaxis]).sum(0) / sum(a)
         return self.CoM
 
     def calcNormCoM(self):
@@ -452,9 +452,9 @@ class SimpleMesh(object):
         box = self.boundingBox
         CoM = self.CoM
         x = self.faceBarycenters
-        self.normCoM = scipy.array([(CoM[0] - box[0, 0]) / (box[0, 1] - box[0, 0]), \
-                                    (CoM[1] - box[1, 0]) / (box[1, 1] - box[1, 0]), \
-                                    (CoM[2] - box[2, 0]) / (box[2, 1] - box[2, 0]), \
+        self.normCoM = numpy.array([(CoM[0] - box[0, 0]) / (box[0, 1] - box[0, 0]),
+                                    (CoM[1] - box[1, 0]) / (box[1, 1] - box[1, 0]),
+                                    (CoM[2] - box[2, 0]) / (box[2, 1] - box[2, 0]),
                                     ])
 
         return self.normCoM
@@ -470,12 +470,12 @@ class SimpleMesh(object):
         I13 = -(v[:, 0] * v[:, 2] * areas).sum()
         I23 = -(v[:, 1] * v[:, 2] * areas).sum()
 
-        I = scipy.array([[I11, I12, I13], [I12, I22, I23], [I13, I23, I33]])
+        I = numpy.array([[I11, I12, I13], [I12, I22, I23], [I13, I23, I33]])
         self.I = I
 
         u, s, vh = svd(I)
         self.principalMoments = s.real[::-1]
-        self.principalAxes = scipy.fliplr(u.real)
+        self.principalAxes = numpy.fliplr(u.real)
 
         # ~ print ' %(one)8.6f\n %(two)8.6f\n %(three)8.6f\n'\
         # ~ %{'one':self.principalAxes[2,0], 'two':self.principalAxes[0,1], 'three':self.principalAxes[1,2]}
@@ -494,24 +494,24 @@ class SimpleMesh(object):
         """
         pAxes = self.principalAxes
         CoM = self.CoM
-        targetCoM = scipy.zeros(3)
-        targetPAxes = scipy.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]], dtype=float)
+        targetCoM = numpy.zeros(3)
+        targetPAxes = numpy.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]], dtype=float)
         T = alignment.calcAffine((CoM, pAxes), (targetCoM, targetPAxes))
-        self.transformAffine(scipy.vstack((T, scipy.ones(4))))
+        self.transformAffine(numpy.vstack((T, numpy.ones(4))))
         return T
 
     def transformAffine(self, t):
         """ transform mesh vertices by an affine
         transformation matrix T (shape = (3,4))
         """
-        # newV = scipy.dot( t, scipy.vstack( (self.v.T, scipy.ones(self.v.shape[0])) ) )[:3,:].T 
+        # newV = numpy.dot( t, numpy.vstack( (self.v.T, numpy.ones(self.v.shape[0])) ) )[:3,:].T 
         # self.v = newV
 
         self.v = transform3D.transformAffine(self.v, t)
         if self.vertexNormals is not None:
-            self.vertexNormals = scipy.dot(t[:3, :3], self.vertexNormals.T).T
+            self.vertexNormals = numpy.dot(t[:3, :3], self.vertexNormals.T).T
         if self.faceNormals is not None:
-            self.faceNormals = scipy.dot(t[:3, :3], self.faceNormals.T).T
+            self.faceNormals = numpy.dot(t[:3, :3], self.faceNormals.T).T
         if self.faceBarycenters is not None:
             self.faceBarycenters = transform3D.transformAffine(self.faceBarycenters, t)
 
@@ -579,19 +579,19 @@ class SimpleMesh(object):
 
 
 def mag(x):
-    return scipy.sqrt((x * x).sum())
+    return numpy.sqrt((x * x).sum())
 
 
 def normalise(x):
-    return x / scipy.sqrt((x * x).sum())
+    return x / numpy.sqrt((x * x).sum())
 
 
 def mag2(x):
-    return scipy.sqrt((x * x).sum(1))
+    return numpy.sqrt((x * x).sum(1))
 
 
 def normalise2(x):
-    return x / scipy.sqrt((x * x).sum(1))[:, scipy.newaxis]
+    return x / numpy.sqrt((x * x).sum(1))[:, numpy.newaxis]
 
 
 def _sortEigDesc(l, e):
@@ -600,20 +600,20 @@ def _sortEigDesc(l, e):
     the columns of e
     """
     lSortI = abs(l).argsort()[::-1]
-    lSort = scipy.array([l[i] for i in lSortI])
-    eSort = scipy.array([e[:, i] for i in lSortI]).T
+    lSort = numpy.array([l[i] for i in lSortI])
+    eSort = numpy.array([e[:, i] for i in lSortI]).T
 
     return lSort, eSort
 
 
 def normals_is_out(x, xn):
-    # check_point = scipy.array([1e6, 1e6, 1e6])
+    # check_point = numpy.array([1e6, 1e6, 1e6])
     check_point = x.max(0) * 10.0
 
     # find closest point to check_point
-    c_i = scipy.argmin(((x - check_point) ** 2.0).sum(1))
+    c_i = numpy.argmin(((x - check_point) ** 2.0).sum(1))
 
     # vector to check point
     v_check_point = check_point - x[c_i]
 
-    return scipy.dot(v_check_point, xn[c_i]) > 0.0
+    return numpy.dot(v_check_point, xn[c_i]) > 0.0

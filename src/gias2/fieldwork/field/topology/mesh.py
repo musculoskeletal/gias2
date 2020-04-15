@@ -17,7 +17,7 @@ import json
 import os
 import shelve
 
-from scipy import linspace, sort
+from numpy import linspace, sort
 
 from gias2.fieldwork.field.topology import element_types
 

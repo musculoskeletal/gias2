@@ -14,7 +14,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import copy
 
-import scipy
+import numpy
 from scipy.optimize import fmin
 
 from gias2.common import geoprimitives
@@ -28,7 +28,7 @@ from gias2.registration import alignment_fitting
 
 
 def normaliseVector(v):
-    return v / scipy.linalg.norm(v)
+    return v / numpy.linalg.norm(v)
 
 
 def _makeLandmarkObj(targ, evaluator):
@@ -63,7 +63,7 @@ def alignMeshParametersRigid(gFields, targetGF=None, retTransforms=False):
     Ts = []
     for i in range(len(gFields)):
         CoMTrans = targetCoM - gFields[i].calc_CoM()
-        x0 = scipy.hstack([CoMTrans, 0, 0, 0])
+        x0 = numpy.hstack([CoMTrans, 0, 0, 0])
         # fit nodes
         tOpt = alignment_fitting.fitRigid(XNodes[i], targNodes, xtol=1e-6, verbose=1)[0]
         # fit surface data
@@ -71,7 +71,7 @@ def alignMeshParametersRigid(gFields, targetGF=None, retTransforms=False):
 
         # apply transform to gfield parameters
         gFieldNodes = gFields[i].get_field_parameters().squeeze().T
-        alignedParams.append(transform3D.transformRigid3DAboutCoM(gFieldNodes, tOpt).T[:, :, scipy.newaxis])
+        alignedParams.append(transform3D.transformRigid3DAboutCoM(gFieldNodes, tOpt).T[:, :, numpy.newaxis])
         Ts.append(tOpt)
 
     if retTransforms:
@@ -107,14 +107,14 @@ def alignMeshParametersProcrustes(gFields, targetGF=None, retTransforms=False):
 
         # apply transform to gfield parameters
         gFieldNodes = gFields[i].get_field_parameters().squeeze().T
-        alignedParams.append(transform3D.transformRigidScale3DAboutCoM(gFieldNodes, tOpt).T[:, :, scipy.newaxis])
+        alignedParams.append(transform3D.transformRigidScale3DAboutCoM(gFieldNodes, tOpt).T[:, :, numpy.newaxis])
         sizes.append(tOpt[-1])
         Ts.append(tOpt)
 
     if retTransforms:
-        return alignedParams, scipy.array(sizes), Ts
+        return alignedParams, numpy.array(sizes), Ts
     else:
-        return alignedParams, scipy.array(sizes)
+        return alignedParams, numpy.array(sizes)
 
 
 def alignModelLandmarksLinScale(gf, landmarks, weights=1.0,
@@ -136,7 +136,7 @@ def alignModelLandmarksLinScale(gf, landmarks, weights=1.0,
     GFParamsCallback : function [optional]
         If defined, function is called after each registration stage with
     fminargs : dict [optional]
-        A dictionary of keyword arguments for scipy.optimize.fmin.
+        A dictionary of keyword arguments for numpy.optimize.fmin.
 
     Returns
     -------
@@ -169,7 +169,7 @@ def alignModelLandmarksLinScale(gf, landmarks, weights=1.0,
         pT = transform3D.transformRigid3DAboutP(
             p0, x, CoM0
         ).T
-        se = scipy.array([f(pT) for f in ldObjs])
+        se = numpy.array([f(pT) for f in ldObjs])
         sse = (se * weights).sum()
         return sse
 
@@ -178,29 +178,29 @@ def alignModelLandmarksLinScale(gf, landmarks, weights=1.0,
         pT = transform3D.transformRigidScale3DAboutP(
             p0, x, CoM0
         ).T
-        se = scipy.array([f(pT) for f in ldObjs])
+        se = numpy.array([f(pT) for f in ldObjs])
         sse = (se * weights).sum()
         return sse
 
     P0 = gf.get_field_parameters()
     n0 = ldObjs[0](P0)
-    x01 = scipy.hstack([targetLandmarks[0] - n0, 0, 0, 0])
+    x01 = numpy.hstack([targetLandmarks[0] - n0, 0, 0, 0])
 
     # rigid reg
     xOpt1 = fmin(obj1, x01, **fminargs)
     sse1 = obj1(xOpt1)
     pT = transform3D.transformRigid3DAboutP(
         p0, xOpt1, CoM0
-    ).T[:, :, scipy.newaxis]
+    ).T[:, :, numpy.newaxis]
     if GFParamsCallback is not None:
         GFParamsCallback(pT)
     # rigid + isotropic scale
-    x02 = scipy.hstack([xOpt1, 1.0])
+    x02 = numpy.hstack([xOpt1, 1.0])
     xOpt2 = fmin(obj2, x02, **fminargs)
     sse2 = obj2(xOpt2)
     pT = transform3D.transformRigidScale3DAboutP(
         p0, xOpt2, CoM0
-    ).T[:, :, scipy.newaxis]
+    ).T[:, :, numpy.newaxis]
     if GFParamsCallback is not None:
         GFParamsCallback(pT)
     # rigid + orthogonal scale
@@ -241,7 +241,7 @@ def alignModelLandmarksPC(gf, landmarks, pc, pcs, weights=1.0,
     mwn : float [optional]
         Mahalanobis distance penalty weight for the rigid + all pcs stage
     fminargs : dict [optional]
-        A dictionary of keyword arguments for scipy.optimize.fmin.
+        A dictionary of keyword arguments for numpy.optimize.fmin.
 
     Returns
     -------
@@ -264,7 +264,7 @@ def alignModelLandmarksPC(gf, landmarks, pc, pcs, weights=1.0,
 
     def obj(P):
         P3 = P.reshape((3, -1))
-        se = scipy.array([f(P3) for f in ldObjs])
+        se = numpy.array([f(P3) for f in ldObjs])
         # print se
         sse = (se * weights).sum()
         return sse
@@ -285,10 +285,10 @@ def alignModelLandmarksPC(gf, landmarks, pc, pcs, weights=1.0,
 
     P0 = pc.getMean().reshape((3, -1))
     n0 = ldObjs[0](P0)
-    x0 = scipy.hstack([targetLandmarks[0] - n0, 0, 0, 0])
+    x0 = numpy.hstack([targetLandmarks[0] - n0, 0, 0, 0])
 
     # targetCoM = (targetHC + ((targetMEC+targetLEC)/2.0))/2.0
-    # x0 = scipy.hstack([targetCoM - sourceGF.calc_CoM(), 0, 0, 0])
+    # x0 = numpy.hstack([targetCoM - sourceGF.calc_CoM(), 0, 0, 0])
 
     rigidT, rigidP = pcFitter.rigidFit(obj, x0=x0)
     sourceGF.set_field_parameters(rigidP.reshape((3, -1, 1)))
@@ -319,9 +319,9 @@ def alignModelLandmarksPC(gf, landmarks, pc, pcs, weights=1.0,
 def createFemurACS(head, mc, lc):
     o = (mc + lc) / 2.0
     z = normaliseVector(head - o)
-    y = normaliseVector(scipy.cross(z, (o - lc)))
-    x = normaliseVector(scipy.cross(y, z))
-    u = scipy.array([o, o + x, o + y, o + z])
+    y = normaliseVector(numpy.cross(z, (o - lc)))
+    x = normaliseVector(numpy.cross(y, z))
+    u = numpy.array([o, o + x, o + y, o + z])
     return u
 
 
@@ -334,12 +334,12 @@ def createFemurACSISB(head, mc, lc, side='left'):
     # y - origin to head
     y = normaliseVector(head - o)
     # z - right in plane of head, mc, lc
-    n1 = normaliseVector(scipy.cross(mc - head, lc - head))
-    z = normaliseVector(scipy.cross(n1, y))
+    n1 = normaliseVector(numpy.cross(mc - head, lc - head))
+    z = normaliseVector(numpy.cross(n1, y))
     if side == 'right':
         z *= -1.0
     # x - anteriorly 
-    x = normaliseVector(scipy.cross(y, z))
+    x = normaliseVector(numpy.cross(y, z))
     return o, x, y, z
 
 
@@ -352,22 +352,22 @@ def createFemurACSOpenSim(head, mc, lc, side='left'):
     # y - origin to head
     y = normaliseVector(head - o_)
     # z - right in plane of head, mc, lc
-    n1 = normaliseVector(scipy.cross(mc - head, lc - head))
-    z = normaliseVector(scipy.cross(n1, y))
+    n1 = normaliseVector(numpy.cross(mc - head, lc - head))
+    z = normaliseVector(numpy.cross(n1, y))
     # if left, z should point towards to MC
     if side == 'left':
-        if scipy.dot(z, mc - o_) < 0.0:
+        if numpy.dot(z, mc - o_) < 0.0:
             z *= -1.0
 
     # if right, z should point towards LC
     elif side == 'right':
-        if scipy.dot(z, lc - o_) < 0.0:
+        if numpy.dot(z, lc - o_) < 0.0:
             z *= -1.0
     else:
         raise ValueError('Invalid side value {}'.format(side))
 
     # x - anteriorly 
-    x = normaliseVector(scipy.cross(y, z))
+    x = normaliseVector(numpy.cross(y, z))
     return head, x, y, z
 
 
@@ -378,21 +378,21 @@ def alignAnatomicFemur(X, head, mc, lc, returnT=False):
 
     o = (mc + lc) / 2.0
     z = normaliseVector(head - o)
-    y = normaliseVector(scipy.cross(z, (o - lc)))
-    x = normaliseVector(scipy.cross(y, z))
+    y = normaliseVector(numpy.cross(z, (o - lc)))
+    x = normaliseVector(numpy.cross(y, z))
 
     # o = X.mean(0)
 
-    u = scipy.array([o, o + x, o + y, o + z])
+    u = numpy.array([o, o + x, o + y, o + z])
 
-    ut = scipy.array([[0, 0, 0], \
+    ut = numpy.array([[0, 0, 0], \
                       [1, 0, 0], \
                       [0, 1, 0], \
                       [0, 0, 1]])
 
     t = transform3D.directAffine(u, ut)
     if t.shape == (3, 4):
-        t = scipy.vstack([t, [0, 0, 0, 1]])
+        t = numpy.vstack([t, [0, 0, 0, 1]])
 
     if returnT:
         return transform3D.transformAffine(X, t), t
@@ -421,9 +421,9 @@ def alignFemurLandmarksRigidScale(gf, landmarks, t0=None, r0=None, s0=None):
         sourceLandmarks.append(evaluator(gf.get_field_parameters()))
         targetLandmarks.append(ldTarg)
 
-    targetLandmarks = scipy.array(targetLandmarks)
-    sourceLandmarks = scipy.array(sourceLandmarks)
-    T0 = scipy.zeros(7)
+    targetLandmarks = numpy.array(targetLandmarks)
+    sourceLandmarks = numpy.array(sourceLandmarks)
+    T0 = numpy.zeros(7)
     if s0 is None:
         T0[6] = 1.0
     else:
@@ -478,11 +478,11 @@ def alignFemurLandmarksPC(gf, pc, landmarks, GFParamsCallback=None, mw0=1.0, mwn
 
     def obj(p):
         P = p.reshape((3, -1))
-        x = scipy.array([P[:, l] for l in landmarkNodes])
+        x = numpy.array([P[:, l] for l in landmarkNodes])
         if hasFHC:
             headC = geoprimitives.fitSphereAnalytic(P[:, headNodes].T)[0]
-            x = scipy.vstack([x, headC])
-        # e = scipy.sqrt((((x - targetLandmarks)**2.0).sum(1)).mean())
+            x = numpy.vstack([x, headC])
+        # e = numpy.sqrt((((x - targetLandmarks)**2.0).sum(1)).mean())
         sse = (((x - targetLandmarks) ** 2.0).sum(1)).sum()
         return sse
 
@@ -492,10 +492,10 @@ def alignFemurLandmarksPC(gf, pc, landmarks, GFParamsCallback=None, mw0=1.0, mwn
 
     P0 = pc.getMean().reshape((3, -1))
     n0 = P0[:, landmarkNodes[0]]
-    x0 = scipy.hstack([targetLandmarks[0] - n0, 0, 0, 0])
+    x0 = numpy.hstack([targetLandmarks[0] - n0, 0, 0, 0])
 
     # targetCoM = (targetHC + ((targetMEC+targetLEC)/2.0))/2.0
-    # x0 = scipy.hstack([targetCoM - sourceGF.calc_CoM(), 0, 0, 0])
+    # x0 = numpy.hstack([targetCoM - sourceGF.calc_CoM(), 0, 0, 0])
 
     rigidT, rigidP = pcFitter.rigidFit(obj, x0=x0)
     sourceGF.set_field_parameters(rigidP.reshape((3, -1, 1)))
@@ -525,21 +525,21 @@ def alignAnatomicFemurOrthoload(X, head, p1, p2, lcdorsal, mcdorsal, returnT=Fal
 
     o = head
     z = normaliseVector(p1 - p2)
-    y = normaliseVector(scipy.cross(z, (lcdorsal - mcdorsal)))
-    x = normaliseVector(scipy.cross(y, z))
+    y = normaliseVector(numpy.cross(z, (lcdorsal - mcdorsal)))
+    x = normaliseVector(numpy.cross(y, z))
 
     # o = X.mean(0)
 
-    u = scipy.array([o, o + x, o + y, o + z])
+    u = numpy.array([o, o + x, o + y, o + z])
 
-    ut = scipy.array([[0, 0, 0], \
+    ut = numpy.array([[0, 0, 0], \
                       [1, 0, 0], \
                       [0, 1, 0], \
                       [0, 0, 1]])
 
     t = transform3D.directAffine(u, ut)
     if t.shape == (3, 4):
-        t = scipy.vstack([t, [0, 0, 0, 1]])
+        t = numpy.vstack([t, [0, 0, 0, 1]])
 
     if returnT:
         return transform3D.transformAffine(X, t), t
@@ -560,7 +560,7 @@ def alignFemurMeshParametersOrtholoadSingle(femurModel):
 
     o = FM.measurements['head_diameter'].centre
     p1 = FM.shaftAxis.a
-    p2 = scipy.array([0, 0, 0])
+    p2 = numpy.array([0, 0, 0])
 
     # condyle dorsal vector
     lcondX = femurModel.evaluate_geometric_field_in_elements([10, 10],
@@ -573,7 +573,7 @@ def alignFemurMeshParametersOrtholoadSingle(femurModel):
     alignedParams, T = alignAnatomicFemurOrthoload(femurModel.get_field_parameters().squeeze().T,
                                                    o, p1, p2, mcDorsal, lcDorsal, returnT=True)
 
-    alignedParams = alignedParams.T[:, :, scipy.newaxis]
+    alignedParams = alignedParams.T[:, :, numpy.newaxis]
     return alignedParams, T
 
 
@@ -587,7 +587,7 @@ def alignFemurMeshParametersAnatomicSingle(g):
     mc = g.calc_CoM_2D(d, elem=fmd.assemblyElementsNumbers['medialcondyle'])
 
     alignedParams, T = alignAnatomicFemur(g.get_field_parameters().squeeze().T, head, mc, lc, returnT=True)
-    alignedParams = alignedParams.T[:, :, scipy.newaxis]
+    alignedParams = alignedParams.T[:, :, numpy.newaxis]
     return alignedParams, T
 
 
@@ -602,7 +602,7 @@ def alignFemurMeshParametersAnatomic(Gs):
         lc = g.calc_CoM_2D(d, elem=fmd.assemblyElementsNumbers['lateralcondyle'])
         mc = g.calc_CoM_2D(d, elem=fmd.assemblyElementsNumbers['medialcondyle'])
         alignedParams.append(
-            alignment_analytic.alignAnatomic(g.get_field_parameters().squeeze().T, head, mc, lc).T[:, :, scipy.newaxis])
+            alignment_analytic.alignAnatomic(g.get_field_parameters().squeeze().T, head, mc, lc).T[:, :, numpy.newaxis])
 
     return alignedParams
 
@@ -619,10 +619,10 @@ def createPelvisACSISB(lasis, rasis, lpsis, rpsis):
     # right
     z = normaliseVector(rasis - lasis)
     # anterior, in plane of op, rasis, lasis
-    n1 = normaliseVector(scipy.cross(rasis - op, lasis - op))
-    x = normaliseVector(scipy.cross(n1, z))
+    n1 = normaliseVector(numpy.cross(rasis - op, lasis - op))
+    x = normaliseVector(numpy.cross(n1, z))
     # superior
-    y = normaliseVector(scipy.cross(z, x))
+    y = normaliseVector(numpy.cross(z, x))
     return oa, x, y, z
 
 
@@ -630,17 +630,17 @@ def createPelvisACSAPP(lasis, rasis, lpt, rpt):
     """Calculate the anterior pelvic plane anatomic
     coordinate system: x-right, y-anterior, z-superior
     """
-    # lasis = scipy.array(lasis)
-    # rasis = scipy.array(rasis)
-    # lpt = scipy.array(lpt)
-    # rpt = scipy.array(rpt)
+    # lasis = numpy.array(lasis)
+    # rasis = numpy.array(rasis)
+    # lpt = numpy.array(lpt)
+    # rpt = numpy.array(rpt)
 
     o = 0.5 * (lasis + rasis)
     pt = 0.5 * (lpt + rpt)
     x = normaliseVector(rasis - lasis)
-    y = normaliseVector(scipy.cross(x, pt - o))
-    # y = normaliseVector(scipy.cross(x, lpt-lasis))
-    z = normaliseVector(scipy.cross(x, y))
+    y = normaliseVector(numpy.cross(x, pt - o))
+    # y = normaliseVector(numpy.cross(x, lpt-lasis))
+    z = normaliseVector(numpy.cross(x, y))
     return o, x, y, z
 
 
@@ -648,20 +648,20 @@ def alignAnatomicPelvis(X, lasis, rasis, lpsis, rpsis, returnT=False):
     # oa = ( lasis + rasis )/2.0
     # op = ( lpsis + lpsis )/2.0
     # z = normaliseVector( rasis - lasis )
-    # y = normaliseVector( scipy.cross( z, op - rasis ) )
-    # x = normaliseVector( scipy.cross( y, z ) )
+    # y = normaliseVector( numpy.cross( z, op - rasis ) )
+    # x = normaliseVector( numpy.cross( y, z ) )
 
     o, x, y, z = createPelvisACSISB(lasis, rasis, lpsis, rpsis)
 
-    u = scipy.array([o, o + x, o + y, o + z])
-    ut = scipy.array([[0, 0, 0], \
+    u = numpy.array([o, o + x, o + y, o + z])
+    ut = numpy.array([[0, 0, 0], \
                       [1, 0, 0], \
                       [0, 1, 0], \
                       [0, 0, 1]])
 
     t = transform3D.directAffine(u, ut)
     if t.shape == (3, 4):
-        t = scipy.vstack([t, [0, 0, 0, 1]])
+        t = numpy.vstack([t, [0, 0, 0, 1]])
 
     if returnT:
         return transform3D.transformAffine(X, t), t
@@ -679,28 +679,28 @@ def alignAnatomicPelvisAPP(X, lasis, rasis, lpt, rpt, returnT=False):
     normal to the APP, and the z axis is normal to the x and y axes. The
     origin is the midpoint between LASIS and RASIS.
     """
-    # lasis = scipy.array(lasis)
-    # rasis = scipy.array(rasis)
-    # lpt = scipy.array(lpt)
-    # rpt = scipy.array(rpt)
+    # lasis = numpy.array(lasis)
+    # rasis = numpy.array(rasis)
+    # lpt = numpy.array(lpt)
+    # rpt = numpy.array(rpt)
 
     # o = 0.5*(lasis+rasis) 
     # pt = 0.5*(lpt + rpt)
     # x = normaliseVector(rasis-lasis)
-    # y = normaliseVector(scipy.cross(x, pt-o))
-    # z = normaliseVector(scipy.cross(x, y))
+    # y = normaliseVector(numpy.cross(x, pt-o))
+    # z = normaliseVector(numpy.cross(x, y))
 
     o, x, y, z = createPelvisACSAPP(lasis, rasis, lpt, rpt)
 
-    u = scipy.array([o, o + x, o + y, o + z])
-    ut = scipy.array([[0, 0, 0],
+    u = numpy.array([o, o + x, o + y, o + z])
+    ut = numpy.array([[0, 0, 0],
                       [1, 0, 0],
                       [0, 1, 0],
                       [0, 0, 1]])
 
     t = transform3D.directAffine(u, ut)
     if t.shape == (3, 4):
-        t = scipy.vstack([t, [0, 0, 0, 1]])
+        t = numpy.vstack([t, [0, 0, 0, 1]])
 
     if returnT:
         return transform3D.transformAffine(X, t), t
@@ -710,18 +710,18 @@ def alignAnatomicPelvisAPP(X, lasis, rasis, lpt, rpt, returnT=False):
 
 def alignAnatomicLH(X, lasis, lpsis, FHC):
     y = normaliseVector(lpsis - FHC)
-    x = normaliseVector(scipy.cross(y, lasis - FHC))
-    z = normaliseVector(scipy.cross(x, y))
+    x = normaliseVector(numpy.cross(y, lasis - FHC))
+    z = normaliseVector(numpy.cross(x, y))
 
-    u = scipy.array([FHC, FHC + x, FHC + y, FHC + z])
-    ut = scipy.array([[0, 0, 0], \
+    u = numpy.array([FHC, FHC + x, FHC + y, FHC + z])
+    ut = numpy.array([[0, 0, 0], \
                       [1, 0, 0], \
                       [0, 1, 0], \
                       [0, 0, 1]])
 
     t = transform3D.directAffine(u, ut)
     if t.shape == (3, 4):
-        t = scipy.vstack([t, [0, 0, 0, 1]])
+        t = numpy.vstack([t, [0, 0, 0, 1]])
     return transform3D.transformAffine(X, t)
 
 
@@ -760,7 +760,7 @@ def alignLHMeshParametersAnatomic(Gs):
         acetEP = g.evaluate_geometric_field_in_elements(d, LHAcetabulumElements).T
         FHC, FHRadius = alignment_fitting.fitSphere(acetEP)
         alignedParams.append(
-            alignAnatomicLH(g.get_field_parameters().squeeze().T, lasis, lpsis, FHC).T[:, :, scipy.newaxis])
+            alignAnatomicLH(g.get_field_parameters().squeeze().T, lasis, lpsis, FHC).T[:, :, numpy.newaxis])
 
     return alignedParams
 
@@ -774,7 +774,7 @@ def alignWholePelvisMeshParametersAnatomicSingle(g):
 
     alignedParams, t = alignAnatomicPelvis(g.get_field_parameters().squeeze().T, lasis, rasis, lpsis, rpsis,
                                            returnT=True)
-    alignedParams = alignedParams.T[:, :, scipy.newaxis]
+    alignedParams = alignedParams.T[:, :, numpy.newaxis]
 
     return alignedParams, t
 
@@ -802,7 +802,7 @@ def alignWholePelvisMeshParametersAnatomicAPPSingle(g):
                                               lasis, rasis, lpt, rpt,
                                               returnT=True
                                               )
-    alignedParams = alignedParams.T[:, :, scipy.newaxis]
+    alignedParams = alignedParams.T[:, :, numpy.newaxis]
 
     return alignedParams, t
 
@@ -836,7 +836,7 @@ def alignPelvisLandmarksPC(gf, pc, landmarks, weights=1.0, GFParamsCallback=None
 
     def obj(P):
         P3 = P.reshape((3, -1))
-        se = scipy.array([f(P3) for f in ldObjs])
+        se = numpy.array([f(P3) for f in ldObjs])
         # print se
         sse = (se * weights).sum()
         return sse
@@ -847,10 +847,10 @@ def alignPelvisLandmarksPC(gf, pc, landmarks, weights=1.0, GFParamsCallback=None
 
     P0 = pc.getMean().reshape((3, -1))
     n0 = ldObjs[0](P0)
-    x0 = scipy.hstack([targetLandmarks[0] - n0, 0, 0, 0])
+    x0 = numpy.hstack([targetLandmarks[0] - n0, 0, 0, 0])
 
     # targetCoM = (targetHC + ((targetMEC+targetLEC)/2.0))/2.0
-    # x0 = scipy.hstack([targetCoM - sourceGF.calc_CoM(), 0, 0, 0])
+    # x0 = numpy.hstack([targetCoM - sourceGF.calc_CoM(), 0, 0, 0])
 
     rigidT, rigidP = pcFitter.rigidFit(obj, x0=x0)
     sourceGF.set_field_parameters(rigidP.reshape((3, -1, 1)))
@@ -885,8 +885,8 @@ def createTibiaFibulaACSGroodSuntay(MM, LM, MC, LC, side='left'):
     z = normaliseVector(IC - IM)
     if side == 'right':
         z *= -1.0
-    y = normaliseVector(scipy.cross(z, MC - LC))
-    x = normaliseVector(scipy.cross(y, z))
+    y = normaliseVector(numpy.cross(z, MC - LC))
+    x = normaliseVector(numpy.cross(y, z))
 
     return IC, x, y, z
 
@@ -901,10 +901,10 @@ def createTibiaFibulaACSISB(MM, LM, MC, LC, side='left'):
     y = normaliseVector(IC - IM)
 
     # anteriorly, normal to plane of IM, LC and MC
-    x = normaliseVector(scipy.cross(LC - IM, MC - IM))
+    x = normaliseVector(numpy.cross(LC - IM, MC - IM))
 
     # right
-    z = normaliseVector(scipy.cross(x, y))
+    z = normaliseVector(numpy.cross(x, y))
     if side == 'right':
         z *= -1.0
         x *= -1.0
@@ -922,10 +922,10 @@ def createTibiaFibulaACSOpenSim(MM, LM, MC, LC, side='left'):
     y = normaliseVector(IC - IM)
 
     # anteriorly, normal to plane of IM, LC and MC
-    x = normaliseVector(scipy.cross(LC - IM, MC - IM))
+    x = normaliseVector(numpy.cross(LC - IM, MC - IM))
 
     # right
-    z = normaliseVector(scipy.cross(x, y))
+    z = normaliseVector(numpy.cross(x, y))
     if side == 'right':
         z *= -1.0
         x *= -1.0
@@ -938,20 +938,20 @@ def alignAnatomicTibiaFibulaGroodSuntay(X, MM, LM, MC, LC, returnT=False):
     # IM = (MM + LM)/2.0
 
     # z = normaliseVector(IC - IM)
-    # y = normaliseVector(scipy.cross(z, MC-LC))
-    # x = normaliseVector(scipy.cross(y, z))
+    # y = normaliseVector(numpy.cross(z, MC-LC))
+    # x = normaliseVector(numpy.cross(y, z))
 
     IC, x, y, z = createTibiaFibulaACSGroodSuntay(MM, LM, MC, LC)
 
-    u = scipy.array([IC, IC + x, IC + y, IC + z])
-    ut = scipy.array([[0, 0, 0], \
+    u = numpy.array([IC, IC + x, IC + y, IC + z])
+    ut = numpy.array([[0, 0, 0], \
                       [1, 0, 0], \
                       [0, 1, 0], \
                       [0, 0, 1]])
 
     t = transform3D.directAffine(u, ut)
     if t.shape == (3, 4):
-        t = scipy.vstack([t, [0, 0, 0, 1]])
+        t = numpy.vstack([t, [0, 0, 0, 1]])
     if returnT:
         return transform3D.transformAffine(X, t), t
     else:
@@ -975,7 +975,7 @@ def alignTibiaFibulaLandmarksPC(gf, pc, landmarks, weights=1.0, GFParamsCallback
 
     def obj(P):
         P3 = P.reshape((3, -1))
-        se = scipy.array([f(P3) for f in ldObjs])
+        se = numpy.array([f(P3) for f in ldObjs])
         # print se
         sse = (se * weights).sum()
         return sse
@@ -986,10 +986,10 @@ def alignTibiaFibulaLandmarksPC(gf, pc, landmarks, weights=1.0, GFParamsCallback
 
     P0 = pc.getMean().reshape((3, -1))
     n0 = ldObjs[0](P0)
-    x0 = scipy.hstack([targetLandmarks[0] - n0, 0, 0, 0])
+    x0 = numpy.hstack([targetLandmarks[0] - n0, 0, 0, 0])
 
     # targetCoM = (targetHC + ((targetMEC+targetLEC)/2.0))/2.0
-    # x0 = scipy.hstack([targetCoM - sourceGF.calc_CoM(), 0, 0, 0])
+    # x0 = numpy.hstack([targetCoM - sourceGF.calc_CoM(), 0, 0, 0])
 
     rigidT, rigidP = pcFitter.rigidFit(obj, x0=x0)
     sourceGF.set_field_parameters(rigidP.reshape((3, -1, 1)))
@@ -1020,8 +1020,8 @@ def createPatellaACSTest(sup, inf, lat, side='left'):
     """
     o = (sup + inf) / 2.0
     y = normaliseVector(sup - inf)
-    x = normaliseVector(scipy.cross(lat - inf, sup - inf))
-    z = normaliseVector(scipy.cross(x, y))
+    x = normaliseVector(numpy.cross(lat - inf, sup - inf))
+    z = normaliseVector(numpy.cross(x, y))
     if side == 'right':
         z *= -1.0
     return o, x, y, z

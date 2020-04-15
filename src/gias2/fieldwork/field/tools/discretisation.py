@@ -18,10 +18,8 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
 
-import scipy
+import numpy
 
-
-# import pdb
 
 def discretiseRegularXi(GF, D):
     """
@@ -60,7 +58,7 @@ def discretiseRegularGeoD(d, elemEval):
             pointsXi = _subdivideQuad2D(pointsXiInit, elemEval, d2)
         elif elemEval.element.dimensions == 3:
             # initial points = 4 corners
-            pointsXiInit = scipy.array([[0.0, 0.0, 0.0],
+            pointsXiInit = numpy.array([[0.0, 0.0, 0.0],
                                         [1.0, 0.0, 0.0],
                                         [0.0, 1.0, 0.0],
                                         [1.0, 1.0, 0.0],
@@ -90,7 +88,7 @@ def discretiseRegularGeoD(d, elemEval):
     else:
         raise TypeError('unrecognised element type: ' + elemEval.elemType)
 
-    return scipy.array(list(pointsXi))
+    return numpy.array(list(pointsXi))
 
 
 def _subdivideQuad2D(cornerXi, elemEval, maxDistanceSquared):
@@ -165,8 +163,8 @@ def _checkQuad2D(corners, maxDistanceSquared):
 
     # a-b, b-d, d-c, c-a
     a, b, c, d = corners
-    X1 = scipy.array([a, b, d, c])
-    X2 = scipy.array([b, d, c, a])
+    X1 = numpy.array([a, b, d, c])
+    X2 = numpy.array([b, d, c, a])
 
     edgeDistsSquared = ((X1 - X2) ** 2.0).sum(1)
 
@@ -194,10 +192,7 @@ def _checkQuad2D(corners, maxDistanceSquared):
 
 def _subdivideQuad3D(cornerXi, elemEval, maxDistanceSquared):
     def nodiv(cornerXi, elemEval, maxDistanceSquared):
-        try:
-            return set([tuple(p) for p in cornerXi])
-        except TypeError:
-            pdb.set_trace()
+        return set([tuple(p) for p in cornerXi])
 
     def xdiv(cornerXi, elemEval, maxDistanceSquared):
         # subdivide
@@ -406,8 +401,8 @@ def _checkTri2D(corners, maxDistanceSquared):
 
     # a-b, b-c, c-a
     a, b, c = corners
-    X1 = scipy.array([a, b, c])
-    X2 = scipy.array([b, c, a])
+    X1 = numpy.array([a, b, c])
+    X2 = numpy.array([b, c, a])
 
     edgeDistsSquared = ((X1 - X2) ** 2.0).sum(1)
 

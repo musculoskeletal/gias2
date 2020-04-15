@@ -12,7 +12,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
 
-import scipy
+import numpy
 from mayavi.core.ui.mayavi_scene import MayaviScene
 from mayavi.tools.mlab_scene_model import MlabSceneModel
 from traits.api import HasTraits, Button, Str, List, Instance
@@ -260,7 +260,7 @@ class Viewer(HasTraits):
             points = self.GF.get_all_point_positions().T
             self.sceneObjectGFPoints = self.scene.mlab.points3d(
                 points[0], points[1], points[2],
-                scipy.arange(points.shape[1]),
+                numpy.arange(points.shape[1]),
                 mode='sphere', scale_mode='none',
                 scale_factor=self.nodeScaleFactor,
                 name=self.GF.name
@@ -275,10 +275,10 @@ class Viewer(HasTraits):
             allPoints = P.T
             points = []
             for i, p in enumerate(allPoints):
-                if scipy.mod(i, self.curveD[0]) != 0 or i == 0:
+                if numpy.mod(i, self.curveD[0]) != 0 or i == 0:
                     points.append(p)
 
-            points = scipy.transpose(points)
+            points = numpy.transpose(points)
 
             nodes = c.get_all_point_positions().T
             self.sceneObjectCurves.append(
@@ -351,10 +351,10 @@ class Viewer(HasTraits):
             # get node number of 1st picked point
             p0 = pickedPoints[0]
             nodeCoords = self.MB.GF.get_all_point_positions()
-            nodeN = scipy.sqrt(((nodeCoords - p0) ** 2.0).sum(1)).argmin()
+            nodeN = numpy.sqrt(((nodeCoords - p0) ** 2.0).sum(1)).argmin()
 
             # change its coordinates to the 2nd picked point
-            newParams = pickedPoints[1][:, scipy.newaxis]
+            newParams = pickedPoints[1][:, numpy.newaxis]
 
             print('moving node ' + str(nodeN) + ' to ' + str(newParams))
             self.MB.modifyPoint(nodeN, newParams)
@@ -387,7 +387,7 @@ class MeshBuilder(object):
         self.simplemesh = mesh
         self.data = self.simplemesh.v
         self.dataScalar = scalar
-        self.crawler = splinet_tools.pointCrawlerData(self.data)
+        self.crawler = spline_tools.pointCrawlerData(self.data)
 
     def loadBoundaryCurve(self, gf, ens, mesh):
         self.boundaryCurves.append(geometric_field.load_geometric_field(gf, ens, mesh))
@@ -428,13 +428,13 @@ class MeshBuilder(object):
         self.fitter(self.GF)
 
     def addElementByPoints(self, e, points):
-        p = scipy.array(points).transpose()[:, :, scipy.newaxis]
+        p = numpy.array(points).transpose()[:, :, numpy.newaxis]
         if self.GF.add_element_with_parameters(e, p):
             print('element added')
         return
 
     def modifyPoint(self, pointN, newParams):
-        # ~ p = scipy.array( newParams[0] )[:,scipy.newaxis]
+        # ~ p = numpy.array( newParams[0] )[:,numpy.newaxis]
         p = newParams
         self.GF.modify_geometric_point(pointN, p)
         return
@@ -442,20 +442,20 @@ class MeshBuilder(object):
     def movePoint(self, pointN, move):
         p0 = self.GF.get_point_position(pointN)
         p1 = p0 + move
-        self.GF.modify_geometric_point(pointN, p1[:, scipy.newaxis])
+        self.GF.modify_geometric_point(pointN, p1[:, numpy.newaxis])
         return
 
     def addCurve(self, curve, picked_points):
 
         # check for close points to existing geometric points
         proxTol = 0.5
-        picked_points = scipy.array(picked_points)
-        gp = scipy.array(self.GF.get_all_point_positions())
+        picked_points = numpy.array(picked_points)
+        gp = numpy.array(self.GF.get_all_point_positions())
         if len(gp) > 0:
             for i, p in enumerate(picked_points):
                 dist = ((gp - p) ** 2.0).sum(1)
                 if dist.min() <= proxTol:
-                    picked_points[i] = gp[scipy.argmin(dist)]
+                    picked_points[i] = gp[numpy.argmin(dist)]
         try:
             pathPoints, pathCloud = self.crawler.trace(picked_points[0], picked_points[1], debug=0)
         except RuntimeError:
@@ -467,17 +467,17 @@ class MeshBuilder(object):
             # assume lagrange
             if len(pathPoints) > nNodes:
                 # put initial nodes along path
-                p0 = scipy.zeros((3, nNodes))
+                p0 = numpy.zeros((3, nNodes))
                 for i in range(nNodes):
                     p0[:, i] = pathPoints[round((i / float(nNodes - 1)) * (len(pathPoints) - 1))]
 
-                p0 = p0[:, :, scipy.newaxis]
+                p0 = p0[:, :, numpy.newaxis]
             else:
                 # evenly distribute nodes between 2 ends, ignoring path         
-                p0x = scipy.linspace(picked_points[0][0], picked_points[1][0], nNodes)
-                p0y = scipy.linspace(picked_points[0][1], picked_points[1][1], nNodes)
-                p0z = scipy.linspace(picked_points[0][2], picked_points[1][2], nNodes)
-                p0 = scipy.array([p0x, p0y, p0z])[:, :, scipy.newaxis]
+                p0x = numpy.linspace(picked_points[0][0], picked_points[1][0], nNodes)
+                p0y = numpy.linspace(picked_points[0][1], picked_points[1][1], nNodes)
+                p0z = numpy.linspace(picked_points[0][2], picked_points[1][2], nNodes)
+                p0 = numpy.array([p0x, p0y, p0z])[:, :, numpy.newaxis]
 
             curve.set_field_parameters(p0)
 
@@ -499,6 +499,6 @@ class MeshBuilder(object):
             # ~ print 'fitted curve nodes:', fittedPoints
             # add points to geometric field
             for p in curve.get_all_point_positions():
-                self.GF.add_geometric_point(p[:, scipy.newaxis])
+                self.GF.add_geometric_point(p[:, numpy.newaxis])
 
             return

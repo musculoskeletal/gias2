@@ -13,7 +13,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
 
-from scipy import array, hstack, where, argwhere, sort, histogram, digitize, zeros, exp, unique
+from numpy import array, hstack, where, argwhere, sort, histogram, digitize, zeros, exp, unique
 from scipy.spatial import cKDTree
 
 
@@ -42,6 +42,7 @@ def normalise(x):
 
 
 def drawBins3d(D, C, bins=None, nBins=None):
+    from mayavi import mlab
     if bins == None:
         bins = histogram(C, nBins)[1]
     else:
@@ -53,6 +54,7 @@ def drawBins3d(D, C, bins=None, nBins=None):
 
 
 def drawPolyMesh(v, f, C, bins=None, nBins=None):
+    from mayavi import mlab
     if bins == None:
         bins = histogram(C, nBins)[1]
     else:

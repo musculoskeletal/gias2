@@ -13,14 +13,18 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 """
 
 import itertools
-import scipy
+import logging
 import sys
+
+import numpy as np
 from scipy.optimize import leastsq, fmin
 from scipy.spatial import cKDTree
 
 from gias2.common import transform3D
 from gias2.fieldwork.field import geometric_field
 from gias2.fieldwork.field import geometric_field_fitter as GFF
+
+log = logging.getLogger(__name__)
 
 
 # ======================================================================#
@@ -34,7 +38,7 @@ def _sampleData(data, N):
     elif N > len(data):
         return data
     else:
-        i = scipy.linspace(0, len(data) - 1, N).astype(int)
+        i = np.linspace(0, len(data) - 1, N).astype(int)
         return data[i, :]
 
 
@@ -45,7 +49,7 @@ def fitAffine(data, target, xtol=1e-5, maxfev=0, sample=None, verbose=0, outputE
     if len(data) != len(target):
         raise ValueError('data and target points must have same number of points')
 
-    rms0 = scipy.sqrt(((data - target) ** 2.0).sum(1).mean())
+    rms0 = np.sqrt(((data - target) ** 2.0).sum(1).mean())
 
     if sample is not None:
         D = _sampleData(data, sample)
@@ -56,7 +60,7 @@ def fitAffine(data, target, xtol=1e-5, maxfev=0, sample=None, verbose=0, outputE
 
     t = transform3D.directAffine(D, T)
     dataFitted = transform3D.transformAffine(data, t)
-    rmsOpt = scipy.sqrt(((dataFitted - target) ** 2.0).sum(1).mean())
+    rmsOpt = np.sqrt(((dataFitted - target) ** 2.0).sum(1).mean())
     if verbose:
         print('initial RMS: {}'.format(rms0))
         print('final RMS: {}'.format(rmsOpt))
@@ -86,15 +90,15 @@ def fitTranslation(data, target, xtol=1e-5, maxfev=0, sample=None, verbose=0, ou
         return d
 
     t0 = target.mean(0) - data.mean(0)
-    # t0 = scipy.array([ 0.0, 0.0, 0.0 ])
+    # t0 = np.array([ 0.0, 0.0, 0.0 ])
 
-    rms0 = scipy.sqrt(obj(t0).mean())
+    rms0 = np.sqrt(obj(t0).mean())
     if verbose:
         print('initial RMS: {}'.format(rms0))
 
     xOpt = leastsq(obj, t0, xtol=xtol, maxfev=maxfev)[0]
 
-    rmsOpt = scipy.sqrt(obj(xOpt).mean())
+    rmsOpt = np.sqrt(obj(xOpt).mean())
     if verbose:
         print('final RMS: {}'.format(rmsOpt))
 
@@ -126,14 +130,14 @@ def fitRigid(data, target, t0=None, xtol=1e-3, maxfev=0, sample=None, verbose=0,
         d = ((DT - T) ** 2.0).sum(1)
         return d
 
-    t0 = scipy.array(t0)
-    rms0 = scipy.sqrt(obj(t0).mean())
+    t0 = np.array(t0)
+    rms0 = np.sqrt(obj(t0).mean())
     if verbose:
         print('initial RMS: {}'.format(rms0))
 
     xOpt = leastsq(obj, t0, xtol=xtol, maxfev=maxfev, epsfcn=epsfcn)[0]
 
-    rmsOpt = scipy.sqrt(obj(xOpt).mean())
+    rmsOpt = np.sqrt(obj(xOpt).mean())
     if verbose:
         print('final RMS: {}'.format(rmsOpt))
 
@@ -163,17 +167,17 @@ def fitRigidFMin(data, target, t0=None, xtol=1e-3, maxfev=0, sample=None, verbos
     def obj(x):
         DT = transform3D.transformRigid3DAboutCoM(D, x)
         d = ((DT - T) ** 2.0).sum(1)
-        rmsd = scipy.sqrt(d.mean())
+        rmsd = np.sqrt(d.mean())
         return rmsd
 
-    t0 = scipy.array(t0)
-    rms0 = scipy.sqrt(obj(t0).mean())
+    t0 = np.array(t0)
+    rms0 = np.sqrt(obj(t0).mean())
     if verbose:
         print('initial RMS: {}'.format(rms0))
 
     xOpt = fmin(obj, t0, xtol=xtol, maxiter=maxfev)
 
-    rmsOpt = scipy.sqrt(obj(xOpt).mean())
+    rmsOpt = np.sqrt(obj(xOpt).mean())
     if verbose:
         print('final RMS: {}'.format(rmsOpt))
 
@@ -205,14 +209,14 @@ def fitRigidScale(data, target, t0=None, xtol=1e-3, maxfev=0, sample=None, verbo
         d = ((DT - T) ** 2.0).sum(1)
         return d
 
-    t0 = scipy.array(t0)
-    rms0 = scipy.sqrt(obj(t0).mean())
+    t0 = np.array(t0)
+    rms0 = np.sqrt(obj(t0).mean())
     if verbose:
         print('initial RMS: {}'.format(rms0))
 
     xOpt = leastsq(obj, t0, xtol=xtol, maxfev=maxfev)[0]
 
-    rmsOpt = scipy.sqrt(obj(xOpt).mean())
+    rmsOpt = np.sqrt(obj(xOpt).mean())
     if verbose:
         print('final RMS: {}'.format(rmsOpt))
 
@@ -241,10 +245,10 @@ def fitDataRigidEPDP(data, target, xtol=1e-5, maxfev=0, t0=None, sample=None, ou
         T = target
 
     if t0 is None:
-        t0 = scipy.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        t0 = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 
     TTree = cKDTree(T)
-    D = scipy.array(D)
+    D = np.array(D)
 
     def obj(t):
         DT = transform3D.transformRigid3DAboutCoM(D, t)
@@ -252,10 +256,10 @@ def fitDataRigidEPDP(data, target, xtol=1e-5, maxfev=0, t0=None, sample=None, ou
         # print d.mean()
         return d * d
 
-    initialRMSE = scipy.sqrt(obj(t0).mean())
+    initialRMSE = np.sqrt(obj(t0).mean())
     tOpt = leastsq(obj, t0, xtol=xtol, maxfev=maxfev)[0]
     dataFitted = transform3D.transformRigid3DAboutCoM(data, tOpt)
-    finalRMSE = scipy.sqrt(obj(tOpt).mean())
+    finalRMSE = np.sqrt(obj(tOpt).mean())
     # print 'fitDataRigidEPDP finalRMSE:', finalRMSE
 
     if outputErrors:
@@ -278,21 +282,21 @@ def fitDataTranslateEPDP(data, target, xtol=1e-5, maxfev=0, t0=None, sample=None
         T = target
 
     if t0 is None:
-        t0 = scipy.array([0.0, 0.0, 0.0])
+        t0 = np.array([0.0, 0.0, 0.0])
 
     TTree = cKDTree(T)
-    D = scipy.array(D)
+    D = np.array(D)
 
     def obj(t):
-        DT = transform3D.transformRigid3DAboutCoM(D, scipy.hstack((t, [0.0, 0.0, 0.0])))
+        DT = transform3D.transformRigid3DAboutCoM(D, np.hstack((t, [0.0, 0.0, 0.0])))
         d = TTree.query(list(DT))[0]
         # ~ print d.mean()
         return d * d
 
-    initialRMSE = scipy.sqrt(obj(t0).mean())
+    initialRMSE = np.sqrt(obj(t0).mean())
     tOpt = leastsq(obj, t0, xtol=xtol, maxfev=maxfev)[0]
-    dataFitted = transform3D.transformRigid3DAboutCoM(data, scipy.hstack((tOpt, [0.0, 0.0, 0.0])))
-    finalRMSE = scipy.sqrt(obj(tOpt).mean())
+    dataFitted = transform3D.transformRigid3DAboutCoM(data, np.hstack((tOpt, [0.0, 0.0, 0.0])))
+    finalRMSE = np.sqrt(obj(tOpt).mean())
 
     if outputErrors:
         return tOpt, dataFitted, (initialRMSE, finalRMSE)
@@ -314,9 +318,9 @@ def fitDataRigidDPEP(data, target, xtol=1e-5, maxfev=0, t0=None, sample=None, ou
         T = target
 
     if t0 is None:
-        t0 = scipy.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        t0 = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 
-    D = scipy.array(D)
+    D = np.array(D)
 
     def obj(t):
         DT = transform3D.transformRigid3DAboutCoM(D, t)
@@ -325,10 +329,10 @@ def fitDataRigidDPEP(data, target, xtol=1e-5, maxfev=0, t0=None, sample=None, ou
         # ~ print d.mean()
         return d * d
 
-    initialRMSE = scipy.sqrt(obj(t0).mean())
+    initialRMSE = np.sqrt(obj(t0).mean())
     tOpt = leastsq(obj, t0, xtol=xtol, maxfev=maxfev)[0]
     dataFitted = transform3D.transformRigid3DAboutCoM(data, tOpt)
-    finalRMSE = scipy.sqrt(obj(tOpt).mean())
+    finalRMSE = np.sqrt(obj(tOpt).mean())
 
     if outputErrors:
         return tOpt, dataFitted, (initialRMSE, finalRMSE)
@@ -350,10 +354,10 @@ def fitDataRigidScaleEPDP(data, target, xtol=1e-5, maxfev=0, t0=None, sample=Non
         T = target
 
     if t0 is None:
-        t0 = scipy.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0])
+        t0 = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0])
 
     TTree = cKDTree(T)
-    D = scipy.array(D)
+    D = np.array(D)
 
     if scaleThreshold is not None:
         # print 'scale penalty on'
@@ -372,10 +376,10 @@ def fitDataRigidScaleEPDP(data, target, xtol=1e-5, maxfev=0, t0=None, sample=Non
             d = TTree.query(list(DT))[0]
             return d * d
 
-    initialRMSE = scipy.sqrt(obj(t0).mean())
+    initialRMSE = np.sqrt(obj(t0).mean())
     tOpt = leastsq(obj, t0, xtol=xtol, maxfev=maxfev)[0]
     dataFitted = transform3D.transformRigidScale3DAboutCoM(data, tOpt)
-    finalRMSE = scipy.sqrt(obj(tOpt).mean())
+    finalRMSE = np.sqrt(obj(tOpt).mean())
 
     if outputErrors:
         return tOpt, dataFitted, (initialRMSE, finalRMSE)
@@ -397,15 +401,16 @@ def fitDataRigidScaleDPEP(data, target, xtol=1e-5, maxfev=0, t0=None, sample=Non
         T = target
 
     if t0 is None:
-        t0 = scipy.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0])
+        t0 = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0])
 
-    D = scipy.array(D)
+    D = np.array(D)
 
     if scaleThreshold is not None:
         def obj(t):
             DT = transform3D.transformRigidScale3DAboutCoM(D, t)
             DTTree = cKDTree(DT)
             d = DTTree.query(T)[0]
+            s = t[6]
             if s > scaleThreshold:
                 sw = 1000.0 * s
             else:
@@ -418,10 +423,10 @@ def fitDataRigidScaleDPEP(data, target, xtol=1e-5, maxfev=0, t0=None, sample=Non
             d = DTTree.query(T)[0]
             return d * d
 
-    initialRMSE = scipy.sqrt(obj(t0).mean())
+    initialRMSE = np.sqrt(obj(t0).mean())
     tOpt = leastsq(obj, t0, xtol=xtol, maxfev=maxfev)[0]
     dataFitted = transform3D.transformRigidScale3DAboutCoM(data, tOpt)
-    finalRMSE = scipy.sqrt(obj(tOpt).mean())
+    finalRMSE = np.sqrt(obj(tOpt).mean())
 
     if outputErrors:
         return tOpt, dataFitted, (initialRMSE, finalRMSE)
@@ -438,10 +443,10 @@ def combineObjs(obj1, obj2, w1, w2):
     def obj(p):
         err1 = obj1(p)
         err2 = obj2(p)
-        err = scipy.hstack((err1 * w1, err2 * w2))
+        err = np.hstack((err1 * w1, err2 * w2))
 
-        sys.stdout.write('\rit' + str(next(c)) + '\tgeom rms:' + str(scipy.sqrt((err1).mean())) + '\tcomb rms:' + str(
-            scipy.sqrt((err).mean())))
+        sys.stdout.write('\rit' + str(next(c)) + '\tgeom rms:' + str(np.sqrt((err1).mean())) + '\tcomb rms:' + str(
+            np.sqrt((err).mean())))
         sys.stdout.flush()
 
         return err
@@ -457,11 +462,11 @@ def combObjGeomSobNormalStack(gObj, sobObj, nObj, sobW, nW, fixedNodeI=None, fix
             gErr = gObj(p)
             sobErr = sobObj(p) * sobW
             nErr = nObj(p) * nW
-            err = scipy.hstack((gErr, sobErr, nErr))
+            err = np.hstack((gErr, sobErr, nErr))
 
             sys.stdout.write(
-                '\rit' + str(next(c)) + '\tgeom rms:' + str(scipy.sqrt((gErr).mean())) + '\tcomb rms:' + str(
-                    scipy.sqrt((err).mean())))
+                '\rit' + str(next(c)) + '\tgeom rms:' + str(np.sqrt((gErr).mean())) + '\tcomb rms:' + str(
+                    np.sqrt((err).mean())))
             sys.stdout.flush()
 
             return err
@@ -475,11 +480,11 @@ def combObjGeomSobNormalStack(gObj, sobObj, nObj, sobW, nW, fixedNodeI=None, fix
             gErr = gObj(p)
             sobErr = sobObj(p) * sobW
             nErr = nObj(p) * nW
-            err = scipy.hstack((gErr, sobErr, nErr))
+            err = np.hstack((gErr, sobErr, nErr))
 
             sys.stdout.write(
-                '\rit' + str(next(c)) + '\tgeom rms:' + str(scipy.sqrt((gErr).mean())) + '\tcomb rms:' + str(
-                    scipy.sqrt((err).mean())))
+                '\rit' + str(next(c)) + '\tgeom rms:' + str(np.sqrt((gErr).mean())) + '\tcomb rms:' + str(
+                    np.sqrt((err).mean())))
             sys.stdout.flush()
 
             return err
@@ -495,11 +500,11 @@ def combObjGeomSobNormalSum(gObj, sobObj, nObj, sobW, nW, fixedNodeI=None, fixed
             gErr = gObj(p)
             sobErr = sobObj(p) * sobW
             nErr = nObj(p) * nW
-            err = scipy.hstack((gErr + sobErr, nErr))
+            err = np.hstack((gErr + sobErr, nErr))
 
             sys.stdout.write(
-                '\rit: ' + str(next(c)) + '\tgeom rms:' + str(scipy.sqrt((gErr).mean())) + '\tcomb rms:' + str(
-                    scipy.sqrt((err).mean())))
+                '\rit: ' + str(next(c)) + '\tgeom rms:' + str(np.sqrt((gErr).mean())) + '\tcomb rms:' + str(
+                    np.sqrt((err).mean())))
             sys.stdout.flush()
 
             return err
@@ -514,11 +519,11 @@ def combObjGeomSobNormalSum(gObj, sobObj, nObj, sobW, nW, fixedNodeI=None, fixed
             gErr = gObj(p)
             sobErr = sobObj(p) * sobW
             nErr = nObj(p) * nW
-            err = scipy.hstack((gErr + sobErr, nErr))
+            err = np.hstack((gErr + sobErr, nErr))
 
             sys.stdout.write(
-                '\rit: ' + str(next(c)) + '\tgeom rms:' + str(scipy.sqrt((gErr).mean())) + '\tcomb rms:' + str(
-                    scipy.sqrt((err).mean())))
+                '\rit: ' + str(next(c)) + '\tgeom rms:' + str(np.sqrt((gErr).mean())) + '\tcomb rms:' + str(
+                    np.sqrt((err).mean())))
             sys.stdout.flush()
 
             return err
@@ -554,7 +559,7 @@ def fitBoundaryCurveDPEP(curveGF, data, GD, sobW, tangentW, itMax=10, nClosestPo
     # ~ Opt, fitOutput, errors = gFitter.meshFit( it=itMax, errorOutput=True, verbose=fitVerbose )
 
     fE = gObj(Opt.ravel())
-    finalErr = scipy.sqrt(fE[scipy.where(scipy.isfinite(fE))].mean())
+    finalErr = np.sqrt(fE[np.where(np.isfinite(fE))].mean())
     curveGF.set_field_parameters(Opt.copy())
 
     return curveGF, Opt, finalErr
@@ -580,7 +585,7 @@ def fitSurfaceDPEP(GF, data, GD, sobW, normalD, normalW, itMax=10, dataWeights=N
     # ~ Opt, fitOutput, errors = gFitter.meshFit( it=itMax, errorOutput=True, verbose=fitVerbose )
 
     fE = gObj(Opt.ravel())
-    finalErr = scipy.sqrt(fE[scipy.where(scipy.isfinite(fE))].mean())
+    finalErr = np.sqrt(fE[np.where(np.isfinite(fE))].mean())
     GF.set_field_parameters(Opt.copy())
 
     return GF, Opt, finalErr
@@ -591,7 +596,7 @@ def fitSurfaceDPEPFixNodes(GF, data, GD, sobW, normalD, normalW, fixedNodes, itM
     # get indices of params free to fit
     P0 = GF.get_field_parameters()
     P0[:, fixedNodes, :] = -99999
-    nonFixedInd = scipy.where(P0.ravel() != -99999)
+    nonFixedInd = np.where(P0.ravel() != -99999)
 
     sobObj = GFF.makeSobelovPenalty2D(GF, GD, sobW)
     normalSmoother = GFF.normalSmoother2(GF.ensemble_field_function.flatten()[0])
@@ -619,7 +624,7 @@ def fitSurfaceDPEPFixNodes(GF, data, GD, sobW, normalD, normalW, fixedNodes, itM
     # ~ Opt, fitOutput, errors = gFitter.meshFit( it=itMax, errorOutput=True, verbose=fitVerbose )
 
     fE = gObj(Opt.ravel())
-    finalErr = scipy.sqrt(fE[scipy.where(scipy.isfinite(fE))].mean())
+    finalErr = np.sqrt(fE[np.where(np.isfinite(fE))].mean())
     GF.set_field_parameters(Opt.copy())
 
     return GF, Opt, finalErr
@@ -644,7 +649,7 @@ def fitBoundaryCurveEPDP(curveGF, data, GD, sobW, tangentW, itMax=10, nClosestPo
     # ~ Opt, fitOutput, errors = gFitter.meshFit( it=itMax, errorOutput=True, verbose=fitVerbose )
 
     fE = gObj(Opt.ravel())
-    finalErr = scipy.sqrt(fE[scipy.where(scipy.isfinite(fE))].mean())
+    finalErr = np.sqrt(fE[np.where(np.isfinite(fE))].mean())
     curveGF.set_field_parameters(Opt.copy())
 
     return curveGF, Opt, finalErr
@@ -670,7 +675,7 @@ def fitSurfaceEPDP(GF, data, GD, sobW, normalD, normalW, itMax=10, dataWeights=N
     # ~ Opt, fitOutput, errors = gFitter.meshFit( it=itMax, errorOutput=True, verbose=fitVerbose )
 
     fE = gObj(Opt.ravel())
-    finalErr = scipy.sqrt(fE[scipy.where(scipy.isfinite(fE))].mean())
+    finalErr = np.sqrt(fE[np.where(np.isfinite(fE))].mean())
     GF.set_field_parameters(Opt.copy())
 
     return GF, Opt, finalErr
@@ -681,7 +686,7 @@ def fitSurfaceEPDPFixNodes(GF, data, GD, sobW, normalD, normalW, fixedNodes, itM
     # get indices of params free to fit
     P0 = GF.get_field_parameters()
     P0[:, fixedNodes, :] = -99999
-    nonFixedInd = scipy.where(P0.ravel() != -99999)
+    nonFixedInd = np.where(P0.ravel() != -99999)
 
     sobObj = GFF.makeSobelovPenalty2D(GF, GD, sobW)
     normalSmoother = GFF.normalSmoother2(GF.ensemble_field_function.flatten()[0])
@@ -705,7 +710,7 @@ def fitSurfaceEPDPFixNodes(GF, data, GD, sobW, normalD, normalW, fixedNodes, itM
     Opt = X.copy().reshape((GF.dimensions, -1, 1))
 
     fE = gObj(Opt.ravel())
-    finalErr = scipy.sqrt(fE[scipy.where(scipy.isfinite(fE))].mean())
+    finalErr = np.sqrt(fE[np.where(np.isfinite(fE))].mean())
     GF.set_field_parameters(Opt.copy())
 
     return GF, Opt, finalErr
@@ -735,17 +740,19 @@ def fitBoundaryCurve2Way(curveGF, data, GD, sobW, tangentW, itMax=10, nClosestPo
     # ~ Opt, fitOutput, errors = gFitter.meshFit( it=itMax, errorOutput=True, verbose=fitVerbose )
 
     fE = gObj(Opt.ravel())
-    finalErr = scipy.sqrt(fE[scipy.where(scipy.isfinite(fE))].mean())
+    finalErr = np.sqrt(fE[np.where(np.isfinite(fE))].mean())
     curveGF.set_field_parameters(Opt.copy())
 
     return curveGF, Opt, finalErr
 
 
-def fitSurface2Way(curveGF, data, GD, sobW, normalD, normalW, dataWeights=None, itMax=10, nClosestPoints=1, treeArgs={},
+def fitSurface2Way(GF, data, GD, sobW, normalD, normalW, dataWeights=None, itMax=10, nClosestPoints=1, treeArgs=None,
                    fitVerbose=False):
     """
     both EPDP and DPEP
     """
+    if treeArgs is None:
+        treeArgs = {}
 
     sobObj = GFF.makeSobelovPenalty2D(GF, GD, sobW)
     normalSmoother = GFF.normalSmoother(GF.ensemble_field_function.flatten()[0])
@@ -766,7 +773,7 @@ def fitSurface2Way(curveGF, data, GD, sobW, normalD, normalW, dataWeights=None, 
     # ~ Opt, fitOutput, errors = gFitter.meshFit( it=itMax, errorOutput=True, verbose=fitVerbose )
 
     fE = gObj(Opt.ravel())
-    finalErr = scipy.sqrt(fE[scipy.where(scipy.isfinite(fE))].mean())
+    finalErr = np.sqrt(fE[np.where(np.isfinite(fE))].mean())
     GF.set_field_parameters(Opt.copy())
 
     return GF, Opt, finalErr
@@ -780,7 +787,7 @@ def fitBoundaryCurve2WayFixNodes(curveGF, data, GD, sobW, tangentW, fixedNodes, 
     # get indices of params free to fit
     P0 = curveGF.get_field_parameters()
     P0[:, fixedNodes, :] = -99999
-    nonFixedInd = scipy.where(P0.ravel() != -99999)
+    nonFixedInd = np.where(P0.ravel() != -99999)
 
     sobObj = GFF.makeSobelovPenalty1D(curveGF, GD, sobW)
     tangentSmoother = GFF.tangentSmoother(curveGF.ensemble_field_function)
@@ -808,7 +815,7 @@ def fitBoundaryCurve2WayFixNodes(curveGF, data, GD, sobW, tangentW, fixedNodes, 
     # ~ Opt, fitOutput, errors = gFitter.meshFit( it=itMax, errorOutput=True, verbose=fitVerbose )
 
     fE = gObj(Opt.ravel())
-    finalErr = scipy.sqrt(fE[scipy.where(scipy.isfinite(fE))].mean())
+    finalErr = np.sqrt(fE[np.where(np.isfinite(fE))].mean())
     curveGF.set_field_parameters(Opt.copy())
 
     return curveGF, Opt, finalErr
@@ -822,7 +829,7 @@ def fitSurface2WayFixNodes(GF, data, GD, sobW, normalD, normalW, fixedNodes, dat
     # get indices of params free to fit
     P0 = GF.get_field_parameters()
     P0[:, fixedNodes, :] = -99999
-    nonFixedInd = scipy.where(P0.ravel() != -99999)
+    nonFixedInd = np.where(P0.ravel() != -99999)
 
     sobObj = GFF.makeSobelovPenalty2D(GF, GD, sobW)
     normalSmoother = GFF.normalSmoother2(GF.ensemble_field_function.flatten()[0])
@@ -850,7 +857,7 @@ def fitSurface2WayFixNodes(GF, data, GD, sobW, normalD, normalW, fixedNodes, dat
     # ~ Opt, fitOutput, errors = gFitter.meshFit( it=itMax, errorOutput=True, verbose=fitVerbose )
 
     fE = gObj(Opt.ravel())
-    finalErr = scipy.sqrt(fE[scipy.where(scipy.isfinite(fE))].mean())
+    finalErr = np.sqrt(fE[np.where(np.isfinite(fE))].mean())
     GF.set_field_parameters(Opt.copy())
 
     return GF, Opt, finalErr
@@ -895,7 +902,7 @@ def fitSurface(gObjType, GF, data, GD, sobD, sobW, normalD, normalW,
     Opt = output[0].reshape((GF.dimensions, -1, 1))
 
     fE = gObj(Opt.ravel())
-    finalErr = scipy.sqrt(fE[scipy.where(scipy.isfinite(fE))].mean())
+    finalErr = np.sqrt(fE[np.where(np.isfinite(fE))].mean())
     GF.set_field_parameters(Opt.copy())
 
     if fullErrors:
@@ -911,7 +918,7 @@ def fitSurfaceFixNodes(gObjType, GF, data, GD, sobD, sobW, normalD, normalW,
     # get indices of params free to fit
     P0 = GF.get_field_parameters()
     P0[:, fixedNodes, :] = -99999
-    nonFixedInd = scipy.where(P0.ravel() != -99999)
+    nonFixedInd = np.where(P0.ravel() != -99999)
 
     if sobObj == None:
         sobObj = GFF.makeSobelovPenalty2D(GF, sobD, sobW)
@@ -940,7 +947,7 @@ def fitSurfaceFixNodes(gObjType, GF, data, GD, sobD, sobW, normalD, normalW,
     Opt = X.copy().reshape((GF.dimensions, -1, 1))
 
     fE = gObj(Opt.ravel())
-    finalErr = scipy.sqrt(fE[scipy.where(scipy.isfinite(fE))].mean())
+    finalErr = np.sqrt(fE[np.where(np.isfinite(fE))].mean())
     GF.set_field_parameters(Opt.copy())
 
     if fullErrors:
@@ -955,15 +962,15 @@ def closestSearch(X, Y, k=1, treeArgs={}):
     """
     closestDist, closestInd = cKDTree(Y).query(list(X), k=k, **treeArgs)
 
-    closest = scipy.zeros(X.shape, dtype=float)
+    closest = np.zeros(X.shape, dtype=float)
     # if any dist are inf (closest point not found), replace its closest point
     # by the point in X itself, replace its closestInd with None
-    isFinite = scipy.isfinite(closestDist)
-    for i in scipy.where(scipy.bitwise_not(isFinite))[0]:
+    isFinite = np.isfinite(closestDist)
+    for i in np.where(np.bitwise_not(isFinite))[0]:
         closest[i] = X[i]
         # closestInd[i] = None
 
-    closest[scipy.where(isFinite)] = Y[closestInd[scipy.where(isFinite)]]
+    closest[np.where(isFinite)] = Y[closestInd[np.where(isFinite)]]
     return closest, closestInd, closestDist
 
 
@@ -1040,7 +1047,7 @@ def fitSurfacePerItSearch(gObjType, GF, data, GD, sobD, sobW, normalD, normalW, 
                 # ~ closestMPs, fitEP, fitEPDist = GF.find_closest_material_points( data, initGD=[10,10], verbose=True )
                 # ~ gObj = gObjMakers['EPEP']( GF, fitData, GD, dataWeights=dataWeights, matPoints=closestMPs )
             else:
-                ep = scipy.vstack([GF.discretiseElementRegularGeoD(e, GD, geoCoords=True)[1] for e in sampleElems])
+                ep = np.vstack([GF.discretiseElementRegularGeoD(e, GD, geoCoords=True)[1] for e in sampleElems])
 
             # ~ pdb.set_trace()
             # ~ geometric_field.mlab.points3d(ep[fitEPI,0],ep[fitEPI,1],ep[fitEPI,2])
@@ -1078,13 +1085,12 @@ def hostMeshFit(hostGF, slaveGF, slaveObj, slaveXi=None, maxIt=0,
     """ host mesh fit slaveGF using hostGF as the 
     host mesh and slaveObj as the objective function to minimise
     """
-    print('host mesh fit...')
 
     # # calc slave node xi in host
     # if slaveXi==None:
     #     if verbose:
     #         print('calculating slave xi...')
-    #     slaveXi = scipy.array([hostGF.findXi(0, node)[0] for node in slaveGF.field_parameters[:,:,0].T])
+    #     slaveXi = np.array([hostGF.findXi(0, node)[0] for node in slaveGF.field_parameters[:,:,0].T])
     #     #~ pdb.set_trace()
     #     #~ savetxt( 'host_mesh_fitting/slaveXi.txt', slaveXi )
 
@@ -1094,7 +1100,7 @@ def hostMeshFit(hostGF, slaveGF, slaveObj, slaveXi=None, maxIt=0,
     # basisFunction = hostGF.ensemble_field_function.basis[hostElem.type]
     # slaveBasis = basisFunction.eval( slaveXi.T )
     # #~ pdb.set_trace()
-    # A = scipy.zeros( [slaveGF.get_number_of_points(), hostGF.get_number_of_points()], dtype=float )
+    # A = np.zeros( [slaveGF.get_number_of_points(), hostGF.get_number_of_points()], dtype=float )
     # slaveEvalEntries = [ [0,b] for b in slaveBasis.T ]
     # evalSlaveParams = geometric_field.buildEvaluatorSparse(A, slaveEvalEntries,
     #                     hostGF.ensemble_field_function.mapper._element_to_ensemble_map,
@@ -1103,8 +1109,6 @@ def hostMeshFit(hostGF, slaveGF, slaveObj, slaveXi=None, maxIt=0,
 
     # calc slave node xi in host
     if slaveXi == None:
-        if verbose:
-            print('calculating slave xi...')
         slaveXi = hostGF.find_closest_material_points(
             slaveGF.field_parameters[:, :, 0].T,
             initGD=[40, 40, 40],
@@ -1117,19 +1121,20 @@ def hostMeshFit(hostGF, slaveGF, slaveObj, slaveXi=None, maxIt=0,
     )
 
     # initialise smoothing for host mesh
-    sobolevW = scipy.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 3.0])
+    sobolevW = np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 3.0])
     hostParam0 = hostGF.get_field_parameters()
     smoother = GFF.makeSobelovPenalty3D(hostGF, sobD, sobolevW * sobW)
 
     # handle fixed slave nodes
     if fixedSlaveNodes is not None:
         slaveP0 = slaveGF.get_field_parameters()
-        slaveP0[:, slaveFixedNodes, :] = inf
-        fixedSlaveInds = scipy.where(~scipy.isfinite(slaveP0.ravel()))[0]
+        slaveP0[:, fixedSlaveNodes, :] = np.inf
+        fixedSlaveInds = np.where(~np.isfinite(slaveP0.ravel()))[0]
         fixedSlaveParams = slaveGF.get_field_parameters().ravel()[fixedSlaveInds]
         fixedSlave = True
     else:
         fixedSlave = False
+        fixedSlaveInd = None
 
     c = itertools.count(0)
 
@@ -1146,13 +1151,13 @@ def hostMeshFit(hostGF, slaveGF, slaveObj, slaveXi=None, maxIt=0,
 
         slaveErr = slaveObj(slaveParams)
         smoothErr = smoother(hostParams)
-        err = scipy.hstack((slaveErr, smoothErr))
+        err = np.hstack((slaveErr, smoothErr))
 
         sys.stdout.write(
             'it: {it:d}, slaveRMS: {srms:8.6f}, combinedRMS: {crms:8.6f}\r'.format(
                 it=next(c),
-                srms=scipy.sqrt(slaveErr.mean()),
-                crms=scipy.sqrt(err.mean())
+                srms=np.sqrt(slaveErr.mean()),
+                crms=np.sqrt(err.mean())
             ))
         sys.stdout.flush()
 
@@ -1161,14 +1166,14 @@ def hostMeshFit(hostGF, slaveGF, slaveObj, slaveXi=None, maxIt=0,
     maxf = maxIt * hostGF.get_number_of_points() * 3
 
     if verbose:
-        print('HMF initial rms: {}'.format(scipy.sqrt(hostMeshObj(hostParam0).mean())))
+        log.info('HMF initial rms: %s', np.sqrt(hostMeshObj(hostParam0).mean()))
 
     # do fit
     hostParamsOpt = leastsq(hostMeshObj, hostParam0.ravel(), xtol=xtol,
                             maxfev=maxf
                             )[0].reshape((3, -1, 1))
     hostGF.set_field_parameters(hostParamsOpt)
-    slaveParamsOpt = evalSlaveParams(hostParamsOpt)[:, :, scipy.newaxis]
+    slaveParamsOpt = evalSlaveParams(hostParamsOpt)[:, :, np.newaxis]
     if fixedSlave:
         # replace parameters at fixed indices with their original values
         slaveParamsOptFlat = slaveParamsOpt.ravel()
@@ -1177,10 +1182,10 @@ def hostMeshFit(hostGF, slaveGF, slaveObj, slaveXi=None, maxIt=0,
 
     slaveGF.set_field_parameters(slaveParamsOpt)
 
-    finalHostRMS = scipy.sqrt(hostMeshObj(hostParamsOpt.ravel().copy()).mean())
-    finalSlaveRMS = scipy.sqrt(slaveObj(slaveParamsOpt.ravel().copy()).mean())
+    finalHostRMS = np.sqrt(hostMeshObj(hostParamsOpt.ravel().copy()).mean())
+    finalSlaveRMS = np.sqrt(slaveObj(slaveParamsOpt.ravel().copy()).mean())
     if verbose:
-        print('final host rms: {}, final slave rms: {}'.format(finalHostRMS, finalSlaveRMS))
+        log.info('final host rms: %s, final slave rms: %s', finalHostRMS, finalSlaveRMS)
 
     return hostParamsOpt, slaveParamsOpt, slaveXi, finalSlaveRMS
 
@@ -1203,19 +1208,20 @@ def hostMeshFitMulti(hostGF, slaveGF, slaveObj, slaveXi=None, maxIt=0,
     evalSlaveParams = geometric_field.makeGeometricFieldEvaluatorSparse(hostGF, [1, 1], matPoints=slaveXi)
 
     # initialise smoothing for host mesh
-    sobolevW = scipy.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 2.0, 3.0])
+    sobolevW = np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 2.0, 3.0])
     hostParam0 = hostGF.get_field_parameters()
     smoother = GFF.makeSobelovPenalty3D(hostGF, sobD, sobolevW * sobW)
 
     # handle fixed slave nodes
     if fixedSlaveNodes is not None:
         slaveP0 = slaveGF.get_field_parameters()
-        slaveP0[:, slaveFixedNodes, :] = inf
-        fixedSlaveInds = scipy.where(~scipy.isfinite(slaveP0.ravel()))[0]
+        slaveP0[:, fixedSlaveNodes, :] = np.inf
+        fixedSlaveInds = np.where(~np.isfinite(slaveP0.ravel()))[0]
         fixedSlaveParams = slaveGF.get_field_parameters().ravel()[fixedSlaveInds]
         fixedSlave = True
     else:
         fixedSlave = False
+        fixedSlaveInd = None
 
     c = itertools.count(0)
 
@@ -1224,7 +1230,7 @@ def hostMeshFitMulti(hostGF, slaveGF, slaveObj, slaveXi=None, maxIt=0,
 
         hostParams = hostParams.reshape(3, -1, 1)
         hostGF.set_field_parameters(hostParams)
-        # ~ slaveParams = scipy.array( [ evaluator( slaveBasis, p ) for p in hostParams] ).ravel()
+        # ~ slaveParams = np.array( [ evaluator( slaveBasis, p ) for p in hostParams] ).ravel()
         slaveParams = evalSlaveParams(hostParams).ravel()
         if fixedSlave:
             # replace parameters at fixed indices with their original values
@@ -1233,11 +1239,11 @@ def hostMeshFitMulti(hostGF, slaveGF, slaveObj, slaveXi=None, maxIt=0,
         slaveErr = slaveObj(slaveParams)
 
         smoothErr = smoother(hostParams)
-        Err = scipy.hstack((slaveErr, smoothErr))
+        Err = np.hstack((slaveErr, smoothErr))
         sys.stdout.write('it: {it:d}, slaveRMS: {srms:8.6f}, combinedRMS: {crms:8.6f}\r'.format(
             it=next(c),
-            srms=scipy.sqrt(slaveErr.mean()),
-            crms=scipy.sqrt(Err.mean())
+            srms=np.sqrt(slaveErr.mean()),
+            crms=np.sqrt(Err.mean())
         ))
         sys.stdout.flush()
         return Err
@@ -1245,13 +1251,13 @@ def hostMeshFitMulti(hostGF, slaveGF, slaveObj, slaveXi=None, maxIt=0,
     maxf = maxIt * (hostGF.get_number_of_points() * 3)
 
     if verbose:
-        print('HMF initial rms: {}'.format(scipy.sqrt(hostMeshObj(hostParam0).mean())))
+        print('HMF initial rms: {}'.format(np.sqrt(hostMeshObj(hostParam0).mean())))
 
     # do fit
     hostParamsOpt = leastsq(hostMeshObj, hostParam0.ravel(), xtol=xtol, maxfev=maxf)[0].reshape((3, -1, 1))
     hostGF.set_field_parameters(hostParamsOpt)
-    # slaveParamsOpt = hostGF.evaluate_geometric_field_at_element_points( 0, slaveXi )[:,:,scipy.newaxis]
-    slaveParamsOpt = evalSlaveParams(hostParamsOpt)[:, :, scipy.newaxis]
+    # slaveParamsOpt = hostGF.evaluate_geometric_field_at_element_points( 0, slaveXi )[:,:,np.newaxis]
+    slaveParamsOpt = evalSlaveParams(hostParamsOpt)[:, :, np.newaxis]
     if fixedSlave:
         # replace parameters at fixed indices with their original values
         slaveParamsOptFlat = slaveParamsOpt.ravel()
@@ -1260,8 +1266,8 @@ def hostMeshFitMulti(hostGF, slaveGF, slaveObj, slaveXi=None, maxIt=0,
 
     slaveGF.set_field_parameters(slaveParamsOpt)
 
-    finalHostRMS = scipy.sqrt(hostMeshObj(hostParamsOpt.ravel().copy()).mean())
-    finalSlaveRMS = scipy.sqrt(slaveObj(slaveParamsOpt.ravel().copy()).mean())
+    finalHostRMS = np.sqrt(hostMeshObj(hostParamsOpt.ravel().copy()).mean())
+    finalSlaveRMS = np.sqrt(slaveObj(slaveParamsOpt.ravel().copy()).mean())
     if verbose:
         print('final host rms: {}, final slave rms: {}'.format(finalHostRMS, finalSlaveRMS))
 
@@ -1334,7 +1340,7 @@ def hostMeshFitMultiPerItSearch(data, hostGF, slaveGF, slaveGObjType, slaveGD,
             errSurface = slaveGObj(x)
             errSob = slaveSobObj(x)
             errNorm = slaveNObj(x) * slaveNW
-            return scipy.hstack([errSurface, errSob, errNorm])
+            return np.hstack([errSurface, errSob, errNorm])
 
         # run iterations of HMF
         fitOutput = hostMeshFitMulti(
@@ -1413,10 +1419,10 @@ def hostMeshFitPoints(host_mesh, slave_points, slave_func, slave_xi=None, max_it
     )
 
     # initialise smoothing for host mesh
-    sobolev_weights = scipy.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
-                                   2.0, 2.0,
-                                   3.0
-                                   ])
+    sobolev_weights = np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+                                2.0, 2.0,
+                                3.0
+                                ])
     host_x_0 = host_mesh.field_parameters.copy()
     host_smoother = GFF.makeSobelovPenalty3D(
         host_mesh, sob_d, sobolev_weights * sob_w
@@ -1441,13 +1447,13 @@ def hostMeshFitPoints(host_mesh, slave_points, slave_func, slave_xi=None, max_it
         slave_err = slave_func(slave_points_it)
 
         smooth_err = host_smoother(host_x)
-        err = scipy.hstack([slave_err, smooth_err])
+        err = np.hstack([slave_err, smooth_err])
         if verbose:
             sys.stdout.write(
                 'it: {it:d}, slaveRMS: {srms:8.6f}, combinedRMS: {crms:8.6f}\r'.format(
                     it=next(c),
-                    srms=scipy.sqrt(slave_err.mean()),
-                    crms=scipy.sqrt(err.mean())
+                    srms=np.sqrt(slave_err.mean()),
+                    crms=np.sqrt(err.mean())
                 ))
             sys.stdout.flush()
         return err
@@ -1455,7 +1461,7 @@ def hostMeshFitPoints(host_mesh, slave_points, slave_func, slave_xi=None, max_it
     maxf = max_it * (host_mesh.get_number_of_points() * 3)
 
     if verbose:
-        print(('HMF initial rms: {:6.4f}'.format(scipy.sqrt(host_func(host_x_0).mean()))))
+        print(('HMF initial rms: {:6.4f}'.format(np.sqrt(host_func(host_x_0).mean()))))
 
     # do fit
     host_x_opt = leastsq(
@@ -1466,8 +1472,8 @@ def hostMeshFitPoints(host_mesh, slave_points, slave_func, slave_xi=None, max_it
     if has_fixed_points:
         slave_points_opt[fixed_points, :] = fixed_point_coords
 
-    host_rmse_opt = scipy.sqrt(host_func(host_x_opt.ravel().copy()).mean())
-    slave_rmse_opt = scipy.sqrt(slave_func(slave_points_opt).mean())
+    host_rmse_opt = np.sqrt(host_func(host_x_opt.ravel().copy()).mean())
+    slave_rmse_opt = np.sqrt(slave_func(slave_points_opt).mean())
     if verbose:
         print(('final host rms: {:6.4f}, final slave rms: {:6.4f}'.format(
             host_rmse_opt,
@@ -1487,8 +1493,8 @@ def getClosestDataPoints(data, L, d, n, DUB):
     dataTree = cKDTree(data)
 
     closestI = dataTree.query(list(ep), k=n, distance_upper_bound=DUB)[1]
-    closestI = closestI[scipy.where(closestI < data.shape[0])]
-    return data[scipy.unique(closestI)]
+    closestI = closestI[np.where(closestI < data.shape[0])]
+    return data[np.unique(closestI)]
 
 
 def fitterFit(GF, epD, data, fit=None, maxIt=100, drms=0.0, output=True, doFit=True):
@@ -1506,7 +1512,7 @@ def fitterFit(GF, epD, data, fit=None, maxIt=100, drms=0.0, output=True, doFit=T
 
     if doFit:
         rmsErr = fit.solve(GF.getFitterParameters(), maxiter=maxIt, drms=drms, output=output)
-        GF.set_field_parameters(fit.x.T[:, :, scipy.newaxis])
+        GF.set_field_parameters(fit.x.T[:, :, np.newaxis])
     else:
         rmsErr = None
 
@@ -1524,14 +1530,14 @@ def projectToDataGF(dataGF, GPC, initRot, modes):
     targ = dataGF.get_field_parameters().reshape((3, -1)).T
     data = GPC.getMean().reshape((3, -1)).T
     initTrans = targ.mean(0) - data.mean(0)
-    rigidX0 = scipy.hstack([initTrans, initRot])
+    rigidX0 = np.hstack([initTrans, initRot])
 
     rigidXOpt, rigidFittedData = fitRigid(data, targ, x0=rigidX0, xtol=1e-3, maxfev=0, verbose=0)
 
     rigidXOptBack, rigidFittedDataTarg = fitRigid(targ, data, x0=-rigidX0, xtol=1e-3, maxfev=0, verbose=0)
     projWeights = GPC.project(rigidFittedDataTarg.T.ravel() - GPC.getMean(), modes)
     projSD = GPC.calcSDFromWeights(modes, projWeights)
-    return scipy.hstack([rigidXOpt, projSD])
+    return np.hstack([rigidXOpt, projSD])
 
 
 # ======================================================================#
@@ -1578,4 +1584,4 @@ def calcDPDPErrors(dataGT, data):
 
 
 def calcRMS(x):
-    return scipy.sqrt((x ** 2.0).mean())
+    return np.sqrt((x ** 2.0).mean())

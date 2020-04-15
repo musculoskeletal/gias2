@@ -12,7 +12,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
 
-import scipy
+import numpy
 
 from gias2.fieldwork.field import geometric_field
 from gias2.visualisation import fieldvi
@@ -73,8 +73,8 @@ def viewMeasurements(M, G, onCloseCallback=None, F=None):
 def _addText3D(F, name, value, unit, mOrigin, offset):
     charWidth = 0.01
     lineWidth = 0.2
-    textOrigin = scipy.array(mOrigin) + scipy.array(offset)
-    textLine = scipy.array([mOrigin, textOrigin]).T
+    textOrigin = numpy.array(mOrigin) + numpy.array(offset)
+    textLine = numpy.array([mOrigin, textOrigin]).T
     mStr = '{}: {:5.2f} {}'.format(name, value, unit)
     F.scene.mlab.text(textOrigin[0], textOrigin[1], mStr, z=textOrigin[2], width=len(mStr) * charWidth,
                       name='text_' + name)
@@ -82,13 +82,13 @@ def _addText3D(F, name, value, unit, mOrigin, offset):
 
 
 def _drawAxes(F, M):
-    saPoints = M.shaftAxis.eval(scipy.array([-300, 300])).T
+    saPoints = M.shaftAxis.eval(numpy.array([-300, 300])).T
     F.scene.mlab.plot3d(saPoints[0], saPoints[1], saPoints[2], name='axis_shaft', tube_radius=1.0)
-    naPoints = M.neckAxis.eval(scipy.array([-100, 100])).T
+    naPoints = M.neckAxis.eval(numpy.array([-100, 100])).T
     F.scene.mlab.plot3d(naPoints[0], naPoints[1], naPoints[2], name='axis_neck', tube_radius=1.0)
-    ecPoints = M.epicondylarAxis.eval(scipy.array([-100, 100])).T
+    ecPoints = M.epicondylarAxis.eval(numpy.array([-100, 100])).T
     F.scene.mlab.plot3d(ecPoints[0], ecPoints[1], ecPoints[2], name='axis_epicondylar', tube_radius=1.0)
-    pcPoints = M.measurements['anteversion_angle'].posteriorCondyleAxis.eval(scipy.array([-100, 100])).T
+    pcPoints = M.measurements['anteversion_angle'].posteriorCondyleAxis.eval(numpy.array([-100, 100])).T
     F.scene.mlab.plot3d(pcPoints[0], pcPoints[1], pcPoints[2], name='axis_posteriorcondyle', tube_radius=1.0)
 
 
@@ -108,21 +108,21 @@ def _drawNeckWidth(F, M, drawTube=False):
     NWInf = NW.interceptInf
     # NWMin = NW.searchMin
     # NWMax = NW.searchMax
-    # NWPoints = scipy.array([NWSup, NWC, NWInf, NWMin, NWMax]).T
-    NWPoints = scipy.array([NWSup, NWInf]).T
+    # NWPoints = numpy.array([NWSup, NWC, NWInf, NWMin, NWMax]).T
+    NWPoints = numpy.array([NWSup, NWInf]).T
     F.scene.mlab.points3d(NWPoints[0], NWPoints[1], NWPoints[2], name='glyph_neckWidthPoints', mode='sphere',
                           scale_factor=5, resolution=16, color=(1.0, 0.0, 0.0))
-    NWLinePoints = scipy.array([NWSup, NWInf]).T
+    NWLinePoints = numpy.array([NWSup, NWInf]).T
     F.scene.mlab.plot3d(NWLinePoints[0], NWLinePoints[1], NWLinePoints[2], name='glyph_neckWidthLine', tube_radius=1.0)
     _addText3D(F, 'neck width', NW.value, 'mm', NWC, [0.0, 0.0, -100])
 
     # tube
     if drawTube:
         neckRadiusM = M.measurements['neck_width']
-        # neckEnds = M.neckAxis.eval(scipy.array([-50,10])).T
+        # neckEnds = M.neckAxis.eval(numpy.array([-50,10])).T
         # NW = M.measurements['neck_width']
-        # neckEnds = scipy.array([NW.searchMin, NW.searchMax]).T
-        neckEnds = M.neckAxis.eval(scipy.array([-30, 20])).T
+        # neckEnds = numpy.array([NW.searchMin, NW.searchMax]).T
+        neckEnds = M.neckAxis.eval(numpy.array([-30, 20])).T
         F.scene.mlab.plot3d(neckEnds[0], neckEnds[1], neckEnds[2], name='glyph_neckWidthTube',
                             tube_radius=neckRadiusM.value / 2.0, tube_sides=16, color=(0.0, 0.0, 1.0), opacity=0.3)
 
@@ -145,7 +145,7 @@ def _drawNeckShaftAngle(F, M):
 
 def _drawSubTrochantericWidth(F, M):
     sTW = M.measurements['subtrochanteric_width']
-    points = scipy.array([sTW.p1, sTW.p2]).T
+    points = numpy.array([sTW.p1, sTW.p2]).T
     centre = (sTW.p1 + sTW.p2) * 0.5
     F.scene.mlab.points3d(points[0], points[1], points[2], name='glyph_sTWPoints', mode='sphere', scale_factor=5,
                           resolution=16, color=(1.0, 0.0, 0.0))
@@ -155,7 +155,7 @@ def _drawSubTrochantericWidth(F, M):
 
 def _drawMidshaftWidth(F, M, drawTube=False):
     mSW = M.measurements['midshaft_width']
-    points = scipy.array([mSW.p1, mSW.p2]).T
+    points = numpy.array([mSW.p1, mSW.p2]).T
     centre = (mSW.p1 + mSW.p2) * 0.5
     F.scene.mlab.points3d(points[0], points[1], points[2], name='glyph_midshaftWidthPoints', mode='sphere',
                           scale_factor=5, resolution=16, color=(1.0, 0.0, 0.0))
@@ -164,7 +164,7 @@ def _drawMidshaftWidth(F, M, drawTube=False):
 
     # draw midshaft tube
     if drawTube:
-        midshaftEnds = M.shaftAxis.eval(scipy.array([-20, 20])).T
+        midshaftEnds = M.shaftAxis.eval(numpy.array([-20, 20])).T
         F.scene.mlab.plot3d(midshaftEnds[0], midshaftEnds[1], midshaftEnds[2], name='glyph_midshaftWidthTube',
                             tube_radius=mSW.value / 2.0, tube_sides=16, color=(0.0, 0.0, 1.0), opacity=0.3)
 

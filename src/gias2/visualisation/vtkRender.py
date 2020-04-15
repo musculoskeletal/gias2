@@ -13,6 +13,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 """
 
 import vtk
+from numpy import uint8, array
 
 raise DeprecationWarning('Use classes in gias2.mesh.vtktools')
 

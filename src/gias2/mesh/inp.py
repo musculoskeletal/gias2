@@ -42,7 +42,7 @@ class Mesh(object):
         self.surfaces = {}
 
     def getName(self):
-        return name
+        return self.name
 
     def setNodes(self, nodes, nodeNumbers):
         """ Set nodes of the mesh.
@@ -225,7 +225,7 @@ class InpReader(object):
                 try:
                     l = next(f)
                 except StopIteration:
-                    raise IOError('No NSET named ' + meshName)
+                    raise IOError('Cannot find nodes starting with {}'.format(self.nodeStartString))
                 else:
                     # if ('NSET='+meshName) in l:
                     if (self.nodeStartString) in l.upper():

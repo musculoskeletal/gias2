@@ -16,13 +16,11 @@ import copy
 import json
 import os
 import shelve
-
-import scipy
 import sys
+
+import numpy
 from scipy import sparse
-# import pdb
 from scipy.interpolate import splprep, splev, splrep
-from scipy.linalg import svd
 from scipy.optimize import fmin
 from scipy.spatial import cKDTree
 
@@ -44,10 +42,10 @@ except ImportError:
 
 # !!!!breaks ASM!!!!
 # def normaliseVectors(x):
-#     return x/(scipy.sqrt((x**2.0).sum(1))[:,scipy.newaxis])
+#     return x/(numpy.sqrt((x**2.0).sum(1))[:,numpy.newaxis])
 
 # def normaliseVector(x):
-#     return x/scipy.sqrt((x**2.0).sum())
+#     return x/numpy.sqrt((x**2.0).sum())
 
 class geometric_field:
     """ Class for an ensemble_field representing the geometry of an 
@@ -167,7 +165,7 @@ class geometric_field:
         [node number] [node param1] [node param2] ...
         """
 
-        node_numbers = scipy.arange(self.field_parameters.shape[1])
+        node_numbers = numpy.arange(self.field_parameters.shape[1])
         params = self.field_parameters.squeeze()
         line_pattern = '{:6d} '
 
@@ -234,7 +232,7 @@ class geometric_field:
                 p_lengths[0]) + ') does not match number of field ensemble points ( ' + str(n_ensemble_points) + ')')
 
         # if nothings wrong so far
-        self.field_parameters = scipy.array(field_parameters, dtype=float)
+        self.field_parameters = numpy.array(field_parameters, dtype=float)
 
         # set geometric points associated with ensemble point with these parameters
         # ~ for i in self.ensemble_to_points_map.keys():
@@ -253,68 +251,68 @@ class geometric_field:
     def transformAffine(self, T):
         x = self.get_field_parameters()[:, :, 0].T
         xT = transform3D.transformAffine(x, T)
-        # self.set_field_parameters( xT.T[:,:,scipy.newaxis] )
-        self.field_parameters = xT.T[:, :, scipy.newaxis]
+        # self.set_field_parameters( xT.T[:,:,numpy.newaxis] )
+        self.field_parameters = xT.T[:, :, numpy.newaxis]
 
     def transformTranslate(self, T):
         x = self.get_field_parameters()[:, :, 0]
-        xT = x + T[:, scipy.newaxis]
-        # self.set_field_parameters( xT[:,:,scipy.newaxis] )
-        self.field_parameters = xT[:, :, scipy.newaxis]
+        xT = x + T[:, numpy.newaxis]
+        # self.set_field_parameters( xT[:,:,numpy.newaxis] )
+        self.field_parameters = xT[:, :, numpy.newaxis]
 
     def transformRigid(self, T):
         x = self.get_field_parameters()[:, :, 0].T
         xT = transform3D.transformRigid3D(x, T)
-        # self.set_field_parameters( xT.T[:,:,scipy.newaxis] )
-        self.field_parameters = xT.T[:, :, scipy.newaxis]
+        # self.set_field_parameters( xT.T[:,:,numpy.newaxis] )
+        self.field_parameters = xT.T[:, :, numpy.newaxis]
 
     def transformRigidRotateAboutCoM(self, T):
         x = self.get_field_parameters()[:, :, 0].T
         xT = transform3D.transformRigid3DAboutCoM(x, T)
-        # self.set_field_parameters( xT.T[:,:,scipy.newaxis] )
-        self.field_parameters = xT.T[:, :, scipy.newaxis]
+        # self.set_field_parameters( xT.T[:,:,numpy.newaxis] )
+        self.field_parameters = xT.T[:, :, numpy.newaxis]
 
     def transformRigidScale(self, T):
         x = self.get_field_parameters()[:, :, 0].T
         xT = transform3D.transformRigidScale3D(x, T)
-        # self.set_field_parameters( xT.T[:,:,scipy.newaxis] )
-        self.field_parameters = xT.T[:, :, scipy.newaxis]
+        # self.set_field_parameters( xT.T[:,:,numpy.newaxis] )
+        self.field_parameters = xT.T[:, :, numpy.newaxis]
 
     def transformRigidScaleRotateAboutCoM(self, T):
         x = self.get_field_parameters()[:, :, 0].T
         xT = transform3D.transformRigidScale3DAboutCoM(x, T)
-        # self.set_field_parameters( xT.T[:,:,scipy.newaxis] )
-        self.field_parameters = xT.T[:, :, scipy.newaxis]
+        # self.set_field_parameters( xT.T[:,:,numpy.newaxis] )
+        self.field_parameters = xT.T[:, :, numpy.newaxis]
 
     def transformRigidRotateAboutP(self, T, P):
         x = self.get_field_parameters()[:, :, 0].T
         xT = transform3D.transformRigid3DAboutP(x, T, P)
-        # self.set_field_parameters( xT.T[:,:,scipy.newaxis] )
-        self.field_parameters = xT.T[:, :, scipy.newaxis]
+        # self.set_field_parameters( xT.T[:,:,numpy.newaxis] )
+        self.field_parameters = xT.T[:, :, numpy.newaxis]
 
     def transformRigidScaleRotateAboutP(self, T, P):
         x = self.get_field_parameters()[:, :, 0].T
         xT = transform3D.transformRigidScale3DAboutP(x, T, P)
-        # self.set_field_parameters( xT.T[:,:,scipy.newaxis] )
-        self.field_parameters = xT.T[:, :, scipy.newaxis]
+        # self.set_field_parameters( xT.T[:,:,numpy.newaxis] )
+        self.field_parameters = xT.T[:, :, numpy.newaxis]
 
     def transformRotateAboutP(self, r, P):
         x = self.get_field_parameters()[:, :, 0].T
         xT = transform3D.transformRotateAboutP(x, r, P)
-        # self.set_field_parameters( xT.T[:,:,scipy.newaxis] )
-        self.field_parameters = xT.T[:, :, scipy.newaxis]
+        # self.set_field_parameters( xT.T[:,:,numpy.newaxis] )
+        self.field_parameters = xT.T[:, :, numpy.newaxis]
 
     def transformRotateAboutAxis(self, theta, p0, p1):
         x = self.get_field_parameters()[:, :, 0].T
         xT = transform3D.transformRotateAboutAxis(x, theta, p0, p1)
-        # self.set_field_parameters( xT.T[:,:,scipy.newaxis] )
-        self.field_parameters = xT.T[:, :, scipy.newaxis]
+        # self.set_field_parameters( xT.T[:,:,numpy.newaxis] )
+        self.field_parameters = xT.T[:, :, numpy.newaxis]
 
     def transformRotateAboutCartCS(self, r, o, v1, v2, v3):
         x = self.get_field_parameters()[:, :, 0].T
         xT = transform3D.transformRotateAboutCartCS(x, r, o, v1, v2, v3)
-        # self.set_field_parameters( xT.T[:,:,scipy.newaxis] )
-        self.field_parameters = xT.T[:, :, scipy.newaxis]
+        # self.set_field_parameters( xT.T[:,:,numpy.newaxis] )
+        self.field_parameters = xT.T[:, :, numpy.newaxis]
 
     # ==================================================================#
     def get_field_parameters(self):
@@ -337,7 +335,7 @@ class geometric_field:
         if len(field_parameters) != self.dimensions:
             raise ValueError('ERROR: geometric_field.add_point: parameters length/dimension mismatch')
 
-        self.points.append(geometric_point(self.dimensions, scipy.array(field_parameters)))
+        self.points.append(geometric_point(self.dimensions, numpy.array(field_parameters)))
         if name:
             self.named_points_map[name] = self.points_counter
 
@@ -421,7 +419,7 @@ class geometric_field:
         coords = []
         for p in points:
             coords.append(self.get_point_position(p))
-        coords = scipy.array(coords).T
+        coords = numpy.array(coords).T
 
         # ~ pdb.set_trace()
 
@@ -484,9 +482,9 @@ class geometric_field:
 
                 # ~ pdb.set_trace()
                 try:
-                    self.field_parameters = scipy.hstack([self.field_parameters, scipy.array(fp)[:, scipy.newaxis]])
+                    self.field_parameters = numpy.hstack([self.field_parameters, numpy.array(fp)[:, numpy.newaxis]])
                 except ValueError:
-                    self.field_parameters = scipy.array(fp)[:, scipy.newaxis].copy()
+                    self.field_parameters = numpy.array(fp)[:, numpy.newaxis].copy()
                 # ~ for i in range( self.dimensions ):
                 # ~ self.field_parameters[i].append( fp[i] )
 
@@ -520,7 +518,7 @@ class geometric_field:
 
         # check parameters for right dimensionality and number of points
         element_points = element.get_number_of_ensemble_points()
-        parameters = scipy.array(parameters)
+        parameters = numpy.array(parameters)
         if parameters.shape[0:2] != (self.dimensions, element_points):
             print(
                 'ERROR: geometric_field.add_element_with_parameters: parameters length/dimension mismatch. need {}/{}'.format(
@@ -545,9 +543,9 @@ class geometric_field:
                 # ith parameter coordinates
                 coord = parameters[:, i, 0]
                 # calculate distance of coord to existing points
-                D = scipy.sqrt(((existing_positions - coord) ** 2.0).sum(1))
+                D = numpy.sqrt(((existing_positions - coord) ** 2.0).sum(1))
                 if D.min() < tol:
-                    connect_points.append(scipy.argmin(D))
+                    connect_points.append(numpy.argmin(D))
                 else:
                     # create new geometric point at current parameter 
                     # coordinates, and record new geometric point number
@@ -589,7 +587,7 @@ class geometric_field:
         self.ensemble_point_counter = max(F.mapper._ensemble_to_element_map.keys()) + 1
 
         # make new field_parameters array and ens2pt map
-        new_params = scipy.zeros([self.field_parameters.shape[0],
+        new_params = numpy.zeros([self.field_parameters.shape[0],
                                   F.get_number_of_ensemble_points(),
                                   self.field_parameters.shape[2]],
                                  dtype=float)
@@ -651,7 +649,7 @@ class geometric_field:
         # need to remove hanging point's field parameters
         ensPointNumber = self.points_to_ensemble_map[point]
         fp = self.field_parameters.copy()
-        newFp = scipy.hstack((fp[:, :ensPointNumber, :], fp[:, (ensPointNumber + 1):, :]))
+        newFp = numpy.hstack((fp[:, :ensPointNumber, :], fp[:, (ensPointNumber + 1):, :]))
         self.set_field_parameters(newFp)
 
     # ==================================================================#
@@ -659,41 +657,6 @@ class geometric_field:
         self.ensemble_field_function_old = copy.deepcopy(self.ensemble_field_function)
         flatEFF = self.ensemble_field_function.flatten()[0]
         self.ensemble_field_function = flatEFF
-
-    # ==================================================================#
-    def _make_new_EFF(self):
-        self.field_parameters = None
-        self.points = []  # list of point objects
-        self.points_to_ensemble_map = {}  # { points index: ensemble_point_number }
-        self.ensemble_to_points_map = {}  # { ensemble_point_number: points index }
-        self.named_points_map = {}  # { point_name: points index }
-        self.points_counter = 0
-        self.ensemble_point_counter = 0
-        self.splines = {}  # { spline name: geometric_spline object }
-        self.smoothCurvature = True
-
-        # ~ for i in range( self.dimensions ):
-        # ~ self.field_parameters.append( [] )
-
-        if ensemble_field_function:
-            # create the appropriate number of geometric points for the ensemble
-            # points in the mesh
-            self.ensemble_field_function = ensemble_field_function
-            self._create_ensemble_points()
-            try:
-                self.ensemble_field_function_filename = self.ensemble_field_function.filename
-            except AttributeError:
-                self.ensemble_field_function_filename = self.ensemble_field_function.name + '.ens'
-        else:
-            # instantiate a new ensemble_field_function
-            self.ensemble_field_function = template_fields.empty_field(self.name, field_dimensions, field_basis)
-            # ~ self.ensemble_field_function = EFF.ensemble_field_function( self.name+'field', field_dimensions )
-            # ~ self.ensemble_field_function.set_basis( field_basis    )
-
-        # triangulator for drawing the interpolated surface
-        self.triangulator = triangulate.mesh_triangulator(self.ensemble_field_function, self.field_parameters, False)
-
-        self.ensemble_field_function_filename = None
 
     # ==================================================================#
     def invertSurfaceMesh(self, nodeDistTol=1e-3):
@@ -733,7 +696,7 @@ class geometric_field:
         # re-add elements with reordered parameters
         for elemNumber in list(M.keys()):
             elem = oldEFF.mesh.elements[elemNumber]
-            oldNodeNumbers = scipy.array([M[elemNumber][v][0][0] for v in M[elemNumber]])[
+            oldNodeNumbers = numpy.array([M[elemNumber][v][0][0] for v in M[elemNumber]])[
                 invertMap[elem.type]]  # look up mapping
             elemParams = oldParams[:, oldNodeNumbers, :]
             self.add_element_with_parameters(elem, elemParams, tol=nodeDistTol)
@@ -749,11 +712,11 @@ class geometric_field:
         # for p in self.points:
         #     positions.append( p.get_position() )
 
-        # return scipy.array( positions )
+        # return numpy.array( positions )
         if self.field_parameters is not None:
-            return scipy.array(self.field_parameters[:, :, 0].T)
+            return numpy.array(self.field_parameters[:, :, 0].T)
         else:
-            return scipy.array([])
+            return numpy.array([])
 
     # ==================================================================#
     def get_point_position(self, point):
@@ -768,7 +731,7 @@ class geometric_field:
         #     return point.get_position()
         if self.field_parameters is not None:
             try:
-                return scipy.array(self.field_parameters[:, point, 0])
+                return numpy.array(self.field_parameters[:, point, 0])
             except IndexError:
                 raise ValueError('Invalid point number')
         else:
@@ -793,19 +756,19 @@ class geometric_field:
         # evaluate each coordinate in field
         if not derivs:
 
-            return scipy.array([self.ensemble_field_function.evaluate_field_in_mesh(density, d, unpack=True) for d in
+            return numpy.array([self.ensemble_field_function.evaluate_field_in_mesh(density, d, unpack=True) for d in
                                 self.field_parameters])
 
             # ~ for d in self.field_parameters:
-            # ~ V.append( scipy.array(self.ensemble_field_function.evaluate_field_in_mesh( density, d )).flatten() )
-            # ~ return scipy.array(V)
+            # ~ V.append( numpy.array(self.ensemble_field_function.evaluate_field_in_mesh( density, d )).flatten() )
+            # ~ return numpy.array(V)
         else:
             for d in self.field_parameters:
                 v, d = self.ensemble_field_function.evaluate_field_in_mesh(density, d, derivs)
-                V.append(scipy.array(v).flatten())
+                V.append(numpy.array(v).flatten())
                 D.append(d)
 
-            return scipy.array(V), scipy.array(D)
+            return numpy.array(V), numpy.array(D)
 
     # ==================================================================#
     def get_element_numbers(self, coordinates=True):
@@ -822,7 +785,7 @@ class geometric_field:
             for e_i in elem_numbers:
                 if self.ensemble_field_function.mesh.elements[e_i].is_element:
                     # evaluate element at 0.5, 0.5 in element coords
-                    # coords.append( self.evaluate_geometric_field_at_element_points( e_i, scipy.array([0.5,0.5]) ) )
+                    # coords.append( self.evaluate_geometric_field_at_element_points( e_i, numpy.array([0.5,0.5]) ) )
                     # evaluate centre of mass of element nodes
                     elem_nodes = [v[0][0] for v in
                                   list(self.ensemble_field_function.mapper._element_to_ensemble_map[e_i].values())]
@@ -831,7 +794,7 @@ class geometric_field:
                     # find centre of mass of region nodes
                     region_ens_points = [v[0][0] for v in list(
                         self.ensemble_field_function.mapper._element_to_ensemble_map[e_i].values())]
-                    region_nodes = scipy.array(
+                    region_nodes = numpy.array(
                         [self.get_point_position(self.ensemble_to_points_map[i]) for i in region_ens_points])
                     coords.append(region_nodes.mean(0))
 
@@ -852,14 +815,14 @@ class geometric_field:
         if not derivs:
             for p in self.field_parameters:
                 V.append(
-                    scipy.hstack([
+                    numpy.hstack([
                         self.ensemble_field_function.evaluate_field_in_element(
                             e, density, p, unpack=True
                         ) for e in elements
                     ])
                 )
 
-            return scipy.array(V)
+            return numpy.array(V)
         else:
             for p in self.field_parameters:
                 vv = []
@@ -871,10 +834,10 @@ class geometric_field:
                     vv.append(v)
                     dd.append(d)
 
-                V.append(scipy.hstack(vv))
-                D.append(scipy.hstack(dd))
+                V.append(numpy.hstack(vv))
+                D.append(numpy.hstack(dd))
 
-            return scipy.array(V), scipy.array(D)
+            return numpy.array(V), numpy.array(D)
 
     # ==================================================================#
     def evaluate_geometric_field_at_element_points(self, element, XI, derivs=None):
@@ -901,7 +864,7 @@ class geometric_field:
                 )
             )
 
-        return scipy.array(C)
+        return numpy.array(C)
 
     def evaluate_geometric_field_at_element_points_2(self, EP):
         """
@@ -916,18 +879,17 @@ class geometric_field:
         if self.ensemble_field_function.is_flat():
             # check for empty lists
             try:
-                X = scipy.hstack([
+                X = numpy.hstack([
                     self.evaluate_geometric_field_at_element_points(
-                        e, scipy.array(EP[e])
-                    ) for e in elements if len(scipy.array(EP[e])) > 0
+                        e, numpy.array(EP[e])
+                    ) for e in elements if len(numpy.array(EP[e])) > 0
                 ])
             except TypeError:
-                print(EP[e])
                 raise TypeError('bad xi type')
         else:
             # check for empty lists
-            # ~ X = scipy.hstack([self.evaluate_geometric_field_at_element_points( e, EP[e] ) for e in elements])
-            X = scipy.hstack([
+            # ~ X = numpy.hstack([self.evaluate_geometric_field_at_element_points( e, EP[e] ) for e in elements])
+            X = numpy.hstack([
                 self.evaluate_geometric_field_at_element_points(
                     e, EP[e]
                 ) for e in elements if len(EP[e]) > 0
@@ -963,7 +925,7 @@ class geometric_field:
             # ~ D.append( self.ensemble_field_function.evaluate_field_in_mesh( density, parameters=P, derivs=-1 )[1] )
 
         K, H, k1, k2 = self._calculate_curvature(D)
-        V = scipy.array(V).T
+        V = numpy.array(V).T
         # smooth curvature field
         if smooth:
             H = smoothCurvField(V, H)
@@ -1033,13 +995,13 @@ class geometric_field:
                         )[1]
                     )
 
-                d10.append(scipy.hstack(d10i))
-                d01.append(scipy.hstack(d01i))
+                d10.append(numpy.hstack(d10i))
+                d01.append(numpy.hstack(d01i))
 
         # ~ pdb.set_trace()
-        # d10Norm = normaliseVectors( scipy.array(d10).T )
-        # d01Norm = normaliseVectors( scipy.array(d01).T )
-        # return scipy.cross( d10Norm, d01Norm ).T
+        # d10Norm = normaliseVectors( numpy.array(d10).T )
+        # d01Norm = normaliseVectors( numpy.array(d01).T )
+        # return numpy.cross( d10Norm, d01Norm ).T
 
         # !!! normaliseVectors BREAKS ASM !!!
         # CTM does its own normalistion, and works regardless of this.
@@ -1048,15 +1010,15 @@ class geometric_field:
         # as long as its off for segmentation
 
         N = math.norms(
-            scipy.cross(
-                scipy.array(d10).T, scipy.array(d01).T
+            numpy.cross(
+                numpy.array(d10).T, numpy.array(d01).T
             )
         ).T
         return N
 
     def evaluate_normal_at_element_point(self, elem, xi):
-        d10 = scipy.zeros(3, dtype=float)
-        d01 = scipy.zeros(3, dtype=float)
+        d10 = numpy.zeros(3, dtype=float)
+        d01 = numpy.zeros(3, dtype=float)
         for i, p in enumerate(self.field_parameters):
             self.ensemble_field_function.set_parameters(p)
             d10[i] = self.ensemble_field_function.evaluate_field_at_element_point(
@@ -1068,8 +1030,8 @@ class geometric_field:
 
         # d10Norm = normaliseVector(d10)
         # d01Norm = normaliseVector(d01)
-        # return scipy.cross( d10Norm, d01Norm )
-        return math.norm(scipy.cross(d10, d01))
+        # return numpy.cross( d10Norm, d01Norm )
+        return math.norm(numpy.cross(d10, d01))
 
     # ==================================================================#
     def _calculate_curvature(self, D):
@@ -1080,22 +1042,22 @@ class geometric_field:
         k2 = None
         tol = 1e-12
         # concatenate vectors
-        D = scipy.array(D).T
-        D = scipy.where(abs(D) < tol, 0.0, D)
+        D = numpy.array(D).T
+        D = numpy.where(abs(D) < tol, 0.0, D)
         # ~ print 'D ',D.shape
-        # ~ A = scipy.zeros( (6,len(D)) )
+        # ~ A = numpy.zeros( (6,len(D)) )
 
-        # ~ L = scipy.zeros( len(D) )
-        # ~ M = scipy.zeros( len(D) )
-        # ~ N = scipy.zeros( len(D) )
-        # ~ E = scipy.zeros( len(D) )
-        # ~ F = scipy.zeros( len(D) )
-        # ~ G = scipy.zeros( len(D) )
+        # ~ L = numpy.zeros( len(D) )
+        # ~ M = numpy.zeros( len(D) )
+        # ~ N = numpy.zeros( len(D) )
+        # ~ E = numpy.zeros( len(D) )
+        # ~ F = numpy.zeros( len(D) )
+        # ~ G = numpy.zeros( len(D) )
 
         i = 0
 
-        n = scipy.cross(D[:, 0, :], D[:, 1, :])
-        n = n / scipy.sqrt((n ** 2.0).sum(1))[:, scipy.newaxis]
+        n = numpy.cross(D[:, 0, :], D[:, 1, :])
+        n = n / numpy.sqrt((n ** 2.0).sum(1))[:, numpy.newaxis]
 
         E = D[:, 0, 0] * D[:, 0, 0] + D[:, 0, 1] * D[:, 0, 1] + D[:, 0, 2] * D[:, 0, 2]
         F = D[:, 0, 0] * D[:, 1, 0] + D[:, 0, 1] * D[:, 1, 1] + D[:, 0, 2] * D[:, 1, 2]
@@ -1108,22 +1070,22 @@ class geometric_field:
         # do curvature calculations    
         # ~ for i, d in enumerate(D):
         # ~
-        # ~ L[i] = scipy.dot( d[2], n[i] )
-        # ~ M[i] = scipy.dot( d[4], n[i] )
-        # ~ N[i] = scipy.dot( d[3], n[i] )
+        # ~ L[i] = numpy.dot( d[2], n[i] )
+        # ~ M[i] = numpy.dot( d[4], n[i] )
+        # ~ N[i] = numpy.dot( d[3], n[i] )
         # ~
-        # ~ E[i] = scipy.dot( d[0], d[0] )
-        # ~ F[i] = scipy.dot( d[0], d[1] )
-        # ~ G[i] = scipy.dot( d[1], d[1] )
+        # ~ E[i] = numpy.dot( d[0], d[0] )
+        # ~ F[i] = numpy.dot( d[0], d[1] )
+        # ~ G[i] = numpy.dot( d[1], d[1] )
         # ~
-        # ~ A = scipy.where(abs(A)<tol, 0.0, A)
+        # ~ A = numpy.where(abs(A)<tol, 0.0, A)
 
-        E = scipy.where(abs(E) < tol, 0.0, E)
-        F = scipy.where(abs(F) < tol, 0.0, F)
-        G = scipy.where(abs(G) < tol, 0.0, G)
-        L = scipy.where(abs(L) < tol, 0.0, L)
-        M = scipy.where(abs(M) < tol, 0.0, M)
-        N = scipy.where(abs(N) < tol, 0.0, N)
+        E = numpy.where(abs(E) < tol, 0.0, E)
+        F = numpy.where(abs(F) < tol, 0.0, F)
+        G = numpy.where(abs(G) < tol, 0.0, G)
+        L = numpy.where(abs(L) < tol, 0.0, L)
+        M = numpy.where(abs(M) < tol, 0.0, M)
+        N = numpy.where(abs(N) < tol, 0.0, N)
 
         # ~ [L,M,N,E,F,G] = A
 
@@ -1131,12 +1093,12 @@ class geometric_field:
         # ~ H = -(L*G - 2.0*M*F + N*E) / (2.0*(E*G - F**2.0)**1.5)
         H = -(L * G - 2.0 * M * F + N * E) / (2.0 * (E * G - F * F))
 
-        K = scipy.where(abs(K) < tol, 0.0, K)
-        H = scipy.where(abs(H) < tol, 0.0, H)
+        K = numpy.where(abs(K) < tol, 0.0, K)
+        H = numpy.where(abs(H) < tol, 0.0, H)
 
         # calculate principal curvatures
-        k1 = H + scipy.sqrt(H * H - K)
-        k2 = H - scipy.sqrt(H * H - K)
+        k1 = H + numpy.sqrt(H * H - K)
+        k2 = H - numpy.sqrt(H * H - K)
 
         return K, H, k1, k2
 
@@ -1159,10 +1121,10 @@ class geometric_field:
     #     for ei, e in enumerate(self.ensemble_field_function.mesh.elements.keys()):
     #         elemArray.append([e]*ep[ei].shape[1])
 
-    #     elemArray = scipy.hstack(elemArray)
+    #     elemArray = numpy.hstack(elemArray)
 
     #     # create material point kdtree
-    #     ep = scipy.hstack(ep).T
+    #     ep = numpy.hstack(ep).T
     #     epTree = cKDTree(ep)
 
     #     # search tree
@@ -1185,7 +1147,7 @@ class geometric_field:
         # objective function
         def findXiObj(xi, target):
             B = basis.eval(xi)
-            v = scipy.dot(P, B)
+            v = numpy.dot(P, B)
             d = ((v - target) * (v - target)).sum()
             return d
 
@@ -1200,7 +1162,7 @@ class geometric_field:
         """
 
         if initXi is None:
-            initXi = scipy.ones(self.ensemble_field_function.dimensions, dtype=float) * 0.5
+            initXi = numpy.ones(self.ensemble_field_function.dimensions, dtype=float) * 0.5
 
         if findXiObj is None:
             findXiObj = self._makeXiObj(elem)
@@ -1217,16 +1179,16 @@ class geometric_field:
         # # objective function
         # def findXiObj( xi ):
         #     B = basis.eval( xi )
-        #     v = scipy.dot(P, B)
+        #     v = numpy.dot(P, B)
         #     #~ v = [ evaluator(B,p) for p in P ]
         #     d = ((v - target)**2.0 ).sum()
         #     return d    
 
-        # initXi = scipy.array( initXi )
-        # target = scipy.array( target )
+        # initXi = numpy.array( initXi )
+        # target = numpy.array( target )
         xiOpt = fmin(findXiObj, initXi, args=(target,), disp=False)
-        d = scipy.sqrt(findXiObj(xiOpt, target))
-        coord = scipy.dot(findXiObj.P, findXiObj.basis.eval(xiOpt))
+        d = numpy.sqrt(findXiObj(xiOpt, target))
+        coord = numpy.dot(findXiObj.P, findXiObj.basis.eval(xiOpt))
         return xiOpt, coord, d
 
     # ==================================================================#
@@ -1243,7 +1205,7 @@ class geometric_field:
             print('searching for closest material point for %i points' % (len(dataPoints)))
 
         if initGD is None:
-            initGD = scipy.ones(self.ensemble_field_function.dimensions, dtype=int) * 40
+            initGD = numpy.ones(self.ensemble_field_function.dimensions, dtype=int) * 40
 
         # initial scattering of EPs
         elemNumbers = list(self.ensemble_field_function.mesh.elements.keys())
@@ -1266,16 +1228,16 @@ class geometric_field:
         # else:
         #     initXi, initEP = misc._removeDuplicates( initXi, initEP )
 
-        initEP = scipy.vstack(initEP)
+        initEP = numpy.vstack(initEP)
 
         # map of initEP to elements
-        epElems = scipy.zeros(initEP.shape[0], dtype=int)
+        epElems = numpy.zeros(initEP.shape[0], dtype=int)
         counter = 0
         for elemI, elemXi in enumerate(initXi):
             epElems[counter:counter + len(elemXi)] = elemNumbers[elemI]
             counter += len(elemXi)
 
-        initXi = scipy.vstack(initXi)
+        initXi = numpy.vstack(initXi)
 
         # for each datapoint, find its closest ep, and ep element
         initEPTree = cKDTree(initEP)
@@ -1295,8 +1257,8 @@ class geometric_field:
                 findXiObj=elemXiObjs[closestMPs[pi][0]],
             )
             closestXi = closestXi.clip(0.0, 1.0)
-            # closestXi = scipy.where(closestXi<0.0, 0.0, closestXi)
-            # closestXi = scipy.where(closestXi>1.0, 1.0, closestXi)
+            # closestXi = numpy.where(closestXi<0.0, 0.0, closestXi)
+            # closestXi = numpy.where(closestXi>1.0, 1.0, closestXi)
             closestMPs[pi][1] = closestXi
             closestPoints.append(coord)
             distances.append(d)
@@ -1305,8 +1267,8 @@ class geometric_field:
                 sys.stdout.write('closest distance for point %i: %5.3f\r' % (pi, d))
                 sys.stdout.flush()
 
-        closestPoints = scipy.array(closestPoints)
-        distances = scipy.array(distances)
+        closestPoints = numpy.array(closestPoints)
+        distances = numpy.array(distances)
 
         return closestMPs, closestPoints, distances
 
@@ -1328,7 +1290,7 @@ class geometric_field:
 
         # ~ pdb.set_trace()
         # centre of mass
-        CoM = (a[:, scipy.newaxis] * b).sum(0) / aT
+        CoM = (a[:, numpy.newaxis] * b).sum(0) / aT
         return CoM
 
     # ==================================================================#
@@ -1339,7 +1301,7 @@ class geometric_field:
         """
 
         if element is not None:
-            ep = scipy.array([self.ensemble_field_function.evaluate_field_in_element(element, d, p) for p in
+            ep = numpy.array([self.ensemble_field_function.evaluate_field_in_element(element, d, p) for p in
                               self.field_parameters]).T
             elem = self.ensemble_field_function.mesh.elements[element]
             if elem.is_element:
@@ -1347,59 +1309,24 @@ class geometric_field:
             else:
                 T = triangulate.triangulate(elem.get_true_elements(), d)
         else:
-            ep = scipy.array(
+            ep = numpy.array(
                 [self.ensemble_field_function.evaluate_field_in_mesh(d, p) for p in self.field_parameters]).T
             T = triangulate.triangulate(self.ensemble_field_function.mesh.get_true_elements(), d)
 
         # calculate the side lengths of each triangle
-        l1 = scipy.sqrt(((ep[T[:, 0]] - ep[T[:, 1]]) ** 2.0).sum(1))
-        l2 = scipy.sqrt(((ep[T[:, 1]] - ep[T[:, 2]]) ** 2.0).sum(1))
-        l3 = scipy.sqrt(((ep[T[:, 2]] - ep[T[:, 0]]) ** 2.0).sum(1))
+        l1 = numpy.sqrt(((ep[T[:, 0]] - ep[T[:, 1]]) ** 2.0).sum(1))
+        l2 = numpy.sqrt(((ep[T[:, 1]] - ep[T[:, 2]]) ** 2.0).sum(1))
+        l3 = numpy.sqrt(((ep[T[:, 2]] - ep[T[:, 0]]) ** 2.0).sum(1))
 
         # heron's formula for calculating area of triangle give lengths of 3 sides
         # warning: unstable for very narrow triangles
         s = (l1 + l2 + l3) * 0.5
-        a = scipy.sqrt(s * (s - l1) * (s - l2) * (s - l3))
+        a = numpy.sqrt(s * (s - l1) * (s - l2) * (s - l3))
 
         if fullOutput:
             return a.sum(), a, T, ep
         else:
             return a.sum()
-
-    # ==================================================================#
-    def calc_moments_of_area(self, d):
-        # calc areas of each triangle
-        aT, areas, T, ep = self.calc_surface_area(d, element=elem, fullOutput=True)
-
-        # calc barycenter of each triangle
-        b = ep[T].sum(1) / 3.0
-
-        # centre of mass
-        CoM = (a[:, scipy.newaxis] * b).sum(0) / aT
-
-        v = b - CoM
-
-        I11 = ((v[:, 1] * v[:, 1] + v[:, 2] * v[:, 2]) * areas).sum()
-        I22 = ((v[:, 0] * v[:, 0] + v[:, 2] * v[:, 2]) * areas).sum()
-        I33 = ((v[:, 1] * v[:, 1] + v[:, 0] * v[:, 0]) * areas).sum()
-        I12 = -(v[:, 0] * v[:, 1] * areas).sum()
-        I13 = -(v[:, 0] * v[:, 2] * areas).sum()
-        I23 = -(v[:, 1] * v[:, 2] * areas).sum()
-
-        I = scipy.array([[I11, I12, I13], [I12, I22, I23], [I13, I23, I33]])
-
-        u, s, vh = svd(I)
-        self.principalMoments = s.real[::-1]
-        self.principalAxes = scipy.fliplr(u.real)
-
-        if self.principalAxes[2, 0] < 0.0:
-            self.principalAxes[:, 0] *= -1.0
-        if self.principalAxes[0, 1] < 0.0:
-            self.principalAxes[:, 1] *= -1.0
-        if self.principalAxes[1, 2] < 0.0:
-            self.principalAxes[:, 2] *= -1.0
-
-        return self.principalMoments, self.principalAxes
 
     # ==================================================================#
     def display_geometric_field(self, field_eval_density, point_glyph='sphere', point_label=None, point_scale=1.0,
@@ -1460,15 +1387,15 @@ class geometric_field:
         E = self.evaluate_geometric_field(density)
 
         # remove every density points to avoid overlap
-        allPoints = scipy.array(E.T)
+        allPoints = numpy.array(E.T)
         points = []
         for i, p in enumerate(allPoints):
-            if scipy.mod(i, density[0]) != 0 or i == 0:
+            if numpy.mod(i, density[0]) != 0 or i == 0:
                 points.append(p)
 
         # points = E.T
 
-        points = scipy.transpose(points)
+        points = numpy.transpose(points)
         if scene is None:
             line = mlab.plot3d(points[0], points[1], points[2], **kwargs)
         else:
@@ -1527,12 +1454,12 @@ class geometric_field:
             K, H, k1, k2 = self.evaluate_curvature_in_mesh(field_eval_density)
             if curvature == 'mean':
                 H = CT.normalise(CT.filterCurv(H, cMin, cMax))
-                binInd = scipy.digitize(H, bins)
+                binInd = numpy.digitize(H, bins)
                 return self._draw_surface(field_eval_density, scalar=binInd, name=name, figure=fig,
                                           lim=(1.0, len(bins) - 1))
             elif curvature == 'gaussian':
                 K = CT.normalise(CT.filterCurv(K, cMin, cMax))
-                binInd = scipy.digitize(K, bins)
+                binInd = numpy.digitize(K, bins)
                 return self._draw_surface(field_eval_density, scalar=binInd, name=name, figure=fig,
                                           lim=(1.0, len(bins) - 1))
 
@@ -1545,11 +1472,11 @@ class geometric_field:
         """
 
         # get point positions
-        p = scipy.array(self.get_all_point_positions())
+        p = numpy.array(self.get_all_point_positions())
 
         if len(p) > 0:
             # ~ f = mlab.figure()
-            s = scipy.arange(len(self.points))
+            s = numpy.arange(len(self.points))
             if figure:
                 points_plot = mlab.points3d(p[:, 0], p[:, 1], p[:, 2], s, mode='sphere', scale_mode='none',
                                             scale_factor=scale, color=(1, 0, 0), figure=figure)
@@ -1603,7 +1530,7 @@ class geometric_field:
             # evaluate each coordinate in field
             for d in self.field_parameters:
                 evaluation.append(
-                    scipy.array(self.ensemble_field_function.evaluate_field_in_mesh(density, d)).flatten())
+                    numpy.array(self.ensemble_field_function.evaluate_field_in_mesh(density, d)).flatten())
 
             if self.dimensions == 3:
                 field_plot = mlab.points3d(evaluation[0], evaluation[1], evaluation[2], mode=glyph, scale_factor=0.8,
@@ -1616,10 +1543,10 @@ class geometric_field:
         """ evaluates spline and draw using plot3d
         """
         if spline.type == 'parametric':
-            e = spline.eval(scipy.linspace(0, 1, density))
+            e = spline.eval(numpy.linspace(0, 1, density))
             line = mlab.plot3d(e[0], e[1], e[2], tube_radius=0.2)
         elif spline.type == 'interp_x':
-            x = scipy.linspace(spline.xb, spline.xe, density)
+            x = numpy.linspace(spline.xb, spline.xe, density)
             e = spline.eval(x)
             line = mlab.plot3d(x, e[0], e[1], tube_radius=0.2)
             return line
@@ -1692,7 +1619,7 @@ class geometric_field:
         f = self.ensemble_field_function
         self.basisWeights = {}  # {elemNumber: {[xi]:[weights]}}
         self.elementXis = {}  # {elemNumber: [xis]}
-        for ei in scipy.sort(list(f.mesh.elements.keys())):
+        for ei in numpy.sort(list(f.mesh.elements.keys())):
             element = f.mesh.elements[ei]
             elementXis = element.generate_eval_grid(epD).squeeze()
             basisValues = f.basis[element.type].eval(elementXis.T).T
@@ -1728,8 +1655,8 @@ class geometric_field:
         x = E.evaluate_field_in_mesh(GD, parameters=self.field_parameters[0], unpack=0)
         cc = []
         for i, e in enumerate(x):
-            cc.append(scipy.ones(e.shape) * i)
-        cc = scipy.hstack(cc)
+            cc.append(numpy.ones(e.shape) * i)
+        cc = numpy.hstack(cc)
 
         return cc
 
@@ -1768,7 +1695,7 @@ class geometric_field:
             for i in range(e):
                 epCount += ep[i].shape[0]
 
-            epI.append(scipy.arange(epCount, epCount + ep[e].shape[0]))
+            epI.append(numpy.arange(epCount, epCount + ep[e].shape[0]))
 
         return epI
 
@@ -1796,7 +1723,7 @@ class geometric_field:
             # for each element
             for i, e in enumerate(epPacked):
                 if i in subMeshes:
-                    epI.append(scipy.arange(I, I + e.shape[0]))
+                    epI.append(numpy.arange(I, I + e.shape[0]))
                 I += len(e)
         else:
             if isinstance(GD, float):
@@ -1816,7 +1743,7 @@ class geometric_field:
 
                 # for each element in the current subMesh
                 for e in epSubPacked[s]:
-                    epI.append(scipy.arange(subMeshI, subMeshI + e.shape[0]))
+                    epI.append(numpy.arange(subMeshI, subMeshI + e.shape[0]))
                     subMeshI += e.shape[0]
 
         return epI
@@ -1848,7 +1775,7 @@ class geometric_field:
 
             # for each element in the current subMesh
             for e in epSubPacked[s]:
-                epI[si].append(scipy.arange(subMeshI, subMeshI + e.shape[0]))
+                epI[si].append(numpy.arange(subMeshI, subMeshI + e.shape[0]))
                 subMeshI += e.shape[0]
 
         return epI
@@ -1894,13 +1821,12 @@ class geometric_field:
             else:
                 elem = self.ensemble_field_function.mesh.elements[e]
 
-            elemParams = scipy.array(
+            elemParams = numpy.array(
                 [self.ensemble_field_function.mapper.get_element_parameters(e, p, do_hack=0) for p in
-                 self.get_field_parameters()])[:, :, scipy.newaxis]
-            try:
-                newGF.add_element_with_parameters(elem, elemParams, tol=1e-3)
-            except IndexError:
-                pdb.set_trace()
+                 self.get_field_parameters()])[:, :, numpy.newaxis]
+
+            newGF.add_element_with_parameters(elem, elemParams, tol=1e-3)
+
 
         return newGF
 
@@ -1918,8 +1844,8 @@ class geometric_field:
                 self.evaluator = evaluator
 
             def eval(self, xi):
-                basisWeights = self.basis.eval(scipy.transpose(xi))
-                coords = scipy.array([self.evaluator(basisWeights, p) for p in self.parameters]).T
+                basisWeights = self.basis.eval(numpy.transpose(xi))
+                coords = numpy.array([self.evaluator(basisWeights, p) for p in self.parameters]).T
                 return coords
 
         element = self.ensemble_field_function.mesh.elements[elementNumber]
@@ -1929,7 +1855,7 @@ class geometric_field:
         for p in self.field_parameters:
             self.ensemble_field_function.set_parameters(p)
             elemParameters.append(self.ensemble_field_function._get_element_parameters(elementNumber))
-        elemParameters = scipy.array(elemParameters)
+        elemParameters = numpy.array(elemParameters)
 
         return elementGeometryEvaluator(element, elemBasis, elemEvaluator, elemParameters)
 
@@ -1950,7 +1876,7 @@ class geometric_field:
     def discretiseAllElementsRegularGeoD(self, maxDistance, geoCoords=False, unpack=True):
 
         elementOutput = []
-        for elementNumber in scipy.sort(list(self.ensemble_field_function.mesh.elements.keys())):
+        for elementNumber in numpy.sort(list(self.ensemble_field_function.mesh.elements.keys())):
             if self.ensemble_field_function.mesh.elements[elementNumber].is_element == True:
                 elementOutput.append(self.discretiseElementRegularGeoD(elementNumber, maxDistance, geoCoords=geoCoords))
             else:
@@ -1962,12 +1888,12 @@ class geometric_field:
         geo = [e[1] for e in elementOutput]
 
         if geoCoords and unpack:
-            geo = scipy.vstack(geo)
-            xi = scipy.vstack(xi)
+            geo = numpy.vstack(geo)
+            xi = numpy.vstack(xi)
         elif not geoCoords:
             geo = None
             if unpack:
-                xi = scipy.vstack(xi)
+                xi = numpy.vstack(xi)
 
         return xi, geo
 
@@ -1981,7 +1907,7 @@ class geometric_field:
         else:
             dataXi, dataCoords = misc._removeDuplicates(dataXi, dataCoords)
 
-        dataCoords = scipy.vstack([scipy.vstack(c) for c in dataCoords])
+        dataCoords = numpy.vstack([numpy.vstack(c) for c in dataCoords])
 
         dataXi = misc.dictXiMap(dataXi)
         if self.ensemble_field_function.is_flat():
@@ -2045,13 +1971,13 @@ class geometric_field:
         if exactSearch:
             GFXi, GFX, closestDist = self.find_closest_material_points(points, initGD=[80, 80])
             NX = [self.evaluate_normal_in_mesh(None, elemXi={Xi[0]: Xi[1]}).squeeze() for Xi in GFXi]
-            NX = scipy.array(NX)
+            NX = numpy.array(NX)
             PX = points - GFX
         else:
             # evaluate points on surface
             GFXi, GFX = self.discretiseAllElementsRegularGeoD(GD, geoCoords=True, unpack=False)
-            GFX = scipy.vstack(GFX)
-            GFElemXi = dict(list(zip(scipy.sort(list(self.ensemble_field_function.mesh.elements.keys())), GFXi)))
+            GFX = numpy.vstack(GFX)
+            GFElemXi = dict(list(zip(numpy.sort(list(self.ensemble_field_function.mesh.elements.keys())), GFXi)))
 
             # evaluate normals of these points
             GFNormals = self.evaluate_normal_in_mesh(None, elemXi=GFElemXi).T
@@ -2100,15 +2026,12 @@ class geometric_field:
         N = (bboxMax - bboxMin) / spacing
 
         # generate grid of points in bounding box
-        PAll = scipy.array([[x, y, z] for z in scipy.linspace(bboxMin[2], bboxMax[2], N[2]) \
-                            for y in scipy.linspace(bboxMin[1], bboxMax[1], N[1]) \
-                            for x in scipy.linspace(bboxMin[0], bboxMax[0], N[0])])
+        PAll = numpy.array([[x, y, z] for z in numpy.linspace(bboxMin[2], bboxMax[2], N[2]) \
+                            for y in numpy.linspace(bboxMin[1], bboxMax[1], N[1]) \
+                            for x in numpy.linspace(bboxMin[0], bboxMax[0], N[0])])
 
         # filter out exterior points
-        try:
-            isInterior = self.isInteriorToSurface(PAll, maxOutDist=maxOutDist, exactSearch=exactClosestSearch)
-        except ValueError:
-            pdb.set_trace()
+        isInterior = self.isInteriorToSurface(PAll, maxOutDist=maxOutDist, exactSearch=exactClosestSearch)
 
         return PAll[isInterior, :]
 
@@ -2166,7 +2089,7 @@ class geometric_point(object):
 
     # ==================================================================#
     def get_position(self):
-        return scipy.array(self.field_parameters[:, 0])
+        return numpy.array(self.field_parameters[:, 0])
 
 
 # ======================================================================#
@@ -2191,7 +2114,7 @@ class spline_3d_parametric(object):
     def eval(self, u):
         """ evaluate the spline g(u) at u. u can be a sequence of values
         """
-        u = scipy.array(u)
+        u = numpy.array(u)
         x = splev(u, self.tck)
 
         return x
@@ -2211,7 +2134,7 @@ class spline_3d_parametric(object):
 
     def _closestObj(self, u):
         pLine = self.eval(u[0])
-        d = scipy.sqrt((scipy.subtract(self.p, pLine) ** 2.0).sum())
+        d = numpy.sqrt((numpy.subtract(self.p, pLine) ** 2.0).sum())
         return d
 
 
@@ -2261,7 +2184,7 @@ def makeGeometricFieldEvaluator(G, evalD):
     # calculate static basis values for the required evalD
     basisValues = {}
     basisMatrices = {}
-    for elementNumber in scipy.sort(list(f.mesh.elements.keys())):
+    for elementNumber in numpy.sort(list(f.mesh.elements.keys())):
         # get element
         element = f.mesh.elements[elementNumber]
         # calculate basis values
@@ -2277,15 +2200,15 @@ def makeGeometricFieldEvaluator(G, evalD):
     def evaluator(P):
         P3 = P.reshape((3, -1, 1))
         V = []
-        for elementNumber in scipy.sort(list(f.mesh.elements.keys())):
+        for elementNumber in numpy.sort(list(f.mesh.elements.keys())):
             # map global parameters to element parameters
             p1 = f.mapper.get_element_parameters(elementNumber, P3[0], do_hack=1)
             p2 = f.mapper.get_element_parameters(elementNumber, P3[1], do_hack=1)
             p3 = f.mapper.get_element_parameters(elementNumber, P3[2], do_hack=1)
             # combine with static basis values 
-            V.append(scipy.dot(basisMatrices[elementNumber], scipy.vstack((p1, p2, p3)).T))
+            V.append(numpy.dot(basisMatrices[elementNumber], numpy.vstack((p1, p2, p3)).T))
 
-        return scipy.vstack(V).T
+        return numpy.vstack(V).T
 
     return evaluator
 
@@ -2318,12 +2241,12 @@ def makeGeometricFieldEvaluatorSparse(G, evalD, epIndex=None, epXi=None, matPoin
         nEPs = len(matPoints)
     elif evalD is None:
         ep = epXi
-        nEPs = scipy.sum([e.shape[0] for e in ep])
-        # ~ nEPs = scipy.sum( [e.shape[0] for e in ep.values()] )
+        nEPs = numpy.sum([e.shape[0] for e in ep])
+        # ~ nEPs = numpy.sum( [e.shape[0] for e in ep.values()] )
         epMode = 1
     elif isinstance(evalD, float):
         ep = G.discretiseAllElementsRegularGeoD(evalD, unpack=False)[0]
-        nEPs = scipy.sum([e.shape[0] for e in ep])
+        nEPs = numpy.sum([e.shape[0] for e in ep])
         epMode = 1
     else:
         ep = G.evaluate_geometric_field(evalD)
@@ -2331,7 +2254,7 @@ def makeGeometricFieldEvaluatorSparse(G, evalD, epIndex=None, epXi=None, matPoin
         epMode = 2
 
     d = G.dimensions
-    A = scipy.zeros((nEPs, f.get_number_of_ensemble_points()), dtype=float)
+    A = numpy.zeros((nEPs, f.get_number_of_ensemble_points()), dtype=float)
 
     if epMode == 3:
         # ~ pdb.set_trace()
@@ -2353,7 +2276,7 @@ def makeGeometricFieldEvaluatorSparse(G, evalD, epIndex=None, epXi=None, matPoin
         basisValues = {}
         row = 0
 
-        for ei, elementNumber in enumerate(scipy.sort(list(f.mesh.elements.keys()))):
+        for ei, elementNumber in enumerate(numpy.sort(list(f.mesh.elements.keys()))):
             # get element
             element = f.mesh.elements[elementNumber]
 
@@ -2379,10 +2302,7 @@ def makeGeometricFieldEvaluatorSparse(G, evalD, epIndex=None, epXi=None, matPoin
             # fill in A matrix                                
             emap = f.mapper._element_to_ensemble_map[elementNumber]  # element to ensemble map
             for n in range(b.shape[1]):
-                try:
-                    A[row:row + b.shape[0], emap[n][0][0]] = b[:, n]
-                except ValueError:
-                    pdb.set_trace()
+                A[row:row + b.shape[0], emap[n][0][0]] = b[:, n]
 
             row += b.shape[0]
 
@@ -2467,11 +2387,11 @@ def makeGeometricFieldDerivativesEvaluatorSparse(G, evalD, dim=3, epIndex=None, 
 
     if evalD is None:
         ep = epXi
-        nEPs = scipy.sum([e.shape[0] for e in ep])
+        nEPs = numpy.sum([e.shape[0] for e in ep])
         epMode = 1
     elif isinstance(evalD, float):
         ep = G.discretiseAllElementsRegularGeoD(evalD, unpack=False)[0]
-        nEPs = scipy.sum([e.shape[0] for e in ep])
+        nEPs = numpy.sum([e.shape[0] for e in ep])
         epMode = 1
     else:
         ep = G.evaluate_geometric_field(evalD)
@@ -2483,9 +2403,9 @@ def makeGeometricFieldDerivativesEvaluatorSparse(G, evalD, dim=3, epIndex=None, 
     # calculate static basis values for the required evalD and assemble
     # matrices
     basisValues = {}
-    A = [scipy.zeros((nEPs, f.get_number_of_ensemble_points()), dtype=float) for i in range(nDerivs)]
+    A = [numpy.zeros((nEPs, f.get_number_of_ensemble_points()), dtype=float) for i in range(nDerivs)]
     row = 0
-    for ei, elementNumber in enumerate(scipy.sort(list(f.mesh.elements.keys()))):
+    for ei, elementNumber in enumerate(numpy.sort(list(f.mesh.elements.keys()))):
         # get element
         element = f.mesh.elements[elementNumber]
 
@@ -2505,10 +2425,8 @@ def makeGeometricFieldDerivativesEvaluatorSparse(G, evalD, dim=3, epIndex=None, 
         emap = f.mapper._element_to_ensemble_map[elementNumber]  # element to ensemble map
         for d in range(b.shape[0]):
             for n in range(b.shape[1]):
-                try:
-                    A[d][row:row + b.shape[2], emap[n][0][0]] = b[d, n, :]
-                except ValueError:
-                    pdb.set_trace()
+                A[d][row:row + b.shape[2], emap[n][0][0]] = b[d, n, :]
+
 
         row += b.shape[2]
 
@@ -2516,9 +2434,9 @@ def makeGeometricFieldDerivativesEvaluatorSparse(G, evalD, dim=3, epIndex=None, 
         AStacked = []
         for a in A:
             AStacked.append(a[:, epIndex])
-        AStacked = scipy.vstack(AStacked)
+        AStacked = numpy.vstack(AStacked)
     else:
-        AStacked = scipy.vstack(A)
+        AStacked = numpy.vstack(A)
 
     # stack all derivative A matrices
     AStackedSparse = sparse.csc_matrix(AStacked)
@@ -2545,7 +2463,7 @@ def makeArclengthEvalDisc(c, d):
     """
 
     ceval = makeGeometricFieldEvaluatorSparse(c, [d, ])
-    p = scipy.array(c.field_parameters)
+    p = numpy.array(c.field_parameters)
     n_elems = c.ensemble_field_function.mesh.get_number_of_true_elements()
 
     def f(p):
@@ -2553,8 +2471,8 @@ def makeArclengthEvalDisc(c, d):
 
         # separate x into element points per element
         _x = x.reshape((n_elems, -1, 3))
-        return scipy.sum(
-            scipy.sqrt(
+        return numpy.sum(
+            numpy.sqrt(
                 ((_x[:, 1:, :] - _x[:, :-1, :]) ** 2.0).sum(2)
             ), 1)
 
@@ -2673,8 +2591,8 @@ class GeometricFieldJSONWriter(object):
 
     def _serialise_field_parameters(self, gf_dict):
         d = {}
-        node_numbers = scipy.arange(self.gf.field_parameters.shape[1])
-        dims = scipy.arange(self.gf.field_parameters.shape[0])
+        node_numbers = numpy.arange(self.gf.field_parameters.shape[1])
+        dims = numpy.arange(self.gf.field_parameters.shape[0])
         params = self.gf.field_parameters.squeeze()
 
         for n in node_numbers:
@@ -2755,7 +2673,7 @@ class GeometricFieldJSONReader(object):
         node_keys = sorted(gf_dict['field_parameters'].keys())
         dim_keys = sorted(gf_dict['field_parameters'][node_keys[0]].keys())
         val_len = gf_dict['field_parameters'][node_keys[0]][dim_keys[0]].split(' ').__len__()
-        p = scipy.zeros([len(dim_keys), len(node_keys), val_len], dtype=float)
+        p = numpy.zeros([len(dim_keys), len(node_keys), val_len], dtype=float)
         for ni, nk in enumerate(node_keys):
             node_dict = gf_dict['field_parameters'][nk]
             for di, dk in enumerate(dim_keys):

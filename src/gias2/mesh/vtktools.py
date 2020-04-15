@@ -19,7 +19,7 @@ from os import path
 
 import sys
 import vtk
-from scipy import zeros, array, uint8, int16, ones, newaxis, ascontiguousarray
+from numpy import zeros, array, uint8, int16, ones, newaxis, ascontiguousarray
 from vtk.util import numpy_support
 
 from gias2.mesh import plywriter
@@ -944,14 +944,14 @@ class polydataFromImageParams(object):
 
 class DummyFilter(object):
 
-    def __init__(outputDataObject):
-        self.dataObject
+    def __init__(self, output_data_object):
+        self.data_object = output_data_object
 
-    def getOutputDataObject():
-        return dataObject
+    def getOutputDataObject(self):
+        return self.data_object
 
-    def getOutput():
-        return dataObject
+    def getOutput(self):
+        return self.data_object
 
 
 def polydataFromImage(vtkImage, params, disp=0, pipeline=False):
@@ -1013,9 +1013,6 @@ def polydataFromImage(vtkImage, params, disp=0, pipeline=False):
 
     previousFilter = triFilter
 
-    if disp:
-        RenderPolyData(triFilter.GetOutput())
-
     # smooth polydata
     if params.smoothIt:
         print("smoothing...")
@@ -1033,9 +1030,6 @@ def polydataFromImage(vtkImage, params, disp=0, pipeline=False):
                 smoother.Update()
 
         previousFilter = smoother
-
-        if disp:
-            RenderPolyData(smoother.GetOutput())
 
     # decimate polydata
     if params.deciRatio:
@@ -1064,9 +1058,6 @@ def polydataFromImage(vtkImage, params, disp=0, pipeline=False):
                 decimator.Update()
 
         previousFilter = decimator
-
-        if disp:
-            RenderPolyData(decimator.GetOutput())
 
     # clean mesh
     if params.clean:
@@ -1108,9 +1099,6 @@ def polydataFromImage(vtkImage, params, disp=0, pipeline=False):
 
         previousFilter = normal
 
-        if disp:
-            RenderPolyData(normal.GetOutput())
-
     if params.calcCurvature:
         print("calculating curvature...")
         curvature = vtk.vtkCurvatures()
@@ -1126,9 +1114,6 @@ def polydataFromImage(vtkImage, params, disp=0, pipeline=False):
                 curvature.Update()
 
         previousFilter = curvature
-
-        if disp:
-            RenderPolyData(curvature.GetOutput())
 
     previousFilter.Update()
 

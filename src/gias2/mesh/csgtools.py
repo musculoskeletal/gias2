@@ -164,33 +164,8 @@ def cube(center=[0, 0, 0], radius=[1, 1, 1]):
     return CSG.cube(center=list(center), radius=list(radius))
 
 
-def cup(centre, normal, ri, ro):
-    return CSG.cup(list(centre), list(normal), ri, ro)
-
-    # slices=16
-    # stacks=8
-    # centre = np.array(centre)
-    # normal = gmath.norm(np.array(normal))
-
-    # # create outer sphere
-    # sphere_out = CSG.sphere(center=list(centre), radius=ro, slices=slices, stacks=stacks)
-
-    # # create inner sphere
-    # sphere_in = CSG.sphere(center=list(centre), radius=ri, slices=slices, stacks=stacks)
-
-    # # create shell
-    # shell = sphere_out.subtract(sphere_in)
-    # shell_poly = shell.toPolygons()
-
-    # # create cylinder to cut shell
-    # cylinder = CSG.cylinder(start=list(centre),
-    #                         end=list(centre-normal*(ro*1.5)),
-    #                         radius=ro*1.5
-    #                         )
-    # # create cup
-    # cup = shell.subtract(cylinder)
-
-    # return cup
+def cup(centre, normal, ri, ro, slices=12, stacks=12):
+    return CSG.cup(list(centre), list(normal), ri, ro, slices, stacks)
 
 
 def cylinder_var_radius(**kwargs):

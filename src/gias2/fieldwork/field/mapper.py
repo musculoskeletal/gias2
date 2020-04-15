@@ -16,8 +16,6 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 import scipy
 
 
-# import pdb
-
 class mapper:
     """ Class to create maps mapping ensemble parameters to element point 
     parameters and vice-versa.
@@ -64,7 +62,7 @@ class mapper:
                 for j in range(self.field.mesh.elements[i].get_number_of_ensemble_points()):
                     # initialise element point entries for each element
                     # ~ self._element_to_ensemble_map[i][j] = []
-                    self._element_to_ensemble_map[i][j] = ([], [])  ###
+                    self._element_to_ensemble_map[i][j] = ([], [])
 
             return 1
 
@@ -123,8 +121,8 @@ class mapper:
 
                     # update element to ensemble map
                     # ~ self._element_to_ensemble_map[ec][pc].append( [ gp, [1.0] ] )
-                    self._element_to_ensemble_map[ec][pc][0].append(gp)  ###
-                    self._element_to_ensemble_map[ec][pc][1].append(1.0)  ###
+                    self._element_to_ensemble_map[ec][pc][0].append(gp)
+                    self._element_to_ensemble_map[ec][pc][1].append(1.0)
                     assigned.append((ec, pc))
 
                 if self.debug:
@@ -177,11 +175,8 @@ class mapper:
 
                             # update element to ensemble map
 
-                            try:  # ~ self._element_to_ensemble_map[e][p].append( [ host_gp[host_gp_i], [weights[ host_gp_i ]] ] )
-                                self._element_to_ensemble_map[e][p][0].append(host_gp[host_gp_i])  ###
-                                self._element_to_ensemble_map[e][p][1].append(weights[host_gp_i])  ###
-                            except KeyError:
-                                pdb.set_trace()
+                            self._element_to_ensemble_map[e][p][0].append(host_gp[host_gp_i])  ###
+                            self._element_to_ensemble_map[e][p][1].append(weights[host_gp_i])  ###
 
         return 1
 

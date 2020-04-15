@@ -15,7 +15,7 @@ python functions wrapping c code for evaluating elements
 """
 import ctypes as C
 
-from scipy import zeros
+from numpy import zeros
 
 cEval = C.CDLL('/home/yams/PhD/fieldwork/field/field_ctypes/ensemble_evaluators_c.so')
 fpter = C.POINTER(C.c_float)

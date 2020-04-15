@@ -21,8 +21,7 @@ This file is part of Fieldwork. (https://bitbucket.org/jangle/fieldwork)
 """
 miscellaneous helper functions
 """
-
-import scipy as sp
+import numpy
 from scipy.spatial import cKDTree
 
 
@@ -80,53 +79,53 @@ def makeRegionEPMap(xi):
     m = {}
     for ri in list(xi.keys()):
         nValues = valueCount(xi[ri])
-        m[ri] = sp.arange(i, i + nValues)
+        m[ri] = numpy.arange(i, i + nValues)
         i += nValues
 
     return m
 
 
 def _removeDuplicates(xi, x):
-    allX = sp.vstack([sp.vstack(c) for c in x])
+    allX = numpy.vstack([numpy.vstack(c) for c in x])
     T = cKDTree(allX)
 
     for ir, r in enumerate(x):
         for ie, e in enumerate(r):
             d, k = T.query(list(e), k=2)
-            keep = sp.where(d[:, 1] > 0.0)[0]
+            keep = numpy.where(d[:, 1] > 0.0)[0]
             x[ir][ie] = e[keep]
             xi[ir][ie] = xi[ir][ie][keep]
 
-            allX = sp.vstack([sp.vstack(c) for c in x])
+            allX = numpy.vstack([numpy.vstack(c) for c in x])
             T = cKDTree(allX)
 
     return xi, x
 
 
 def _removeDuplicatesFlat(xi, x):
-    allX = sp.vstack(x)
+    allX = numpy.vstack(x)
     T = cKDTree(allX)
 
     for ir, r in enumerate(x):
         d, k = T.query(list(r), k=2)
         # ~ pdb.set_trace()
-        keep = sp.where(d[:, 1] > 0.0)[0]
+        keep = numpy.where(d[:, 1] > 0.0)[0]
         x[ir] = r[keep]
         xi[ir] = xi[ir][keep]
 
-        allX = sp.vstack([sp.vstack(c) for c in x])
+        allX = numpy.vstack([numpy.vstack(c) for c in x])
         T = cKDTree(allX)
 
     return xi, x
 
 
 def removeClosePoints(X, minDist):
-    keep = sp.ones(X.shape[0], dtype=bool)
+    keep = numpy.ones(X.shape[0], dtype=bool)
 
     do = 1
     while do:
         # remove the closest neighboured point in each iteration
-        currentIndices = sp.where(keep)[0]
+        currentIndices = numpy.where(keep)[0]
         T = cKDTree(X[currentIndices])
         d, k = T.query(list(X[currentIndices]), k=2)
         minArg = d[:, 1].argmin()
@@ -160,7 +159,7 @@ def getKeepXi(origXiList, keepMask):
         i += len(l)
 
     for elem, elemKeep in enumerate(keepList):
-        keepXiDict[elem] = sp.array(origXiList[elem])[sp.where(elemKeep)]
+        keepXiDict[elem] = numpy.array(origXiList[elem])[numpy.where(elemKeep)]
 
     return keepXiDict
 
@@ -172,5 +171,5 @@ def BIC(n, k, errVar):
     k: number of parameters
     errVar: error variance
     """
-    BIC = n * sp.log(errVar) + k * sp.log(n)
+    BIC = n * numpy.log(errVar) + k * numpy.log(n)
     return BIC

@@ -16,7 +16,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 import copy
 import pickle
 
-import scipy
+import numpy
 
 from gias2.common import geoprimitives as FT
 from gias2.musculoskeletal import fw_model_landmarks as fml
@@ -172,7 +172,7 @@ class PelvisMeasurements(object):
         )
         # self.EPMap = self.GF.getElementPointINested(
         #               self.epD,
-        #               scipy.sort(self.regionName2ElementMap.values())
+        #               numpy.sort(self.regionName2ElementMap.values())
         #               )
 
     def calcAcetabulumDiameters(self):
@@ -180,13 +180,13 @@ class PelvisMeasurements(object):
         lhjcEval = fml.makeLandmarkEvaluator('pelvis-LHJC', self.GF, radius=True)
         lhjcCenter, lhjcRadius = lhjcEval(self.GF.field_parameters)
         LAm = Measurement('left_acetabulum_diameter', lhjcRadius * 2.0)
-        LAm.centre = scipy.array([lhjcCenter])
+        LAm.centre = numpy.array([lhjcCenter])
         self.measurements['left_acetabulum_diameter'] = LAm
 
         rhjcEval = fml.makeLandmarkEvaluator('pelvis-RHJC', self.GF, radius=True)
         rhjcCenter, rhjcRadius = rhjcEval(self.GF.field_parameters)
         RAm = Measurement('right_acetabulum_diameter', rhjcRadius * 2.0)
-        RAm.centre = scipy.array([rhjcCenter])
+        RAm.centre = numpy.array([rhjcCenter])
         self.measurements['right_acetabulum_diameter'] = RAm
 
         #######
@@ -202,7 +202,7 @@ class PelvisMeasurements(object):
         # (LAcx, LAcy, LAcz), LAr = FT.fitSphereAnalytic( leftAcetabEPs )
 
         # LAm = Measurement( 'left_acetabulum_diameter', LAr*2.0 )
-        # LAm.centre = scipy.array([LAcx, LAcy, LAcz])
+        # LAm.centre = numpy.array([LAcx, LAcy, LAcz])
         # self.measurements['left_acetabulum_diameter'] = LAm
 
         # RHGF = self.GF.makeGFFromElements('RH', [self.regionName2ElementMap['RH'],],\
@@ -215,7 +215,7 @@ class PelvisMeasurements(object):
         # (RAcx, RAcy, RAcz), RAr = FT.fitSphereAnalytic( rightAcetabEPs )
 
         # RAm = Measurement( 'right_acetabulum_diameter', RAr*2.0 )
-        # RAm.centre = scipy.array([RAcx, RAcy, RAcz])
+        # RAm.centre = numpy.array([RAcx, RAcy, RAcz])
         # self.measurements['right_acetabulum_diameter'] = RAm
 
         # # add HJC to landmarks
@@ -243,16 +243,16 @@ class PelvisMeasurements(object):
         # left
         # lhjcEval = fml.makeLandmarkEvaluator('pelvis-LHJC', self.GFACS)
         # lhjcCenter = lhjcEval(self.GFACS.field_parameters)
-        # LHJC = scipy.array([lhjcCenter])
+        # LHJC = numpy.array([lhjcCenter])
 
-        self.LHGF = self.GFACS.makeGFFromElements('LH', \
-                                                  [self.regionName2ElementMap['LH'], ], \
+        self.LHGF = self.GFACS.makeGFFromElements('LH',
+                                                  [self.regionName2ElementMap['LH'], ],
                                                   pmd.pelvisCubicBasisTypes)
         self.LHGF.flatten_ensemble_field_function()
-        leftAcetabEPs = self.LHGF.evaluate_geometric_field_in_elements(self.epD, \
+        leftAcetabEPs = self.LHGF.evaluate_geometric_field_in_elements(self.epD,
                                                                        self.leftAcetabulumElems[0][1]).T
         (LAcx, LAcy, LAcz), LAr = FT.fitSphereAnalytic(leftAcetabEPs)
-        LHJC = scipy.array([LAcx, LAcy, LAcz])
+        LHJC = numpy.array([LAcx, LAcy, LAcz])
         self.measurements['landmarks_ACS'].value['LHJC'] = LHJC
 
         self.LHJCPlane = self._calcAcetabulumPlaneACS(
@@ -277,13 +277,13 @@ class PelvisMeasurements(object):
         )
 
         # right
-        self.RHGF = self.GFACS.makeGFFromElements('RH', [self.regionName2ElementMap['RH'], ], \
+        self.RHGF = self.GFACS.makeGFFromElements('RH', [self.regionName2ElementMap['RH'], ],
                                                   pmd.pelvisCubicBasisTypes)
         self.RHGF.flatten_ensemble_field_function()
-        rightAcetabEPs = self.RHGF.evaluate_geometric_field_in_elements(self.epD, \
+        rightAcetabEPs = self.RHGF.evaluate_geometric_field_in_elements(self.epD,
                                                                         self.rightAcetabulumElems[0][1]).T
         (RAcx, RAcy, RAcz), RAr = FT.fitSphereAnalytic(rightAcetabEPs)
-        RHJC = scipy.array([RAcx, RAcy, RAcz])
+        RHJC = numpy.array([RAcx, RAcy, RAcz])
         self.measurements['landmarks_ACS'].value['RHJC'] = LHJC
 
         self.RHJCPlane = self._calcAcetabulumPlaneACS(
@@ -324,27 +324,27 @@ class PelvisMeasurements(object):
     def calcHJCPredictions(self, popClass):
 
         L = self.measurements['landmarks_ACS']
-        LHJC_T, RHJC_T, ASIS2ASIS = HJC.HJCTylkowski(L.value['LASIS'], \
-                                                     L.value['RASIS'], \
+        LHJC_T, RHJC_T, ASIS2ASIS = HJC.HJCTylkowski(L.value['LASIS'],
+                                                     L.value['RASIS'],
                                                      popClass)
-        LHJC_A, RHJC_A, LO, RO = HJC.HJCAndriacchi(L.value['LASIS'], \
-                                                   L.value['RASIS'], \
-                                                   0.5 * (L.value['LPS'] + L.value['RPS']), \
+        LHJC_A, RHJC_A, LO, RO = HJC.HJCAndriacchi(L.value['LASIS'],
+                                                   L.value['RASIS'],
+                                                   0.5 * (L.value['LPS'] + L.value['RPS']),
                                                    popClass)
-        LHJC_B, RHJC_B, ASIS2ASIS, LO, RO = HJC.HJCBell(L.value['LASIS'], \
-                                                        L.value['RASIS'], \
-                                                        0.5 * (L.value['LPS'] + L.value['RPS']), \
+        LHJC_B, RHJC_B, ASIS2ASIS, LO, RO = HJC.HJCBell(L.value['LASIS'],
+                                                        L.value['RASIS'],
+                                                        0.5 * (L.value['LPS'] + L.value['RPS']),
                                                         popClass)
-        LHJC_D, RHJC_D, ASIS2ASIS, H, D = HJC.HJCSeidel(L.value['LASIS'], \
-                                                        L.value['RASIS'], \
-                                                        L.value['LPSIS'], \
-                                                        L.value['RPSIS'], \
-                                                        0.5 * (L.value['LPS'] + L.value['RPS']), \
+        LHJC_D, RHJC_D, ASIS2ASIS, H, D = HJC.HJCSeidel(L.value['LASIS'],
+                                                        L.value['RASIS'],
+                                                        L.value['LPSIS'],
+                                                        L.value['RPSIS'],
+                                                        0.5 * (L.value['LPS'] + L.value['RPS']),
                                                         popClass)
-        LHJC_H, RHJC_H, PW, PD = HJC.HJCHarrington(L.value['LASIS'], \
-                                                   L.value['RASIS'], \
-                                                   L.value['LPSIS'], \
-                                                   L.value['RPSIS'], \
+        LHJC_H, RHJC_H, PW, PD = HJC.HJCHarrington(L.value['LASIS'],
+                                                   L.value['RASIS'],
+                                                   L.value['LPSIS'],
+                                                   L.value['RPSIS'],
                                                    popClass)
         LHJC_mesh, RHJC_mesh = self._calcACSHJCMesh()
 
@@ -373,7 +373,7 @@ class PelvisMeasurements(object):
         """
         x1 = self.measurements['landmarks_unaligned'].value['LHJC']
         x2 = self.measurements['landmarks_unaligned'].value['RHJC']
-        d = scipy.sqrt(((x1 - x2) ** 2.0).sum())
+        d = numpy.sqrt(((x1 - x2) ** 2.0).sum())
         self.measurements['inter_HJC_distance'] = Measurement('inter_HJC_distance', d)
 
     def calcInterASISDistance(self):
@@ -381,7 +381,7 @@ class PelvisMeasurements(object):
         """
         x1 = self.measurements['landmarks_unaligned'].value['LASIS']
         x2 = self.measurements['landmarks_unaligned'].value['RASIS']
-        d = scipy.sqrt(((x1 - x2) ** 2.0).sum())
+        d = numpy.sqrt(((x1 - x2) ** 2.0).sum())
         self.measurements['inter_ASIS_distance'] = Measurement('inter_ASIS_distance', d)
 
     def calcInterPSISDistance(self):
@@ -389,7 +389,7 @@ class PelvisMeasurements(object):
         """
         x1 = self.measurements['landmarks_unaligned'].value['LPSIS']
         x2 = self.measurements['landmarks_unaligned'].value['RPSIS']
-        d = scipy.sqrt(((x1 - x2) ** 2.0).sum())
+        d = numpy.sqrt(((x1 - x2) ** 2.0).sum())
         self.measurements['inter_PSIS_distance'] = Measurement('inter_PSIS_distance', d)
 
     def calcInterPSDistance(self):
@@ -397,7 +397,7 @@ class PelvisMeasurements(object):
         """
         x1 = self.measurements['landmarks_unaligned'].value['LPS']
         x2 = self.measurements['landmarks_unaligned'].value['RPS']
-        d = scipy.sqrt(((x1 - x2) ** 2.0).sum())
+        d = numpy.sqrt(((x1 - x2) ** 2.0).sum())
         self.measurements['inter_PS_distance'] = Measurement('inter_PS_distance', d)
 
     def calcIlialDepth(self):
@@ -405,12 +405,12 @@ class PelvisMeasurements(object):
         """
         x1l = self.measurements['landmarks_unaligned'].value['LASIS']
         x2l = self.measurements['landmarks_unaligned'].value['LPSIS']
-        dl = scipy.sqrt(((x1l - x2l) ** 2.0).sum())
+        dl = numpy.sqrt(((x1l - x2l) ** 2.0).sum())
         self.measurements['left_ilial_depth'] = Measurement('left_ilial_depth', dl)
 
         x1r = self.measurements['landmarks_unaligned'].value['RASIS']
         x2r = self.measurements['landmarks_unaligned'].value['RPSIS']
-        dr = scipy.sqrt(((x1r - x2r) ** 2.0).sum())
+        dr = numpy.sqrt(((x1r - x2r) ** 2.0).sum())
         self.measurements['right_ilial_depth'] = Measurement('right_ilial_depth', dr)
 
         d = 0.5 * (dl + dr)
@@ -465,7 +465,7 @@ def _calcAnteversionISB(N, side):
     # calc anteversion angle given cup rim plane normal
     # anteversion is measured in the transverse (axial) plane, angle btw left-right
     # axis and transverse plane projection (dims 0,1) of cup plane normal
-    a = -scipy.arctan(N[0] / N[2]) * 180 / scipy.pi
+    a = -numpy.arctan(N[0] / N[2]) * 180 / numpy.pi
     if side == 'left':
         a *= -1
     return a
@@ -475,7 +475,7 @@ def _calcAbductionISB(N, side):
     # calc abduction angle given cup rim plane normal.
     # abduction is measured in the coronal plane, angle btw sup-inf axis and
     # coronal plane projection (dims 0,2) of cup plane normal
-    a = scipy.arctan(N[2] / N[1]) * 180 / scipy.pi
+    a = numpy.arctan(N[2] / N[1]) * 180 / numpy.pi
     if side == 'left':
         a *= -1
     return a
@@ -485,7 +485,7 @@ def _calcAnteversionAPP(N, side):
     # calc anteversion angle given cup rim plane normal
     # anteversion is measured in the transverse (axial) plane, angle btw left-right
     # axis and transverse plane projection (dims 0,1) of cup plane normal
-    a = scipy.arctan(N[1] / N[0]) * 180 / scipy.pi
+    a = numpy.arctan(N[1] / N[0]) * 180 / numpy.pi
     if side == 'left':
         a *= -1
     return a
@@ -495,7 +495,7 @@ def _calcAbductionAPP(N, side):
     # calc abduction angle given cup rim plane normal.
     # abduction is measured in the coronal plane, angle btw sup-inf axis and
     # coronal plane projection (dims 0,2) of cup plane normal
-    a = -scipy.arctan(N[0] / N[2]) * 180 / scipy.pi
+    a = -numpy.arctan(N[0] / N[2]) * 180 / numpy.pi
     if side == 'left':
         a *= -1
     return a
