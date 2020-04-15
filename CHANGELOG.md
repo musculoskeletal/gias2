@@ -1,5 +1,9 @@
 # GIAS2 Change log
 
+## 0.6.17
+- code clean up
+- added VTK as a dependency
+
 ## 0.6.16
 - removed matplotlib as a requirement. User should install it it separately if they need 3D plotting functionalities
 
