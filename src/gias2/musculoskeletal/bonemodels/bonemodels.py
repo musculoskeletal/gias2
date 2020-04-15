@@ -12,17 +12,19 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
 from os import path
+
 import numpy as np
 from scipy.spatial import cKDTree
+
+from gias2.common import transform3D, math
 from gias2.fieldwork.field import geometric_field
-from gias2.musculoskeletal import fw_model_landmarks as model_landmarks
 from gias2.musculoskeletal import model_alignment
-from gias2.common import transform3D, math, geoprimitives
 from gias2.musculoskeletal.bonemodels import modelcore
 
-#=======================================#
+
+# =======================================#
 # Individual bone models                #
-#=======================================#
+# =======================================#
 class PelvisModel(modelcore.BoneModel):
     model_landmarks = [
         'pelvis-LASIS', 'pelvis-RASIS',
@@ -30,27 +32,28 @@ class PelvisModel(modelcore.BoneModel):
         'pelvis-LHJC', 'pelvis-RHJC',
         'pelvis-LPSIS', 'pelvis-RPSIS',
         'pelvis-SacPlat',
-        ]
+    ]
 
     def __init__(self, name, gf, side=None):
         super(PelvisModel, self).__init__(name, gf)
         self.init_landmarks(self.model_landmarks)
-        
+
     def update_acs(self):
         self.acs.update(*model_alignment.createPelvisACSISB(
-                                    self.landmarks['pelvis-LASIS'],
-                                    self.landmarks['pelvis-RASIS'],
-                                    self.landmarks['pelvis-LPSIS'],
-                                    self.landmarks['pelvis-RPSIS'],
-                                    )
+            self.landmarks['pelvis-LASIS'],
+            self.landmarks['pelvis-RASIS'],
+            self.landmarks['pelvis-LPSIS'],
+            self.landmarks['pelvis-RPSIS'],
+        )
                         )
-    
+
+
 class FemurModel(modelcore.BoneModel):
-    KNEE_ELEMS = [46,43,44,47,26,27,28,29,30,52,51,48,49]
+    KNEE_ELEMS = [46, 43, 44, 47, 26, 27, 28, 29, 30, 52, 51, 48, 49]
     model_landmarks = [
         'femur-HC', 'femur-MEC',
         'femur-LEC', 'femur-GT',
-        ]
+    ]
 
     def __init__(self, name, gf, knee_surf_disc=4.0, side='left'):
         super(FemurModel, self).__init__(name, gf)
@@ -58,28 +61,29 @@ class FemurModel(modelcore.BoneModel):
         self.init_landmarks(self.model_landmarks, side=self.side)
         self.knee_surf_disc = knee_surf_disc
         self.knee_surf_evaluator = geometric_field.makeGeometricFieldElementsEvaluatorSparse(
-                                        self.gf, self.KNEE_ELEMS,
-                                        self.knee_surf_disc)
-        
+            self.gf, self.KNEE_ELEMS,
+            self.knee_surf_disc)
+
     def update_acs(self):
         self.acs.update(*model_alignment.createFemurACSISB(
-                                    self.landmarks['femur-HC'],
-                                    self.landmarks['femur-MEC'],
-                                    self.landmarks['femur-LEC'],
-                                    side=self.side
-                                    )
+            self.landmarks['femur-HC'],
+            self.landmarks['femur-MEC'],
+            self.landmarks['femur-LEC'],
+            side=self.side
+        )
                         )
 
     def evaluate_knee_surface(self):
         return self.knee_surf_evaluator(self.gf.get_field_parameters()).T
 
+
 class TibiaFibulaModel(modelcore.BoneModel):
-    KNEE_ELEMS = [37,38,39,40,41,42,43,44,45]
+    KNEE_ELEMS = [37, 38, 39, 40, 41, 42, 43, 44, 45]
     model_landmarks = [
         'tibiafibula-LC', 'tibiafibula-MC',
         'tibiafibula-LM', 'tibiafibula-MM',
         'tibiafibula-TT',
-        ]
+    ]
 
     def __init__(self, name, gf, knee_surf_disc=4.0, side='left'):
         super(TibiaFibulaModel, self).__init__(name, gf)
@@ -87,49 +91,53 @@ class TibiaFibulaModel(modelcore.BoneModel):
         self.init_landmarks(self.model_landmarks, side=self.side)
         self.knee_surf_disc = knee_surf_disc
         self.knee_surf_evaluator = geometric_field.makeGeometricFieldElementsEvaluatorSparse(
-                                        self.gf, self.KNEE_ELEMS,
-                                        self.knee_surf_disc)
-        
+            self.gf, self.KNEE_ELEMS,
+            self.knee_surf_disc)
+
     def update_acs(self):
         self.acs.update(*model_alignment.createTibiaFibulaACSISB(
-                                    self.landmarks['tibiafibula-MM'],
-                                    self.landmarks['tibiafibula-LM'],
-                                    self.landmarks['tibiafibula-MC'],
-                                    self.landmarks['tibiafibula-LC'],
-                                    side=self.side
-                                    )
+            self.landmarks['tibiafibula-MM'],
+            self.landmarks['tibiafibula-LM'],
+            self.landmarks['tibiafibula-MC'],
+            self.landmarks['tibiafibula-LC'],
+            side=self.side
+        )
                         )
 
     def evaluate_knee_surface(self):
         return self.knee_surf_evaluator(self.gf.get_field_parameters()).T
 
+
 class PatellaModel(modelcore.BoneModel):
     model_landmarks = [
         'patella-sup', 'patella-inf', 'patella-lat'
-        ]
+    ]
+
     def __init__(self, name, gf, side='left'):
         super(PatellaModel, self).__init__(name, gf)
         self.side = side
         self.init_landmarks(
             self.model_landmarks,
             side=self.side
-            )
+        )
 
     def update_acs(self):
         self.acs.update(*model_alignment.createPatellaACSTest(
-                                    self.landmarks['patella-sup'],
-                                    self.landmarks['patella-inf'],
-                                    self.landmarks['patella-lat'],
-                                    side=self.side
-                                    )
+            self.landmarks['patella-sup'],
+            self.landmarks['patella-inf'],
+            self.landmarks['patella-lat'],
+            side=self.side
+        )
                         )
 
-#==================================================#
-# Multiple bone models                             #
-#==================================================#
-MAP_DIR = path.expanduser('~/work_projects/MAP/')
-class LowerLimbLeftAtlas(modelcore.MultiBoneAtlas):
 
+# ==================================================#
+# Multiple bone models                             #
+# ==================================================#
+MAP_DIR = path.expanduser('~/work_projects/MAP/')
+
+
+class LowerLimbLeftAtlas(modelcore.MultiBoneAtlas):
     bone_names = ('pelvis', 'femur', 'patella', 'tibiafibula')
     combined_pcs_filename = path.join(MAP_DIR, 'models/lower_limb/shapemodels/LLP26_rigid.pc')
     bone_classes = {'pelvis': PelvisModel,
@@ -137,28 +145,30 @@ class LowerLimbLeftAtlas(modelcore.MultiBoneAtlas):
                     'patella': PatellaModel,
                     'tibiafibula': TibiaFibulaModel,
                     }
-    bone_files = {'pelvis': (path.join(MAP_DIR, 'models/pelvis/template_meshes/pelvis_combined_cubic_mean_rigid_LLP26.geof'),
-                             path.join(MAP_DIR, 'models/pelvis/template_meshes/pelvis_combined_cubic_flat.ens'),
-                             path.join(MAP_DIR, 'models/pelvis/template_meshes/pelvis_combined_cubic_flat.mesh'),
-                             ),
-               'femur': (path.join(MAP_DIR, 'models/femur/template_meshes/femur_left_mean_rigid_LLP26.geof'),
-                         path.join(MAP_DIR, 'models/femur/template_meshes/femur_left_quartic_flat.ens'),
-                         path.join(MAP_DIR, 'models/femur/template_meshes/femur_left_quartic_flat.mesh'),
-                         ),
-               'patella': (path.join(MAP_DIR, 'models/patella/template_meshes/patella_left_mean_rigid_LLP26.geof'),
-                           path.join(MAP_DIR, 'models/patella/template_meshes/patella_11_left.ens'),
-                           path.join(MAP_DIR, 'models/patella/template_meshes/patella_11_left.mesh'),
-                           ),
-               'tibiafibula': (path.join(MAP_DIR, 'models/tibiafibula/template_meshes/tibia_fibula_cubic_left_mean_rigid_LLP26.geof'),
-                                  path.join(MAP_DIR, 'models/tibiafibula/template_meshes/tibia_fibula_left_cubic_flat.ens'),
-                                  path.join(MAP_DIR, 'models/tibiafibula/template_meshes/tibia_fibula_left_cubic_flat.mesh'),
-                                  ),
-                }
-    combined_model_field_basis = {'tri10':'simplex_L3_L3',
-                                  'tri15':'simplex_L4_L4',
-                                  'quad44':'quad_L3_L3',
-                                  'quad55':'quad_L4_L4',
-                                  'quad54':'quad_L4_L3',
+    bone_files = {
+        'pelvis': (path.join(MAP_DIR, 'models/pelvis/template_meshes/pelvis_combined_cubic_mean_rigid_LLP26.geof'),
+                   path.join(MAP_DIR, 'models/pelvis/template_meshes/pelvis_combined_cubic_flat.ens'),
+                   path.join(MAP_DIR, 'models/pelvis/template_meshes/pelvis_combined_cubic_flat.mesh'),
+                   ),
+        'femur': (path.join(MAP_DIR, 'models/femur/template_meshes/femur_left_mean_rigid_LLP26.geof'),
+                  path.join(MAP_DIR, 'models/femur/template_meshes/femur_left_quartic_flat.ens'),
+                  path.join(MAP_DIR, 'models/femur/template_meshes/femur_left_quartic_flat.mesh'),
+                  ),
+        'patella': (path.join(MAP_DIR, 'models/patella/template_meshes/patella_left_mean_rigid_LLP26.geof'),
+                    path.join(MAP_DIR, 'models/patella/template_meshes/patella_11_left.ens'),
+                    path.join(MAP_DIR, 'models/patella/template_meshes/patella_11_left.mesh'),
+                    ),
+        'tibiafibula': (
+        path.join(MAP_DIR, 'models/tibiafibula/template_meshes/tibia_fibula_cubic_left_mean_rigid_LLP26.geof'),
+        path.join(MAP_DIR, 'models/tibiafibula/template_meshes/tibia_fibula_left_cubic_flat.ens'),
+        path.join(MAP_DIR, 'models/tibiafibula/template_meshes/tibia_fibula_left_cubic_flat.mesh'),
+        ),
+        }
+    combined_model_field_basis = {'tri10': 'simplex_L3_L3',
+                                  'tri15': 'simplex_L4_L4',
+                                  'quad44': 'quad_L3_L3',
+                                  'quad55': 'quad_L4_L4',
+                                  'quad54': 'quad_L4_L3',
                                   }
 
     HJC = 'pelvis-LHJC'
@@ -171,7 +181,7 @@ class LowerLimbLeftAtlas(modelcore.MultiBoneAtlas):
     patella_shift = np.array([50.0, 50.0, -10.0])
     _allow_knee_adduction_dof = False
     _allow_knee_adduction_correction = False
-    _neutral_params = [[0,],[0,],[0,0,0,0,0,0],[0,0,0],[0,]]
+    _neutral_params = [[0, ], [0, ], [0, 0, 0, 0, 0, 0], [0, 0, 0], [0, ]]
     N_PARAMS_PELVIS = 6
     N_PARAMS_HIP = 3
     N_PARAMS_KNEE = 1
@@ -193,23 +203,23 @@ class LowerLimbLeftAtlas(modelcore.MultiBoneAtlas):
         self.models['femur'].side = self.side
         self.models['femur'].init_landmarks(
             self.models['femur'].model_landmarks, side=self.side
-            )
+        )
         self.models['femur'].update_acs()
 
         self.models['patella'].side = self.side
         self.models['patella'].init_landmarks(
             self.models['patella'].model_landmarks, side=self.side
-            )
+        )
         self.models['patella'].update_acs()
 
         self.models['tibiafibula'].side = self.side
         self.models['tibiafibula'].init_landmarks(
             self.models['tibiafibula'].model_landmarks, side=self.side
-            )
+        )
         self.models['tibiafibula'].update_acs()
 
         # zero shape model
-        self.update_models_by_pcweights_sd([0,], [0,])
+        self.update_models_by_pcweights_sd([0, ], [0, ])
         # get pelvis origin from which rigid transformation will be made
         self.models['pelvis'].update_landmarks()
         self.models['pelvis'].update_acs()
@@ -243,7 +253,7 @@ class LowerLimbLeftAtlas(modelcore.MultiBoneAtlas):
         self.models[name].side = self.side
         self.models[name].init_landmarks(
             self.models[name].model_landmarks, side=self.side
-            )
+        )
         self.models[name].update_acs()
 
     def _set_kneegap_function(self, f):
@@ -259,13 +269,13 @@ class LowerLimbLeftAtlas(modelcore.MultiBoneAtlas):
 
     def enable_knee_adduction_dof(self):
         self._allow_knee_adduction_dof = True
-        self._neutral_params = [[0,],[0,],[0,0,0,0,0,0],[0,0,0],[0,0]]
+        self._neutral_params = [[0, ], [0, ], [0, 0, 0, 0, 0, 0], [0, 0, 0], [0, 0]]
         self.N_PARAMS_KNEE = 2
         self.N_PARAMS_RIGID = self.N_PARAMS_PELVIS + self.N_PARAMS_HIP + self.N_PARAMS_KNEE
 
     def disable_knee_adduction_dof(self):
         self._allow_knee_adduction_dof = False
-        self._neutral_params = [[0,],[0,],[0,0,0,0,0,0],[0,0,0],[0,]]
+        self._neutral_params = [[0, ], [0, ], [0, 0, 0, 0, 0, 0], [0, 0, 0], [0, ]]
         self.N_PARAMS_KNEE = 1
         self.N_PARAMS_RIGID = self.N_PARAMS_PELVIS + self.N_PARAMS_HIP + self.N_PARAMS_KNEE
 
@@ -305,8 +315,8 @@ class LowerLimbLeftAtlas(modelcore.MultiBoneAtlas):
                             of + self.models['femur'].acs.z,
                             ])
 
-        ot = 0.5*(self.models['tibiafibula'].landmarks['tibiafibula-MC']+
-                  self.models['tibiafibula'].landmarks['tibiafibula-LC'])
+        ot = 0.5 * (self.models['tibiafibula'].landmarks['tibiafibula-MC'] +
+                    self.models['tibiafibula'].landmarks['tibiafibula-LC'])
         cs_source = np.array([ot,
                               ot + self.models['tibiafibula'].acs.x,
                               ot + self.models['tibiafibula'].acs.y,
@@ -334,7 +344,7 @@ class LowerLimbLeftAtlas(modelcore.MultiBoneAtlas):
         dist, femur_points_i = femur_tree.query(tibia_points)
 
         # calc distance in the tibial Y for each pair
-        tibia_y_dist = np.dot(femur_points[femur_points_i]-tibia_points,
+        tibia_y_dist = np.dot(femur_points[femur_points_i] - tibia_points,
                               self.models['tibiafibula'].acs.y
                               )
         return tibia_y_dist.min()
@@ -347,7 +357,7 @@ class LowerLimbLeftAtlas(modelcore.MultiBoneAtlas):
         """shift tibia along tibia y to maintain knee joint gap
         """
         current_knee_gap = self._calc_knee_gap()
-        knee_shift = current_knee_gap - self.knee_gap # if current_knee_gap > self.knee_gap, move in +ve tibia y to close the gap
+        knee_shift = current_knee_gap - self.knee_gap  # if current_knee_gap > self.knee_gap, move in +ve tibia y to close the gap
         shift_t = knee_shift * self.models['tibiafibula'].acs.y
         self.models['tibiafibula'].gf.transformTranslate(shift_t)
         self.models['tibiafibula'].update_landmarks()
@@ -360,7 +370,7 @@ class LowerLimbLeftAtlas(modelcore.MultiBoneAtlas):
 
         # place tibia as per normal
         self._reset_tibia_kneegap_1()
-        
+
         # build kdtree of femoral condyle points
         femur_points = self.models['femur'].evaluate_knee_surface()
         femur_tree = cKDTree(femur_points)
@@ -369,10 +379,10 @@ class LowerLimbLeftAtlas(modelcore.MultiBoneAtlas):
         varus_angle = self._calc_varus_angle(femur_tree)[0]
         floating_x = self._get_knee_floating_x()
         self.models['tibiafibula'].gf.transformRotateAboutAxis(
-                        -varus_angle,
-                        self.models['femur'].acs.o,
-                        self.models['femur'].acs.o + floating_x,
-                        )
+            -varus_angle,
+            self.models['femur'].acs.o,
+            self.models['femur'].acs.o + floating_x,
+        )
         self.models['tibiafibula'].update_landmarks()
         self.models['tibiafibula'].update_acs()
 
@@ -398,19 +408,19 @@ class LowerLimbLeftAtlas(modelcore.MultiBoneAtlas):
 
     def _get_knee_floating_x(self):
         return math.norm(
-                    np.cross(
-                        self.models['tibiafibula'].acs.y,
-                        self.models['femur'].acs.z
-                        )
-                    )
+            np.cross(
+                self.models['tibiafibula'].acs.y,
+                self.models['femur'].acs.z
+            )
+        )
 
     def _get_hip_floating_x(self):
         return math.norm(
-                    np.cross(
-                        self.models['femur'].acs.y,
-                        self.models['pelvis'].acs.z,
-                        )
-                    )
+            np.cross(
+                self.models['femur'].acs.y,
+                self.models['pelvis'].acs.z,
+            )
+        )
 
     def _get_knee_cs(self):
         """Returns knee joint coordinate system:
@@ -426,10 +436,10 @@ class LowerLimbLeftAtlas(modelcore.MultiBoneAtlas):
         """Returns hip joint coordinate system:
         [origin, flexion axis, rotation axis, abduction axis]
         """
-        o = self.models['pelvis'].landmarks[self.HJC] # origin
+        o = self.models['pelvis'].landmarks[self.HJC]  # origin
         abd = self._get_hip_floating_x()  # abduction
-        rot = self.models['femur'].acs.y # rotation
-        flex = self.models['pelvis'].acs.z # flexion
+        rot = self.models['femur'].acs.y  # rotation
+        flex = self.models['pelvis'].acs.z  # flexion
         return np.array([o, flex, rot, abd])
 
     def _calc_varus_angle(self, femur_points_tree):
@@ -457,7 +467,7 @@ class LowerLimbLeftAtlas(modelcore.MultiBoneAtlas):
         tp_fc_angle = abs(math.angle(tp_v_zy, fc_v_zy))
 
         # if lat condyle is higher than med condyle, negative rotation is needed
-        if lat_d>med_d:
+        if lat_d > med_d:
             tp_fc_angle *= -1.0
 
         # anticlock wise is positive
@@ -480,9 +490,9 @@ class LowerLimbLeftAtlas(modelcore.MultiBoneAtlas):
         """
         # rigid transform pelvis
         self.models['pelvis'].gf.transformRigidRotateAboutP(
-                                pelvis_rigid,
-                                self.pelvis_origin,
-                                )
+            pelvis_rigid,
+            self.pelvis_origin,
+        )
         self.models['pelvis'].update_landmarks()
         self.models['pelvis'].update_acs()
 
@@ -505,28 +515,27 @@ class LowerLimbLeftAtlas(modelcore.MultiBoneAtlas):
         # flexion (pelvis-z)
         HJC = self.models['pelvis'].landmarks[self.HJC]
         self.models['femur'].gf.transformRotateAboutAxis(
-                        self.hip_flex_coeff*hip_rot[0],
-                        o, o + flex,
-                        )
+            self.hip_flex_coeff * hip_rot[0],
+            o, o + flex,
+        )
         self.models['femur'].update_landmarks()
         self.models['femur'].update_acs()
 
         # abduction (floating)
         self.models['femur'].gf.transformRotateAboutAxis(
-                        self.hip_abd_coeff*hip_rot[2],
-                        o, o + abd
-                        )
+            self.hip_abd_coeff * hip_rot[2],
+            o, o + abd
+        )
         self.models['femur'].update_landmarks()
         self.models['femur'].update_acs()
-        
+
         # rotations (femur-z)
         self.models['femur'].gf.transformRotateAboutAxis(
-                        self.hip_rot_coeff*hip_rot[1],
-                        o, o + rot,
-                        )
+            self.hip_rot_coeff * hip_rot[1],
+            o, o + rot,
+        )
         self.models['femur'].update_landmarks()
         self.models['femur'].update_acs()
-        
 
     def update_tibiafibula(self, knee_rot):
         """Update position and orientation of the tibiafibula segment.
@@ -542,21 +551,21 @@ class LowerLimbLeftAtlas(modelcore.MultiBoneAtlas):
 
         # apply knee rotations: flexion(femur-z)
         self.models['tibiafibula'].gf.transformRotateAboutAxis(
-                        self.knee_flex_coeff*knee_rot[0],
-                        o,
-                        o + flex,
-                        )
+            self.knee_flex_coeff * knee_rot[0],
+            o,
+            o + flex,
+        )
         self.models['tibiafibula'].update_landmarks()
         self.models['tibiafibula'].update_acs()
 
         # apply knee rotation: adduction(floating x)
-        if self._allow_knee_adduction_dof:     
+        if self._allow_knee_adduction_dof:
             x = self._get_knee_floating_x()
             self.models['tibiafibula'].gf.transformRotateAboutAxis(
-                            self.knee_abd_coeff*knee_rot[1],
-                            o,
-                            o + abd
-                            )
+                self.knee_abd_coeff * knee_rot[1],
+                o,
+                o + abd
+            )
             self.models['tibiafibula'].update_landmarks()
             self.models['tibiafibula'].update_acs()
 
@@ -568,8 +577,8 @@ class LowerLimbLeftAtlas(modelcore.MultiBoneAtlas):
         from the tibia in the tibial Y direction"""
 
         # align patella acs to tibial acs, centred at midpoint of tibial epicondyles
-        ot = 0.5*(self.models['tibiafibula'].landmarks['tibiafibula-LC'] + 
-                  self.models['tibiafibula'].landmarks['tibiafibula-MC'])
+        ot = 0.5 * (self.models['tibiafibula'].landmarks['tibiafibula-LC'] +
+                    self.models['tibiafibula'].landmarks['tibiafibula-MC'])
         cs_targ = np.array([ot,
                             ot + self.models['tibiafibula'].acs.x,
                             ot + self.models['tibiafibula'].acs.y,
@@ -584,9 +593,9 @@ class LowerLimbLeftAtlas(modelcore.MultiBoneAtlas):
         self.models['patella'].update_acs()
 
         # apply patella shift
-        T2 = self.models['tibiafibula'].acs.x*self.patella_shift[0] +\
-             self.models['tibiafibula'].acs.y*self.patella_shift[1] +\
-             self.models['tibiafibula'].acs.z*self.patella_shift[2]
+        T2 = self.models['tibiafibula'].acs.x * self.patella_shift[0] + \
+             self.models['tibiafibula'].acs.y * self.patella_shift[1] + \
+             self.models['tibiafibula'].acs.z * self.patella_shift[2]
 
         self.models['patella'].gf.transformTranslate(T2)
         self.models['patella'].update_landmarks()
@@ -605,7 +614,7 @@ class LowerLimbLeftAtlas(modelcore.MultiBoneAtlas):
         knee_rot [1-d array]: an array of radian angles for tibia-fibula rotation
             about the knee joint (flexion)
         """
-        
+
         # evaluate shape model
         self.update_models_by_pcweights_sd(pc_weights, pc_modes)
 
@@ -688,25 +697,28 @@ class LowerLimbLeftAtlas(modelcore.MultiBoneAtlas):
     # default settings
     _reset_tibia_kneegap = _reset_tibia_kneegap_1
 
+
 class LowerLimbRightAtlas(LowerLimbLeftAtlas):
     combined_pcs_filename = '../models/lower_limb/shapemodels/LLP26_right_mirrored_from_left_rigid.pc'
     bone_files = {'pelvis': ('../models/pelvis/template_meshes/pelvis_combined_cubic_mean_rigid_LLP26.geof',
                              '../models/pelvis/template_meshes/pelvis_combined_cubic_flat.ens',
                              '../models/pelvis/template_meshes/pelvis_combined_cubic_flat.mesh',
                              ),
-               'femur': ('../models/femur/template_meshes/femur_right_mirrored_from_left_mean_rigid_LLP26.geof',
-                         '../models/femur/template_meshes/femur_right_quartic_flat.ens',
-                         '../models/femur/template_meshes/femur_right_quartic_flat.mesh',
-                         ),
-               'patella': ('../models/patella/template_meshes/patella_right_mirrored_from_left_mean_rigid_LLP26.geof',
-                           '../models/patella/template_meshes/patella_11_right.ens',
-                           '../models/patella/template_meshes/patella_11_right.mesh',
-                           ),
-               'tibiafibula': ('../models/tibiafibula/template_meshes/tibia_fibula_cubic_right_mirrored_from_left_mean_rigid_LLP26.geof',
-                                  '../models/tibiafibula/template_meshes/tibia_fibula_right_cubic_flat.ens',
-                                  '../models/tibiafibula/template_meshes/tibia_fibula_right_cubic_flat.mesh',
-                                  ),
-                }
+                  'femur': ('../models/femur/template_meshes/femur_right_mirrored_from_left_mean_rigid_LLP26.geof',
+                            '../models/femur/template_meshes/femur_right_quartic_flat.ens',
+                            '../models/femur/template_meshes/femur_right_quartic_flat.mesh',
+                            ),
+                  'patella': (
+                  '../models/patella/template_meshes/patella_right_mirrored_from_left_mean_rigid_LLP26.geof',
+                  '../models/patella/template_meshes/patella_11_right.ens',
+                  '../models/patella/template_meshes/patella_11_right.mesh',
+                  ),
+                  'tibiafibula': (
+                  '../models/tibiafibula/template_meshes/tibia_fibula_cubic_right_mirrored_from_left_mean_rigid_LLP26.geof',
+                  '../models/tibiafibula/template_meshes/tibia_fibula_right_cubic_flat.ens',
+                  '../models/tibiafibula/template_meshes/tibia_fibula_right_cubic_flat.mesh',
+                  ),
+                  }
     HJC = 'pelvis-RHJC'
     side = 'right'
 

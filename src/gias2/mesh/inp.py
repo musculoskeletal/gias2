@@ -21,10 +21,11 @@ ELEMNODES = {'C3D8R': 8,
              'R3D3': 3,
              'R3D4': 4,
              'C3D4': 4,
-             'T3D2': 2, 
+             'T3D2': 2,
              'S3': 3,
              'S4': 4,
              }
+
 
 class Mesh(object):
     """ ABAQUS INP Mesh object
@@ -124,14 +125,14 @@ class Mesh(object):
         val: [list] list of values for the elset
         """
 
-        valid_options = set([None,'GENERATE','INSTANCE','INTERNAL','UNSORTED'])
+        valid_options = set([None, 'GENERATE', 'INSTANCE', 'INTERNAL', 'UNSORTED'])
         if option not in valid_options:
             raise ValueError('Invalid option value {}'.format(option))
 
         self.elsets[name] = {
             'option': option,
             'value': val
-            }
+        }
 
     def getElset(self, name):
         """
@@ -141,9 +142,9 @@ class Mesh(object):
             elset = self.elsets[name]
             if elset['option'] is None:
                 return [int(x) for x in elset['value'].split(',')]
-            elif elset['option']=='GENERATE':
+            elif elset['option'] == 'GENERATE':
                 e0, e1, estep = [int(x) for x in elset['value'].split(',')]
-                return np.arange(e0, e1+1, estep)
+                return np.arange(e0, e1 + 1, estep)
             else:
                 raise NotImplementedError('{} elset not implemented'.format(elset['option']))
 
@@ -158,6 +159,7 @@ class Mesh(object):
         elem_node_coords = elem_node_coords_flat.reshape([elem_shape[0], elem_shape[1], 3])
         elem_centroids = elem_node_coords.mean(1)
         return elem_centroids
+
 
 class InpReader(object):
     """INP reading class
@@ -179,9 +181,9 @@ class InpReader(object):
             doScan = 1
             while doScan:
                 l = next(f)
-                if l==(COMMENTCHARS+'\n'):
+                if l == (COMMENTCHARS + '\n'):
                     doScan = 0
-                elif l[:2]!=COMMENTCHARS:
+                elif l[:2] != COMMENTCHARS:
                     doScan = 0
                 else:
                     header.append(l[2:].strip())
@@ -203,7 +205,7 @@ class InpReader(object):
                     if 'ELSET' in l:
                         for term in l.split(','):
                             if 'ELSET' in term:
-                                if term=='*ELSET':
+                                if term == '*ELSET':
                                     break
                                 else:
                                     meshNames.add(term.split('=')[1].strip())
@@ -223,7 +225,7 @@ class InpReader(object):
                 try:
                     l = next(f)
                 except StopIteration:
-                    raise IOError('No NSET named '+meshName)
+                    raise IOError('No NSET named ' + meshName)
                 else:
                     # if ('NSET='+meshName) in l:
                     if (self.nodeStartString) in l.upper():
@@ -239,10 +241,9 @@ class InpReader(object):
                 else:
                     doScan = 0
 
-            print(('loaded %d nodes'%(len(nodes))))
+            print(('loaded %d nodes' % (len(nodes))))
 
         return nodeNumbers, nodes
-
 
     def readMeshOld(self, meshName):
         """Reads and returns the mesh with name meshName.
@@ -267,18 +268,18 @@ class InpReader(object):
                 try:
                     l = next(f)
                 except StopIteration:
-                    raise IOError('No ELSET named '+meshName)
+                    raise IOError('No ELSET named ' + meshName)
                 else:
-                    if ('ELSET='+meshName) in l:
+                    if ('ELSET=' + meshName) in l:
                         doScan = 0
                         for term in l.split(','):
                             if 'TYPE' in term.upper():
                                 elemType = term.split('=')[1].strip()
-            
+
             try:
                 en = ELEMNODES[elemType]
             except KeyError:
-                raise RuntimeError('Unsupported element type: '+elemType)
+                raise RuntimeError('Unsupported element type: ' + elemType)
 
             doScan = 1
             nCount = -1
@@ -291,16 +292,16 @@ class InpReader(object):
                 else:
                     if '*' not in l:
                         terms = [int(i) for i in l.split(',') if i]
-                        if len(terms)==0:
+                        if len(terms) == 0:
                             terms = [int(l.strip())]
                         for t in terms:
-                            if nCount==-1:
+                            if nCount == -1:
                                 elemNumbers.append(t)
                                 nCount += 1
-                            elif nCount<en:
+                            elif nCount < en:
                                 elem.append(t)
                                 nCount += 1
-                                if nCount==en:
+                                if nCount == en:
                                     elems.append(elem)
                                     elem = []
                                     nCount = -1
@@ -313,7 +314,7 @@ class InpReader(object):
                     else:
                         doScan = 0
 
-            print(('loaded %s %s elements'%(len(elems), elemType)))
+            print(('loaded %s %s elements' % (len(elems), elemType)))
 
         # get only nodes of the mesh
         _nodesDict = dict(zip(nodeNumbers, nodes))
@@ -349,7 +350,6 @@ class InpReader(object):
 
         return mesh
 
-
     def readAllMeshes(self):
         """Read in all meshes in the file.
         Returns a dictionary in which keys are mesh names and values are the
@@ -381,7 +381,7 @@ class InpReader(object):
                     if (self.elementStartString) in l.upper():
                         if elset is not None:
                             # check if these are the right elset
-                            if ('ELSET='+elset).upper() in l.upper():
+                            if ('ELSET=' + elset).upper() in l.upper():
                                 doScan = 0
                         else:
                             # dont care about elset, we found elements
@@ -390,11 +390,11 @@ class InpReader(object):
                         for term in l.split(','):
                             if 'TYPE' in term.upper():
                                 elemType = term.split('=')[1].strip()
-            
+
             try:
                 en = ELEMNODES[elemType]
             except KeyError:
-                raise RuntimeError('Unsupported element type: '+elemType)
+                raise RuntimeError('Unsupported element type: ' + elemType)
 
             doScan = 1
             nCount = -1
@@ -407,16 +407,16 @@ class InpReader(object):
                 else:
                     if '*' not in l:
                         terms = [int(i) for i in l.split(',') if i]
-                        if len(terms)==0:
+                        if len(terms) == 0:
                             terms = [int(l.strip())]
                         for t in terms:
-                            if nCount==-1:
+                            if nCount == -1:
                                 elemNumbers.append(t)
                                 nCount += 1
-                            elif nCount<en:
+                            elif nCount < en:
                                 elem.append(t)
                                 nCount += 1
-                                if nCount==en:
+                                if nCount == en:
                                     elems.append(elem)
                                     elem = []
                                     nCount = -1
@@ -429,7 +429,7 @@ class InpReader(object):
                     else:
                         doScan = 0
 
-            print(('loaded %s %s elements'%(len(elems), elemType)))
+            print(('loaded %s %s elements' % (len(elems), elemType)))
 
         return elemNumbers, elems, elemType
 
@@ -443,11 +443,11 @@ class InpReader(object):
                 try:
                     l = next(f)
                 except StopIteration:
-                    raise IOError('No ELSET named '+name)
+                    raise IOError('No ELSET named ' + name)
                 else:
                     if (self.elsetStartString) in l.upper():
-                        if ('ELSET='+name).upper() in l.upper():
-                                doScan = 0
+                        if ('ELSET=' + name).upper() in l.upper():
+                            doScan = 0
 
             doScan = 1
             while doScan:
@@ -460,10 +460,10 @@ class InpReader(object):
 
             print('loaded {} elements in elset {}'.format(len(elset), name))
 
-        return elset     
+        return elset
+
 
 class InpWriter(object):
-
     _commentChars = '**'
     _nodeHeaderLine = '*NODE, NSET={}\n'
     _nodeCounterFormat = '{:6d}'
@@ -477,15 +477,15 @@ class InpWriter(object):
         self.filename = filename
         self._header = None
         self.autoFormat = autoFormat
-    
+
     def addHeader(self, header):
         """
         Add commented text to be written at the top of the 
         file.
         """
         self._header = header
-        if header[-1:]!='\n':
-            self._header = self._header+'\n'
+        if header[-1:] != '\n':
+            self._header = self._header + '\n'
 
     def addMesh(self, mesh):
         """Add a mesh to be written.
@@ -504,19 +504,19 @@ class InpWriter(object):
     def _autoFormat(self):
         maxNodes = max([max(mesh.nodeNumbers) for mesh in self._meshes])
         nodeCounterCharLength = len(str(maxNodes)) + 1
-        self._nodeCounterFormat = '{:'+str(nodeCounterCharLength)+'}'
-        
+        self._nodeCounterFormat = '{:' + str(nodeCounterCharLength) + '}'
+
         maxElems = max([max(mesh.elemNumbers) for mesh in self._meshes])
         elemCounterCharLength = len(str(maxElems)) + 1
-        self._elemCounterFormat = '{:'+str(elemCounterCharLength)+'}'
-        self._elemNodeFormat = '{:'+str(nodeCounterCharLength)+'}'
+        self._elemCounterFormat = '{:' + str(elemCounterCharLength) + '}'
+        self._elemNodeFormat = '{:' + str(nodeCounterCharLength) + '}'
 
     def write(self):
         """
         Write data to file.
         """
-        
-        if len(self._meshes)==0:
+
+        if len(self._meshes) == 0:
             raise RuntimeError('no meshes defined')
 
         if self.autoFormat:
@@ -525,12 +525,12 @@ class InpWriter(object):
         # open file for writing
         with open(self.filename, 'w') as f:
             # write header comments
-            if self._header!=None:
-                f.write(COMMENTCHARS+self._header)
+            if self._header != None:
+                f.write(COMMENTCHARS + self._header)
             else:
-                f.write(COMMENTCHARS+'\n')
+                f.write(COMMENTCHARS + '\n')
 
-            f.write(COMMENTCHARS+'\n')
+            f.write(COMMENTCHARS + '\n')
 
             # write each mesh
             for mesh in self._meshes:
@@ -541,7 +541,7 @@ class InpWriter(object):
                     for ni, n in enumerate(mesh.nodes):
                         f.write(self._getNodeLine(mesh.nodeNumbers[ni], n))
 
-                    f.write(COMMENTCHARS+'\n')
+                    f.write(COMMENTCHARS + '\n')
 
                 # elems
                 if mesh.elems is not None:
@@ -549,7 +549,7 @@ class InpWriter(object):
                     for ei, e in enumerate(mesh.elems):
                         f.write(self._getElemLine(mesh.elemNumbers[ei], e))
 
-                    f.write(COMMENTCHARS+'\n')
+                    f.write(COMMENTCHARS + '\n')
 
                 # elsets - TODO
 
@@ -558,17 +558,13 @@ class InpWriter(object):
                 # materials - TODO
 
     def _getNodeLine(self, i, node):
-        words = [self._nodeCounterFormat.format(i),] +\
+        words = [self._nodeCounterFormat.format(i), ] + \
                 [self._nodeCoordFormat.format(x) for x in node]
 
-        return ', '.join(words)+'\n'
+        return ', '.join(words) + '\n'
 
     def _getElemLine(self, i, elem):
-        words = [self._elemCounterFormat.format(i),] +\
+        words = [self._elemCounterFormat.format(i), ] + \
                 [self._elemNodeFormat.format(n) for n in elem]
 
-        return ', '.join(words)+'\n'
-
-
-
-
+        return ', '.join(words) + '\n'

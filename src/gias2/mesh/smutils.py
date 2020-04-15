@@ -11,13 +11,14 @@ License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
-import itertools
-
-import numpy as np
 import copy
-from gias2.mesh import simplemesh
+
+import itertools
+import numpy as np
 from scipy.spatial.ckdtree import cKDTree
 from scipy.stats import mode
+
+from gias2.mesh import simplemesh
 
 
 def make_sub_mesh(sm, faceinds):

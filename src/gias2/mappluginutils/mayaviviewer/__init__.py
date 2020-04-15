@@ -18,10 +18,11 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 # import class that derives itself from the step mountpoint.
 from gias2.mappluginutils.mayaviviewer.mayaviscenewidget import MayaviSceneWidget
-from gias2.mappluginutils.mayaviviewer.mayaviviewerobjects import colours, MayaviViewerObjectsContainer, MayaviViewerSceneObject, MayaviViewerObject
+from gias2.mappluginutils.mayaviviewer.mayaviviewerdatapoints import MayaviViewerDataPoints
 from gias2.mappluginutils.mayaviviewer.mayaviviewerfieldworkmeasurements import MayaviViewerFemurMeasurements
 from gias2.mappluginutils.mayaviviewer.mayaviviewerfieldworkmodel import MayaviViewerFieldworkModel
 from gias2.mappluginutils.mayaviviewer.mayaviviewergiasscan import MayaviViewerGiasScan
-from gias2.mappluginutils.mayaviviewer.mayaviviewerdatapoints import MayaviViewerDataPoints
-from gias2.mappluginutils.mayaviviewer.mayaviviewerlandmark import MayaviViewerLandmark
 from gias2.mappluginutils.mayaviviewer.mayaviviewerimageplane import MayaviViewerImagePlane
+from gias2.mappluginutils.mayaviviewer.mayaviviewerlandmark import MayaviViewerLandmark
+from gias2.mappluginutils.mayaviviewer.mayaviviewerobjects import colours, MayaviViewerObjectsContainer, \
+    MayaviViewerSceneObject, MayaviViewerObject

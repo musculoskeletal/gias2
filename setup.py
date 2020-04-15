@@ -8,9 +8,10 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
 
+from os import path
+
 # !/usr/bin/env python
 import sys
-from os import path
 from setuptools import setup, find_packages
 from setuptools.extension import Extension
 

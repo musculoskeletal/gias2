@@ -13,10 +13,9 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 """
 
 from gias2.mappluginutils.mayaviviewer import MayaviViewerSceneObject, MayaviViewerObject, colours
-import numpy as np
+
 
 class MayaviViewerDataPointsSceneObject(MayaviViewerSceneObject):
-
     typeName = 'datapoints'
 
     def __init__(self, name, points):
@@ -30,8 +29,8 @@ class MayaviViewerDataPointsSceneObject(MayaviViewerSceneObject):
         self.points.remove()
         self.points = None
 
-class MayaviViewerDataPoints(MayaviViewerObject):
 
+class MayaviViewerDataPoints(MayaviViewerObject):
     typeName = 'datapoints'
 
     def __init__(self, name, coords, scalars=None, renderArgs=None):
@@ -39,12 +38,12 @@ class MayaviViewerDataPoints(MayaviViewerObject):
         self.coords = coords
 
         self.scalarName = 'None'
-        if scalars==None:
+        if scalars == None:
             self.scalars = {}
         else:
             self.scalars = scalars
-        
-        if renderArgs==None:
+
+        if renderArgs == None:
             self.renderArgs = {}
         else:
             self.renderArgs = renderArgs
@@ -69,45 +68,47 @@ class MayaviViewerDataPoints(MayaviViewerObject):
         d = self.coords
         s = self.scalars.get(self.scalarName)
         renderArgs = self.renderArgs
-        if s!=None:
-            self.sceneObject = MayaviViewerDataPointsSceneObject(self.name,\
-                                scene.mlab.points3d( d[:,0], d[:,1], d[:,2], s, **renderArgs))
+        if s != None:
+            self.sceneObject = MayaviViewerDataPointsSceneObject(self.name, \
+                                                                 scene.mlab.points3d(d[:, 0], d[:, 1], d[:, 2], s,
+                                                                                     **renderArgs))
         else:
-            self.sceneObject = MayaviViewerDataPointsSceneObject(self.name,\
-                                scene.mlab.points3d( d[:,0], d[:,1], d[:,2], **renderArgs))
-        
+            self.sceneObject = MayaviViewerDataPointsSceneObject(self.name, \
+                                                                 scene.mlab.points3d(d[:, 0], d[:, 1], d[:, 2],
+                                                                                     **renderArgs))
+
         scene.disable_render = False
         return self.sceneObject
 
-    def updateGeometry( self, coords, scene ):
-        
-        if self.sceneObject==None:
+    def updateGeometry(self, coords, scene):
+
+        if self.sceneObject == None:
             self.coords = coords
             self.draw(scene)
-        else: 
-            self.sceneObject.points.mlab_source.set(x=coords[:,0], y=coords[:,1], z=coords[:,2])
+        else:
+            self.sceneObject.points.mlab_source.set(x=coords[:, 0], y=coords[:, 1], z=coords[:, 2])
             self.coords = coords
 
     def updateScalar(self, scalarName, scene):
         self.setScalarSelection(scalarName)
-        if self.sceneObject==None:
+        if self.sceneObject == None:
             self.draw(scene)
-        else: 
+        else:
             d = self.coords
             s = self.scalars.get(self.scalarName)
             renderArgs = self.renderArgs
-            if s!=None:
-                self.sceneObject.points.actor.mapper.scalar_visibility=True
-                self.sceneObject.points.mlab_source.reset( x=d[:,0], y=d[:,1], z=d[:,2], s=s )
+            if s != None:
+                self.sceneObject.points.actor.mapper.scalar_visibility = True
+                self.sceneObject.points.mlab_source.reset(x=d[:, 0], y=d[:, 1], z=d[:, 2], s=s)
             else:
                 if 'color' not in renderArgs:
                     color = self.defaultColour
                 else:
                     color = renderArgs['color']
-                    
-                self.sceneObject.points.actor.mapper.scalar_visibility=False
+
+                self.sceneObject.points.actor.mapper.scalar_visibility = False
                 self.sceneObject.points.actor.property.specular_color = color
                 self.sceneObject.points.actor.property.diffuse_color = color
                 self.sceneObject.points.actor.property.ambient_color = color
                 self.sceneObject.points.actor.property.color = color
-                self.sceneObject.points.mlab_source.reset( x=d[:,0], y=d[:,1], z=d[:,2] )
+                self.sceneObject.points.mlab_source.reset(x=d[:, 0], y=d[:, 1], z=d[:, 2])

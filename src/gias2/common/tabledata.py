@@ -14,12 +14,14 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import numpy as np
 
+
 class Classification(object):
 
     def __init__(self, name, labelsDict, code):
         self.name = name
         self.labels = labelsDict
         self.code = code
+
 
 class TableData(object):
 
@@ -43,7 +45,7 @@ class TableData(object):
     def addDataColumn(self, header, unit, data):
         self._headers.append(header)
         self._units.append(unit)
-        self._dataArray = np.hstack([self._dataArray, data[:,np.newaxis]])
+        self._dataArray = np.hstack([self._dataArray, data[:, np.newaxis]])
 
     def addDataRow(self, rowLabel, data):
         self._rowLabels = self._rowLabels.append(rowLabel)
@@ -68,16 +70,16 @@ class TableData(object):
         return self._units[self._headers.index(header)]
 
     def getData(self, header, classificationName=None, classLabel=None):
-        data = self._dataArray[:,self._headers.index(header)]
-        if classificationName!=None:
+        data = self._dataArray[:, self._headers.index(header)]
+        if classificationName != None:
             C = self._classifications[classificationName]
-            data = data[C.code==C.labels[classLabel]]
+            data = data[C.code == C.labels[classLabel]]
 
         return data
 
     def getRowLabels(self, classificationName=None, classLabel=None):
-        if classificationName==None:
+        if classificationName == None:
             return self._rowLabels
         else:
             C = self._classifications[classificationName]
-            return [self._rowLabels[i] for i in np.where(C.code==C.labels[classLabel])[0]]
+            return [self._rowLabels[i] for i in np.where(C.code == C.labels[classLabel])[0]]

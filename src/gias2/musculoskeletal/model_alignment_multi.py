@@ -12,23 +12,26 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
 
-
 import copy
+
 import scipy
+
 from gias2.common import transform3D
-from gias2.musculoskeletal import fw_femur_model_data as fmd
-from gias2.musculoskeletal import model_alignment
-from gias2.musculoskeletal import fw_pelvis_measurements
 from gias2.musculoskeletal import fw_femur_measurements
+from gias2.musculoskeletal import fw_femur_model_data as fmd
 from gias2.musculoskeletal import fw_model_landmarks as fml
+from gias2.musculoskeletal import fw_pelvis_measurements
+from gias2.musculoskeletal import model_alignment
+
 
 def normaliseVector(v):
-    return v/scipy.linalg.norm(v)
+    return v / scipy.linalg.norm(v)
 
-def alignTibiaFibulaMeshParametersAnatomicSingle( tib, fib ):
+
+def alignTibiaFibulaMeshParametersAnatomicSingle(tib, fib):
     """ given a list of femur geometric fields, align them geometrically.
     returns the aligned field parameters
-    """ 
+    """
     tibNodes = tib.get_all_point_positions()
     fibNodes = fib.get_all_point_positions()
     LM = fibNodes[fml._fibulaLMNode]
@@ -36,13 +39,14 @@ def alignTibiaFibulaMeshParametersAnatomicSingle( tib, fib ):
     LC = tibNodes[fml._tibiaLCNode]
     MC = tibNodes[fml._tibiaMCNode]
 
-    alignedTibParams, T = model_alignment.alignAnatomicTibiaFibulaGroodSuntay( tibNodes, MM, LM, MC, LC, True )
-    alignedFibParams, T = model_alignment.alignAnatomicTibiaFibulaGroodSuntay( fibNodes, MM, LM, MC, LC, True )
-    alignedTibParams = alignedTibParams.T[:,:,scipy.newaxis]
-    alignedFibParams = alignedFibParams.T[:,:,scipy.newaxis]
+    alignedTibParams, T = model_alignment.alignAnatomicTibiaFibulaGroodSuntay(tibNodes, MM, LM, MC, LC, True)
+    alignedFibParams, T = model_alignment.alignAnatomicTibiaFibulaGroodSuntay(fibNodes, MM, LM, MC, LC, True)
+    alignedTibParams = alignedTibParams.T[:, :, scipy.newaxis]
+    alignedFibParams = alignedFibParams.T[:, :, scipy.newaxis]
     return alignedTibParams, alignedFibParams, T
 
-def alignTibiaFibulaMeshParametersAnatomic( tibs, fibs ):
+
+def alignTibiaFibulaMeshParametersAnatomic(tibs, fibs):
     """ given a list of femur geometric fields, align them geometrically.
     returns the aligned field parameters
     """
@@ -52,13 +56,15 @@ def alignTibiaFibulaMeshParametersAnatomic( tibs, fibs ):
         alignedTibParams, alignedFibParams, T = alignTibiaFibulaMeshParametersAnatomicSingle(tib, fib)
         alignedTibParamsAll.append(alignedTibParams)
         alignedFibParamsAll.append(alignedFibParams)
-    
+
     return alignedTibParamsAll, alignedFibParamsAll
 
-def calcAngle(v1, v2):
-    return scipy.arccos( scipy.dot(v1,v2) / (scipy.linalg.norm(v1)*scipy.linalg.norm(v2)) )
 
-def alignPelvisRightFemurAnatomic( pelvisG, rightFemurG ):
+def calcAngle(v1, v2):
+    return scipy.arccos(scipy.dot(v1, v2) / (scipy.linalg.norm(v1) * scipy.linalg.norm(v2)))
+
+
+def alignPelvisRightFemurAnatomic(pelvisG, rightFemurG):
     """
     aligns meshes of the pelvis and femur to the pelvis
     anatomic coordinate system, and aligns the femur z 
@@ -70,7 +76,7 @@ def alignPelvisRightFemurAnatomic( pelvisG, rightFemurG ):
     The input mesh is expected to have 4 submeshes - 
     RH, LH, sac, right femur
     """
-    
+
     # first transform meshes to pelvis anatomic CS
     pelvisG = copy.deepcopy(pelvisG)
     rightFemurG = copy.deepcopy(rightFemurG)
@@ -90,7 +96,7 @@ def alignPelvisRightFemurAnatomic( pelvisG, rightFemurG ):
     rFH = femurM.measurements['head_diameter']
 
     # average to get joint rotation centre
-    HJC = (rFH.centre + rAcetab.centre)/2.0
+    HJC = (rFH.centre + rAcetab.centre) / 2.0
 
     # estimate joint spacing
     jointSpacing = rAcetab.value - rFH.value
@@ -108,20 +114,20 @@ def alignPelvisRightFemurAnatomic( pelvisG, rightFemurG ):
     """
 
     # align femur anatomic coord system to global
-    d = (10,10)
-    head = rightFemurG.calc_CoM_2D( d, elem=fmd.assemblyElementsNumbers['head'] ) 
-    lc = rightFemurG.calc_CoM_2D( d, elem=fmd.assemblyElementsNumbers['lateralcondyle'] ) 
-    mc = rightFemurG.calc_CoM_2D( d, elem=fmd.assemblyElementsNumbers['medialcondyle'] ) 
-    oF = ( mc + lc )/2.0
-    zF = normaliseVector( head - oF )
-    yF = normaliseVector( scipy.cross( zF,  ( lc - oF ) ) )
-    xF = normaliseVector( scipy.cross( yF, zF ) )
-    
+    d = (10, 10)
+    head = rightFemurG.calc_CoM_2D(d, elem=fmd.assemblyElementsNumbers['head'])
+    lc = rightFemurG.calc_CoM_2D(d, elem=fmd.assemblyElementsNumbers['lateralcondyle'])
+    mc = rightFemurG.calc_CoM_2D(d, elem=fmd.assemblyElementsNumbers['medialcondyle'])
+    oF = (mc + lc) / 2.0
+    zF = normaliseVector(head - oF)
+    yF = normaliseVector(scipy.cross(zF, (lc - oF)))
+    xF = normaliseVector(scipy.cross(yF, zF))
+
     oF = rFH.centre
-    
-    u = scipy.array([ oF, oF-yF, oF-zF, oF+xF])
-    ut = scipy.array([ oF, oF+[1.0,0,0], oF+[0,1.0,0], oF+[0,0,1.0]  ])             
-    femurAlignT = transform3D.directAffine( u, ut )
+
+    u = scipy.array([oF, oF - yF, oF - zF, oF + xF])
+    ut = scipy.array([oF, oF + [1.0, 0, 0], oF + [0, 1.0, 0], oF + [0, 0, 1.0]])
+    femurAlignT = transform3D.directAffine(u, ut)
     rightFemurG.transformAffine(femurAlignT)
 
     # check new joint spacing
@@ -133,43 +139,44 @@ def alignPelvisRightFemurAnatomic( pelvisG, rightFemurG ):
     femurM2.calcHeadDiameter()
     rFH2 = femurM2.measurements['head_diameter']
     jointSpacing2 = rAcetab.value - rFH2.value
-    HJC2 = (rFH2.centre + rAcetab.centre)/2.0
+    HJC2 = (rFH2.centre + rAcetab.centre) / 2.0
 
     # translate femur to correct for changes in joint spacing
-    tCorrect = (rAcetab.centre - rFH2.centre) * (jointSpacing2 - jointSpacing) 
-    rightFemurG.transformTranslate(tCorrect)    
+    tCorrect = (rAcetab.centre - rFH2.centre) * (jointSpacing2 - jointSpacing)
+    rightFemurG.transformTranslate(tCorrect)
 
     return pelvisG, rightFemurG
 
+
 def _calcFemurZ(femurG):
-    d = [10,10]
-    head = femurG.calc_CoM_2D( d, elem=fmd.assemblyElementsNumbers['head'] ) 
-    lc = femurG.calc_CoM_2D( d, elem=fmd.assemblyElementsNumbers['lateralcondyle'] ) 
-    mc = femurG.calc_CoM_2D( d, elem=fmd.assemblyElementsNumbers['medialcondyle'] ) 
-    rFOrigin = ( mc + lc )/2.0
-    rFz = normaliseVector( head - rFOrigin )
-    if rFz[2]<0.0:
+    d = [10, 10]
+    head = femurG.calc_CoM_2D(d, elem=fmd.assemblyElementsNumbers['head'])
+    lc = femurG.calc_CoM_2D(d, elem=fmd.assemblyElementsNumbers['lateralcondyle'])
+    mc = femurG.calc_CoM_2D(d, elem=fmd.assemblyElementsNumbers['medialcondyle'])
+    rFOrigin = (mc + lc) / 2.0
+    rFz = normaliseVector(head - rFOrigin)
+    if rFz[2] < 0.0:
         rFz *= -1.0
 
     return rFz
 
-def alignAnatomicTibiaFibulaGroodSuntay( X, MM, LM, MC, LC, returnT=False ):
 
-    IC = ( MC + LC ) / 2.0
-    IM = ( MM + LM ) / 2.0
-    
-    z = normaliseVector( IC - IM )
-    y = normaliseVector( scipy.cross( z, MC-LC ) )
-    x = normaliseVector( scipy.cross( y, z ) )
-    
-    u = scipy.array([ IC, IC+x, IC+y, IC+z])        
-    ut = scipy.array([[0, 0, 0],\
-                        [1, 0, 0],\
-                        [0, 1, 0],\
-                        [0, 0, 1]])
-                
-    t = transform3D.directAffine( u, ut )
+def alignAnatomicTibiaFibulaGroodSuntay(X, MM, LM, MC, LC, returnT=False):
+    IC = (MC + LC) / 2.0
+    IM = (MM + LM) / 2.0
+
+    z = normaliseVector(IC - IM)
+    y = normaliseVector(scipy.cross(z, MC - LC))
+    x = normaliseVector(scipy.cross(y, z))
+
+    u = scipy.array([IC, IC + x, IC + y, IC + z])
+    ut = scipy.array([[0, 0, 0], \
+                      [1, 0, 0], \
+                      [0, 1, 0], \
+                      [0, 0, 1]])
+
+    t = transform3D.directAffine(u, ut)
     if returnT:
-        return transform3D.transformAffine( X, t ), t
+        return transform3D.transformAffine(X, t), t
     else:
-        return transform3D.transformAffine( X, t )
+        return transform3D.transformAffine(X, t)

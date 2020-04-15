@@ -8,5 +8,3 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
 
-from gias2.mesh.vtktools import Reader as PolyReader
-from gias2.mesh.vtktools import Writer as PolyWriter

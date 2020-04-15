@@ -13,11 +13,12 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
 
-import sys
 import numpy as np
+import sys
 from scipy import optimize
+
 from gias2.registration import alignment_fitting
-from gias2.musculoskeletal.bonemodels import modelcore
+
 
 def _make_x0(ll, npcs, landmark_names, target_landmarks, source_landmarks, init_pc_weights=None):
     """ Generate initial parameters for lower limb atlas fitting.
@@ -25,7 +26,7 @@ def _make_x0(ll, npcs, landmark_names, target_landmarks, source_landmarks, init_
     rigid transformation parameters
     """
     reg_landmarks = ('pelvis-LASIS', 'pelvis-RASIS', 'pelvis-Sacral')
-    
+
     # check if we can do an auto registration of the pelvis
     do_rigid = True
     if 'pelvis-Sacral' not in landmark_names:
@@ -34,11 +35,11 @@ def _make_x0(ll, npcs, landmark_names, target_landmarks, source_landmarks, init_
             landmark_names.append('pelvis-Sacral')
             targ_lpsis = target_landmarks[landmark_names.index('pelvis-LPSIS')]
             targ_rpsis = target_landmarks[landmark_names.index('pelvis-RPSIS')]
-            targ_sac = (np.array(targ_lpsis) + np.array(targ_rpsis))*0.5
+            targ_sac = (np.array(targ_lpsis) + np.array(targ_rpsis)) * 0.5
             target_landmarks = np.vstack([target_landmarks, targ_sac])
             src_lpsis = target_landmarks[landmark_names.index('pelvis-LPSIS')]
             src_rpsis = target_landmarks[landmark_names.index('pelvis-RPSIS')]
-            src_sac = (np.array(src_lpsis) + np.array(src_rpsis))*0.5
+            src_sac = (np.array(src_lpsis) + np.array(src_rpsis)) * 0.5
             source_landmarks = np.vstack([source_landmarks, src_sac])
 
     for name in reg_landmarks:
@@ -48,23 +49,23 @@ def _make_x0(ll, npcs, landmark_names, target_landmarks, source_landmarks, init_
 
     if do_rigid:
         # get pelvis landmark coords
-        _target = np.array([target_landmarks[landmark_names.index(n),:] for n in reg_landmarks])
-        _source = np.array([source_landmarks[landmark_names.index(n),:] for n in reg_landmarks])
-        
-        rx, ry, rz = [0,0,0]
+        _target = np.array([target_landmarks[landmark_names.index(n), :] for n in reg_landmarks])
+        _source = np.array([source_landmarks[landmark_names.index(n), :] for n in reg_landmarks])
+
+        rx, ry, rz = [0, 0, 0]
         t0 = np.hstack([
             _target.mean(0) - _source.mean(0),
             [rx, ry, rz],
-            ])
+        ])
         init_rigid, fitted_landmarks, fit_errors = alignment_fitting.fitRigid(
-                        _source, _target,
-                        t0=t0,
-                        rotcentre=0.5*(_source[0] + _source[1]),
-                        xtol=1e-9, maxfev=1e6,
-                        maxfun=1e6,
-                        epsfcn=1e-6,
-                        outputErrors=1,
-                        )
+            _source, _target,
+            t0=t0,
+            rotcentre=0.5 * (_source[0] + _source[1]),
+            xtol=1e-9, maxfev=1e6,
+            maxfun=1e6,
+            epsfcn=1e-6,
+            outputErrors=1,
+        )
         print('init rigid transform: {}'.format(init_rigid))
         print('init rigid fit error {} -> {}'.format(*fit_errors))
         # fitted_errors = np.sqrt(((_target - fitted_landmarks)**2.0).sum(1))
@@ -78,13 +79,14 @@ def _make_x0(ll, npcs, landmark_names, target_landmarks, source_landmarks, init_
 
     init_x = np.hstack([init_pc_weights,
                         init_rigid,
-                        [0,]*ll.N_PARAMS_HIP_L,
-                        [0,]*ll.N_PARAMS_HIP_R,
-                        [0,]*ll.N_PARAMS_KNEE_L,
-                        [0,]*ll.N_PARAMS_KNEE_R,
+                        [0, ] * ll.N_PARAMS_HIP_L,
+                        [0, ] * ll.N_PARAMS_HIP_R,
+                        [0, ] * ll.N_PARAMS_KNEE_L,
+                        [0, ] * ll.N_PARAMS_KNEE_R,
                         ])
 
     return init_x
+
 
 def _make_source_landmark_getter(landmark_names):
     """ Creates a function to return the coordinates of landmarks
@@ -99,10 +101,10 @@ def _make_source_landmark_getter(landmark_names):
     landmark_labels = []
     for ln in landmark_names:
         terms = ln.split('-')
-        if len(terms)==2:
+        if len(terms) == 2:
             body_name, landmark_name = terms
             landmark_labels.append((body_name, ln))
-        elif len(terms)==3:
+        elif len(terms) == 3:
             body_name, landmark_name, side = terms
             landmark_labels.append(('{}-{}'.format(body_name, side), '{}-{}'.format(body_name, landmark_name)))
 
@@ -114,38 +116,38 @@ def _make_source_landmark_getter(landmark_names):
 
     return get_source_landmarks
 
-def _lower_limb_atlas_landmark_fit(ll_model, target_landmark_coords, landmark_names,
-                            pc_modes, mweight, initial_pc_weights=None, x0=None,
-                            callback=None, minimise_args={}):
 
+def _lower_limb_atlas_landmark_fit(ll_model, target_landmark_coords, landmark_names,
+                                   pc_modes, mweight, initial_pc_weights=None, x0=None,
+                                   callback=None, minimise_args={}):
     if initial_pc_weights is not None:
-        if len(initial_pc_weights)!=len(pc_modes):
+        if len(initial_pc_weights) != len(pc_modes):
             raise ValueError('Length of initial_pc_weights not equal to length of pc_modes')
 
     if x0 is not None:
-        if len(x0)!=(ll_model.N_PARAMS_RIGID+len(pc_modes)):
+        if len(x0) != (ll_model.N_PARAMS_RIGID + len(pc_modes)):
             raise ValueError('Incorrect number of elements in x0, need {}, given {}'.format(
-                                ll_model.N_PARAMS_RIGID+len(pc_modes), len(x0))
-                            )
+                ll_model.N_PARAMS_RIGID + len(pc_modes), len(x0))
+            )
 
     n_pc_modes = len(pc_modes)
     get_source_landmarks = _make_source_landmark_getter(landmark_names)
     source_landmark_coords = np.zeros((len(landmark_names), 3), dtype=float)
     source_landmark_coords = get_source_landmarks(ll_model, source_landmark_coords)
     hip_rigid_x_index = n_pc_modes
-    hip_rot_l_x_index = n_pc_modes+ll_model.N_PARAMS_PELVIS
-    hip_rot_r_x_index = n_pc_modes+ll_model.N_PARAMS_PELVIS+\
+    hip_rot_l_x_index = n_pc_modes + ll_model.N_PARAMS_PELVIS
+    hip_rot_r_x_index = n_pc_modes + ll_model.N_PARAMS_PELVIS + \
                         ll_model.N_PARAMS_HIP_L
-    knee_rot_l_x_index = n_pc_modes+ll_model.N_PARAMS_PELVIS+\
+    knee_rot_l_x_index = n_pc_modes + ll_model.N_PARAMS_PELVIS + \
                          ll_model.N_PARAMS_HIP_L + ll_model.N_PARAMS_HIP_R
-    knee_rot_r_x_index = n_pc_modes+ll_model.N_PARAMS_PELVIS+\
-                         ll_model.N_PARAMS_HIP_L + ll_model.N_PARAMS_HIP_R+\
+    knee_rot_r_x_index = n_pc_modes + ll_model.N_PARAMS_PELVIS + \
+                         ll_model.N_PARAMS_HIP_L + ll_model.N_PARAMS_HIP_R + \
                          ll_model.N_PARAMS_KNEE_L
 
     x_history = []
 
     def _x_splitter(x):
-        return [x[:n_pc_modes], 
+        return [x[:n_pc_modes],
                 x[hip_rigid_x_index:hip_rot_l_x_index],
                 x[hip_rot_l_x_index:hip_rot_r_x_index],
                 x[hip_rot_r_x_index:knee_rot_l_x_index],
@@ -153,14 +155,14 @@ def _lower_limb_atlas_landmark_fit(ll_model, target_landmark_coords, landmark_na
                 x[knee_rot_r_x_index:],
                 ]
 
-    #=========================================================================#
+    # =========================================================================#
     # define objective function
     def lower_limb_landmark_reg_obj(x):
         """Main objective function
         """
         # update model geometry
         x_split = _x_splitter(x)
-        ll_model.update_all_models(x_split[0], pc_modes, 
+        ll_model.update_all_models(x_split[0], pc_modes,
                                    x_split[1],
                                    x_split[2],
                                    x_split[3],
@@ -172,10 +174,10 @@ def _lower_limb_atlas_landmark_fit(ll_model, target_landmark_coords, landmark_na
         source_x = get_source_landmarks(ll_model, source_landmark_coords)
 
         # calc sum of squared distance between target and source landmarks
-        ssdist = ((target_landmark_coords - source_x)**2.0).sum()
+        ssdist = ((target_landmark_coords - source_x) ** 2.0).sum()
 
         # calc squared mahalanobis distance
-        m2 = mweight * (x_split[0]**2.0).sum()
+        m2 = mweight * (x_split[0] ** 2.0).sum()
         sys.stdout.write('SSDist: {:12.6f}, mdistance: {:8.5f}\r'.format(ssdist, m2))
         sys.stdout.flush()
         # print('SSDist: {:12.6f}, mdistance: {:8.5f}'.format(ssdist, m2))
@@ -204,11 +206,11 @@ def _lower_limb_atlas_landmark_fit(ll_model, target_landmark_coords, landmark_na
     #     m2 = mweight * (x_split[0]**2.0).sum()
     #     print('SSDist: {:12.6f}, mdistance: {:8.5f}'.format(ssdist, m2))
 
-    #=========================================================================#
+    # =========================================================================#
     # make initial parameters
     if x0 is None:
         x0 = _make_x0(ll_model, n_pc_modes, landmark_names, target_landmark_coords,
-                source_landmark_coords, initial_pc_weights)
+                      source_landmark_coords, initial_pc_weights)
     else:
         x0 = np.array(x0)
 
@@ -226,7 +228,7 @@ def _lower_limb_atlas_landmark_fit(ll_model, target_landmark_coords, landmark_na
     print(' ')
     xopt1_split = _x_splitter(opt_results_1['x'])
     x_history.append(xopt1_split)
-    ll_model.update_all_models(xopt1_split[0], pc_modes, 
+    ll_model.update_all_models(xopt1_split[0], pc_modes,
                                xopt1_split[1],
                                xopt1_split[2],
                                xopt1_split[3],
@@ -236,23 +238,23 @@ def _lower_limb_atlas_landmark_fit(ll_model, target_landmark_coords, landmark_na
 
     # calc final landmark error
     opt_source_landmarks = get_source_landmarks(ll_model, source_landmark_coords)
-    opt_landmark_dist = np.sqrt(((target_landmark_coords - opt_source_landmarks)**2.0).sum(1))
-    opt_landmark_rmse = np.sqrt((opt_landmark_dist**2.0).mean())
+    opt_landmark_dist = np.sqrt(((target_landmark_coords - opt_source_landmarks) ** 2.0).sum(1))
+    opt_landmark_rmse = np.sqrt((opt_landmark_dist ** 2.0).mean())
 
     # prepare output
-    output_info = {'source_landmark_getter':get_source_landmarks,
+    output_info = {'source_landmark_getter': get_source_landmarks,
                    'obj': lower_limb_landmark_reg_obj,
                    'min_results': opt_results_1,
                    'opt_source_landmarks': opt_source_landmarks,
-                   'mahalanobis_distance': np.sqrt((xopt1_split[0]**2.0).sum()),
-                    }
+                   'mahalanobis_distance': np.sqrt((xopt1_split[0] ** 2.0).sum()),
+                   }
 
     return x_history, opt_landmark_dist, opt_landmark_rmse, output_info
+
 
 def fit(ll_model, target_landmark_coords, landmark_names,
         pc_modes, mweight, initial_pc_weights=None, x0=None,
         callback=None, minimise_args={}, verbose=False):
-    
     """Fit a lower limb atlas model to landmarks.
 
     Inputs:
@@ -291,7 +293,7 @@ def fit(ll_model, target_landmark_coords, landmark_names,
 
     """
 
-    if len(target_landmark_coords)!=len(landmark_names):
+    if len(target_landmark_coords) != len(landmark_names):
         raise ValueError('Number of target landmarks not equal to number of landmark names')
 
     if isinstance(pc_modes[0], (list, tuple, np.ndarray)):
@@ -300,17 +302,17 @@ def fit(ll_model, target_landmark_coords, landmark_names,
 
         # prepare mweights
         if isinstance(mweight, (list, tuple, np.ndarray)):
-            if len(mweight)!=n_iterations:
+            if len(mweight) != n_iterations:
                 raise ValueError('Length of mweight and pc_modes do not match')
         else:
-            mweight = [mweight,]*n_iterations
+            mweight = [mweight, ] * n_iterations
 
         # prepare minimise args
         if isinstance(minimise_args, (list, tuple)):
-            if len(minimise_args)!=n_iterations:
+            if len(minimise_args) != n_iterations:
                 raise ValueError('Length of minimise_args and pc_modes do not match')
         else:
-            minimise_args = [minimise_args,]*n_iterations
+            minimise_args = [minimise_args, ] * n_iterations
     else:
         multi_fit = False
 
@@ -323,9 +325,9 @@ def fit(ll_model, target_landmark_coords, landmark_names,
             print('Running single lower limb fit')
 
         return _lower_limb_atlas_landmark_fit(
-                    ll_model, target_landmark_coords, landmark_names, pc_modes,
-                    mweight, initial_pc_weights=initial_pc_weights,
-                    x0=x0, callback=callback, minimise_args=minimise_args)
+            ll_model, target_landmark_coords, landmark_names, pc_modes,
+            mweight, initial_pc_weights=initial_pc_weights,
+            x0=x0, callback=callback, minimise_args=minimise_args)
     else:
         # run multi-stage fit
         if verbose:
@@ -339,39 +341,39 @@ def fit(ll_model, target_landmark_coords, landmark_names,
             x_history.append(x0)
 
         for it in range(n_iterations):
-            if it>0:
+            if it > 0:
                 initial_pc_weights = None
                 # check if new x0 is of right length
-                n_modes_diff = len(pc_modes[it]) - len(pc_modes[it-1])
-                if n_modes_diff>0:
+                n_modes_diff = len(pc_modes[it]) - len(pc_modes[it - 1])
+                if n_modes_diff > 0:
                     # pad
                     x0 = np.hstack([
-                            np.hstack([
-                                x0[:-total_rigid_params],
-                                np.zeros(n_modes_diff, dtype=float)
-                                ]),
-                            x0[-total_rigid_params:]
-                            ])
-                elif n_modes_diff<0:
+                        np.hstack([
+                            x0[:-total_rigid_params],
+                            np.zeros(n_modes_diff, dtype=float)
+                        ]),
+                        x0[-total_rigid_params:]
+                    ])
+                elif n_modes_diff < 0:
                     # truncate
                     x0 = np.hstack([
-                            x0[:len(pc_modes)],
-                            x0[-total_rigid_params:]
-                            ])
+                        x0[:len(pc_modes)],
+                        x0[-total_rigid_params:]
+                    ])
 
             if verbose:
-                print(('it: {}'.format(it+1)))
+                print(('it: {}'.format(it + 1)))
                 print(('modes: {}'.format(pc_modes[it])))
                 print(('mweight: {}'.format(mweight[it])))
                 print(('minargs: {}'.format(minimise_args[it])))
                 print(('x0: {}'.format(x0)))
 
             x_hist_it, opt_dist_it, opt_rmse_it, info_it = _lower_limb_atlas_landmark_fit(
-                    ll_model, target_landmark_coords, landmark_names,
-                    pc_modes[it], mweight[it],
-                    initial_pc_weights=initial_pc_weights,
-                    x0=x0, callback=callback,
-                    minimise_args=minimise_args[it])
+                ll_model, target_landmark_coords, landmark_names,
+                pc_modes[it], mweight[it],
+                initial_pc_weights=initial_pc_weights,
+                x0=x0, callback=callback,
+                minimise_args=minimise_args[it])
 
             x0 = np.hstack(x_hist_it[-1])
 
@@ -381,6 +383,6 @@ def fit(ll_model, target_landmark_coords, landmark_names,
             output_info.append(info_it)
 
             if verbose:
-                print(('it: {}, landmark rmse: {}'.format(it+1, opt_rmse_it)))
+                print(('it: {}, landmark rmse: {}'.format(it + 1, opt_rmse_it)))
 
     return x_history, opt_landmark_dist, opt_landmark_rmse, output_info

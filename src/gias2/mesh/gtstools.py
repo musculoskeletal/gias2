@@ -1,15 +1,18 @@
 """
 Functions for using the GNU GTS library
 """
-import numpy as np
-from gias2.mesh import simplemesh
 import gts
+import numpy as np
+
+from gias2.mesh import simplemesh
+
 
 def _unit(v):
     """
     return the unit vector of vector v
     """
-    return v/np.sqrt((v**2.0).sum(-1))
+    return v / np.sqrt((v ** 2.0).sum(-1))
+
 
 def simplemesh2gtssurf(smesh):
     """
@@ -39,6 +42,7 @@ def simplemesh2gtssurf(smesh):
 
     return gts_surf
 
+
 def gtssurf2simplemesh(gts_surf):
     """
     Create a SimpleMesh from a GTS surface.
@@ -54,6 +58,7 @@ def gtssurf2simplemesh(gts_surf):
     x, y, z, f = gts.get_coords_and_face_indices(gts_surf, True)
     v = np.array([x, y, z]).T
     return simplemesh.SimpleMesh(v=v, f=f)
+
 
 def cylinder(**kwargs):
     """ Returns a cylinder with linearly changing radius between the two ends.
@@ -77,30 +82,30 @@ def cylinder(**kwargs):
     er = kwargs.get('endr', 1.0)
     slices = kwargs.get('slices', 16)
     stacks = kwargs.get('stacks', 2)
-    stack_l = 1.0/stacks # length of each stack segment
+    stack_l = 1.0 / stacks  # length of each stack segment
     ray = e - s
-    
+
     axisZ = _unit(ray)
-    isY = np.abs(axisZ[1])>0.5
+    isY = np.abs(axisZ[1]) > 0.5
     axisX = _unit(np.cross([float(isY), float(not isY), 0], axisZ))
     axisY = _unit(np.cross(axisX, axisZ))
     start = gts.Vertex(*s)
     end = gts.Vertex(*e)
     surf = gts.Surface()
     _verts = {}
-    
+
     def make_vert(stacki, slicei):
-        stackr = stacki*stack_l
-        slicer = slicei/float(slices)
-        angle = slicer*np.pi*2.0
-        out = axisX*np.cos(angle) + axisY*np.sin(angle)
-        r = sr + stackr*(er-sr)
-        pos = s + ray*stackr + out*r
-        return gts.Vertex(*pos)  
+        stackr = stacki * stack_l
+        slicer = slicei / float(slices)
+        angle = slicer * np.pi * 2.0
+        out = axisX * np.cos(angle) + axisY * np.sin(angle)
+        r = sr + stackr * (er - sr)
+        pos = s + ray * stackr + out * r
+        return gts.Vertex(*pos)
 
     def point(stacki, slicei):
         # wrap around
-        if slicei==slices:
+        if slicei == slices:
             slicei = 0
 
         # check if vertex already exists. Duplicated vertices will
@@ -116,20 +121,20 @@ def cylinder(**kwargs):
         e2 = gts.Edge(v2, v3)
         e3 = gts.Edge(v3, v1)
         surf.add(gts.Face(e1, e2, e3))
-    
+
     for i in range(0, stacks):
         # through angles
         for j in range(0, slices):
             # start side triangle
-            if i==0:
-                add_triangle(start, point(i, j), point(i, j+1))
+            if i == 0:
+                add_triangle(start, point(i, j), point(i, j + 1))
 
             # round side tris
-            add_triangle(point(i, j+1), point(i, j), point(i+1, j))
-            add_triangle(point(i, j+1), point(i+1, j), point(i+1, j+1))
+            add_triangle(point(i, j + 1), point(i, j), point(i + 1, j))
+            add_triangle(point(i, j + 1), point(i + 1, j), point(i + 1, j + 1))
 
             # end side triangle
-            if i==(stacks-1):
-                add_triangle(end, point(i+1, j+1), point(i+1, j))
-    
+            if i == (stacks - 1):
+                add_triangle(end, point(i + 1, j + 1), point(i + 1, j))
+
     return surf

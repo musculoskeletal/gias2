@@ -12,15 +12,15 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
 
-import math
 import numpy as np
 
 import pyximport
+
 pyximport.install(
-    setup_args={"include_dirs":np.get_include()},
+    setup_args={"include_dirs": np.get_include()},
     reload_support=True,
     language_level=3
-    )
+)
 from gias2.mesh import cython_csg as CSG
 
 # try:
@@ -35,8 +35,9 @@ from gias2.mesh import cython_csg as CSG
 
 # from csg import geom
 from gias2.mesh import vtktools, simplemesh
-from gias2.common import math as gmath
+
 vtk = vtktools.vtk
+
 
 # class CSG_Pos(object):
 #     """ A very simple implementation of PyCSG's Pos class
@@ -54,7 +55,8 @@ def _unit(v):
     """
     return the unit vector of vector v
     """
-    return v/np.sqrt((v**2.0).sum(-1))
+    return v / np.sqrt((v ** 2.0).sum(-1))
+
 
 def poly_2_csgeom(vertices, faces, normals=None):
     """
@@ -73,7 +75,7 @@ def poly_2_csgeom(vertices, faces, normals=None):
 
     # # instantiate csg vertices for all vertices
     # csg_vertices = [geom.Vertex(list(v)) for v in vertices]
-    
+
     # # instantiate csg polygons for all faces
     # csg_polygons = []
     # for f in faces:
@@ -83,6 +85,7 @@ def poly_2_csgeom(vertices, faces, normals=None):
 
     # # create csg geom
     # return CSG.fromPolygons(csg_polygons)
+
 
 def get_csg_polys(csgeom):
     """
@@ -114,6 +117,7 @@ def get_csg_polys(csgeom):
 
     # return vertices, faces
 
+
 def get_csg_triangles(csgeom, clean=False, normals=False):
     """
     Return the vertex coordinates, triangle vertex indices, and point normals
@@ -138,14 +142,16 @@ def get_csg_triangles(csgeom, clean=False, normals=False):
         a list of face normals if normals=True, else None.
     """
     vertices, faces = get_csg_polys(csgeom)
-    if len(vertices)==0:
+    if len(vertices) == 0:
         raise ValueError('no polygons in geometry')
     return vtktools.polygons2Tri(vertices, faces, clean, normals)
+
 
 def csg2simplemesh(csgeom, clean=True):
     v, f, n = get_csg_triangles(csgeom, clean=clean, normals=False)
     return simplemesh.SimpleMesh(v=v, f=f)
-    
+
+
 def simplemesh2csg(sm):
     if sm.vertexNormals is not None:
         normals = sm.vertexNormals.tolist()
@@ -153,8 +159,10 @@ def simplemesh2csg(sm):
         normals = None
     return poly_2_csgeom(sm.v.tolist(), sm.f.tolist(), normals)
 
-def cube(center=[0,0,0], radius=[1,1,1]):
+
+def cube(center=[0, 0, 0], radius=[1, 1, 1]):
     return CSG.cube(center=list(center), radius=list(radius))
+
 
 def cup(centre, normal, ri, ro):
     return CSG.cup(list(centre), list(normal), ri, ro)
@@ -183,6 +191,7 @@ def cup(centre, normal, ri, ro):
     # cup = shell.subtract(cylinder)
 
     # return cup
+
 
 def cylinder_var_radius(**kwargs):
     """ Returns a cylinder with linearly changing radius between the two ends.
@@ -214,7 +223,7 @@ def cylinder_var_radius(**kwargs):
     # stacks = kwargs.get('stacks', 2)
     # stack_l = 1.0/stacks # length of each stack segment
     # ray = e - s
-    
+
     # axisZ = _unit(ray)
     # isY = np.abs(axisZ[1])>0.5
     # axisX = _unit(np.cross([float(isY), float(not isY), 0], axisZ))
@@ -233,7 +242,7 @@ def cylinder_var_radius(**kwargs):
     #     pos = s + ray*stackr + out*r
     #     normal = out*(1.0 - np.abs(normalBlend)) + (axisZ*normalBlend)
     #     return geom.Vertex(list(pos), list(normal))  
-    
+
     # def point(stacki, slicei, normalBlend):
     #     # wrap around
     #     if slicei==slices:
@@ -246,7 +255,7 @@ def cylinder_var_radius(**kwargs):
     #         vert = make_vert(stacki, slicei, normalBlend)
     #         _verts[(stacki, slicei)] = vert
     #     return vert
-    
+
     # for i in range(0, stacks):
     #     for j in range(0, slices):
     #         # start side triangle
@@ -267,7 +276,7 @@ def cylinder_var_radius(**kwargs):
     #                 point(i+1, j+1, 0.)
     #                 ])
     #             )
-            
+
     #         # end side triangle
     #         if i==(stacks-1):
     #             polygons.append(
@@ -277,5 +286,5 @@ def cylinder_var_radius(**kwargs):
     #                     point(i+1, j,   1.)
     #                     ])
     #                 )
-    
+
     # return CSG.fromPolygons(polygons)

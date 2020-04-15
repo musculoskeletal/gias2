@@ -19,19 +19,19 @@ import scipy
 elements = 3
 height = 10
 radius = [10, 11, 12]
-theta = scipy.linspace( 0.0, 2.0*scipy.pi, elements*2 + 1 )
-zcoords = scipy.linspace( 0.0, height, 3 )
+theta = scipy.linspace(0.0, 2.0 * scipy.pi, elements * 2 + 1)
+zcoords = scipy.linspace(0.0, height, 3)
 xparam = []
 yparam = []
 zparam = []
 
-for row in range( 3 ):
+for row in range(3):
     xcoords = radius[row] * scipy.cos(theta)
     ycoords = radius[row] * scipy.sin(theta)
-    for i in range( len( xcoords ) - 1 ):
-        xparam.append( [xcoords[i]] )
-        yparam.append( [ycoords[i]] )
-        zparam.append( [float(zcoords[row])] )
+    for i in range(len(xcoords) - 1):
+        xparam.append([xcoords[i]])
+        yparam.append([ycoords[i]])
+        zparam.append([float(zcoords[row])])
 
 ################################################################################
 # Plot the data
@@ -40,24 +40,26 @@ from enthought.mayavi import mlab
 # A first plot in 3D
 fig = mlab.figure(1)
 mlab.clf()
-point_plot = mlab.points3d( xparam, yparam, zparam, mode = 'sphere', scale_factor = 1.0, color = (1,0,0) )
-labels = list(range( len( xparam )))
-for i in range( len(labels ) ):
-    l = mlab.text( xparam[i][0], yparam[i][0], str(labels[i]), z = zparam[i][0], line_width = 0.01, width = 0.005*len(str(labels[i]))**1.2 )
-            
+point_plot = mlab.points3d(xparam, yparam, zparam, mode='sphere', scale_factor=1.0, color=(1, 0, 0))
+labels = list(range(len(xparam)))
+for i in range(len(labels)):
+    l = mlab.text(xparam[i][0], yparam[i][0], str(labels[i]), z=zparam[i][0], line_width=0.01,
+                  width=0.005 * len(str(labels[i])) ** 1.2)
+
 ################################################################################
 # Some logic to select 'mesh' and the data index when picking.
 # observer for the figure's point picker object
 from enthought.tvtk.api import tvtk
 
-#~ def picker_callback(picker_obj, evt):
-    #~ picker_obj = tvtk.to_tvtk(picker_obj)
-    #~ picked = picker_obj.actors
-    #~ 
-    #~ print 'point number', picker_obj.point_id
-    #~ print 'point coordinates', picker_obj.pick_position
-#~ 
-#~ fig.scene.picker.pointpicker.add_observer('EndPickEvent', picker_callback)
+
+# ~ def picker_callback(picker_obj, evt):
+# ~ picker_obj = tvtk.to_tvtk(picker_obj)
+# ~ picked = picker_obj.actors
+# ~
+# ~ print 'point number', picker_obj.point_id
+# ~ print 'point coordinates', picker_obj.pick_position
+# ~
+# ~ fig.scene.picker.pointpicker.add_observer('EndPickEvent', picker_callback)
 
 ################################################################################
 # Some logic to pick on click but no move
@@ -70,11 +72,11 @@ class MvtPicker(object):
         self.picked_points = []
 
     def on_button_press(self, obj, evt):
-        #~ print 'down'
+        # ~ print 'down'
         self.mouse_mvt = False
 
     def on_mouse_move(self, obj, evt):
-        #~ print 'move'
+        # ~ print 'move'
         self.mouse_mvt = True
 
     def on_button_release(self, obj, evt):
@@ -82,41 +84,40 @@ class MvtPicker(object):
         if not self.mouse_mvt:
             x, y = obj.GetEventPosition()
             self.picker.pick((x, y, 0), fig.scene.renderer)
-            
+
             # calculate distance to all data points from picked point
-            tmp = ( self.points_plot.mlab_source.points - self.picker.pick_position ) ** 2.0
+            tmp = (self.points_plot.mlab_source.points - self.picker.pick_position) ** 2.0
             # find nearest data point
-            nearest_point = tmp.sum(axis = 1).argmin()
+            nearest_point = tmp.sum(axis=1).argmin()
             print('nearest point:', nearest_point)
-            self.picked_points.append( nearest_point )
-            
+            self.picked_points.append(nearest_point)
+
         self.mouse_mvt = False
-    
-    def on_p(self, obj, evt ):
+
+    def on_p(self, obj, evt):
         obj = tvtk.to_tvtk(obj)
         picked = obj.actors
-        
+
         print('point number', obj.point_id)
         print('point coordinates', obj.pick_position)
         # calculate distance to all data points from picked point
-        tmp = ( self.points_plot.mlab_source.points - obj.pick_position ) ** 2.0
+        tmp = (self.points_plot.mlab_source.points - obj.pick_position) ** 2.0
         # find nearest data point
-        nearest_point = tmp.sum(axis = 1).argmin()
+        nearest_point = tmp.sum(axis=1).argmin()
         print('nearest point:', nearest_point)
-        self.picked_points.append( nearest_point )
-        
-        
+        self.picked_points.append(nearest_point)
+
         return None
+
 
 mvt_picker = MvtPicker(fig.scene.picker.pointpicker, point_plot)
 
-fig.scene.interactor.add_observer('LeftButtonPressEvent', 
-                                mvt_picker.on_button_press)
-fig.scene.interactor.add_observer('MouseMoveEvent', 
-                                mvt_picker.on_mouse_move)
-fig.scene.interactor.add_observer('LeftButtonReleaseEvent', 
-                                mvt_picker.on_button_release)
+fig.scene.interactor.add_observer('LeftButtonPressEvent',
+                                  mvt_picker.on_button_press)
+fig.scene.interactor.add_observer('MouseMoveEvent',
+                                  mvt_picker.on_mouse_move)
+fig.scene.interactor.add_observer('LeftButtonReleaseEvent',
+                                  mvt_picker.on_button_release)
 fig.scene.picker.pointpicker.add_observer('EndPickEvent', mvt_picker.on_p)
-
 
 mlab.show()

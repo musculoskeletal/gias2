@@ -13,15 +13,18 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 """
 
 import numpy as np
+
 from gias2.musculoskeletal.bonemodels.bonemodels import LowerLimbLeftAtlas, LowerLimbRightAtlas
+
 
 def _trim_angle(a):
     if a < -np.pi:
-        return a + 2*np.pi
+        return a + 2 * np.pi
     elif a > np.pi:
-        return a - 2*np.pi
+        return a - 2 * np.pi
     else:
         return a
+
 
 class LowerLimbAtlas(object):
     """
@@ -31,14 +34,14 @@ class LowerLimbAtlas(object):
     _allow_knee_adduction_dof = False
     _allow_knee_adduction_correction = False
     _neutral_params = [
-        [0,],
-        [0,],
-        [0,0,0,0,0,0],
-        [0,0,0],
-        [0,0,0],
-        [0,],
-        [0,],
-        ]
+        [0, ],
+        [0, ],
+        [0, 0, 0, 0, 0, 0],
+        [0, 0, 0],
+        [0, 0, 0],
+        [0, ],
+        [0, ],
+    ]
     N_PARAMS_PELVIS = 6
     N_PARAMS_HIP_L = 3
     N_PARAMS_HIP_R = 3
@@ -59,15 +62,15 @@ class LowerLimbAtlas(object):
         self._map_model_params = None
         self._combined_param_map = None
 
-        self.ll_l = LowerLimbLeftAtlas(self.name+'_l')
-        self.ll_r = LowerLimbRightAtlas(self.name+'_r')
+        self.ll_l = LowerLimbLeftAtlas(self.name + '_l')
+        self.ll_r = LowerLimbRightAtlas(self.name + '_r')
 
         self._pelvis_rigid = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         self._hip_rot_l = np.array([0.0, 0.0, 0.0])
         self._hip_rot_r = np.array([0.0, 0.0, 0.0])
         self._knee_rot_l = np.array([0.0, 0.0, 0.0])
         self._knee_rot_r = np.array([0.0, 0.0, 0.0])
-        self.shape_modes = [0,]
+        self.shape_modes = [0, ]
         self._shape_mode_weights = np.zeros(self.SHAPEMODESMAX, dtype=float)
         self.uniform_scaling = 1.0
         self.pelvis_scaling = 1.0
@@ -89,14 +92,14 @@ class LowerLimbAtlas(object):
 
     @pelvis_rigid.setter
     def pelvis_rigid(self, value):
-        if len(value)!=6:
+        if len(value) != 6:
             raise ValueError('input vector not of length 6')
         else:
             self._pelvis_rigid = np.array([value[0], value[1], value[2],
-                                          _trim_angle(value[3]),
-                                          _trim_angle(value[4]),
-                                          _trim_angle(value[5]),
-                                         ])
+                                           _trim_angle(value[3]),
+                                           _trim_angle(value[4]),
+                                           _trim_angle(value[5]),
+                                           ])
             self.update_pelvis(self._pelvis_rigid)
 
     @property
@@ -107,10 +110,9 @@ class LowerLimbAtlas(object):
     def hip_rot_r(self):
         return self._hip_rot_r
 
-
     @hip_rot_l.setter
     def hip_rot_l(self, value):
-        if len(value)!=3:
+        if len(value) != 3:
             raise ValueError('input vector not of length 3')
         else:
             self._hip_rot_l = np.array([_trim_angle(v) for v in value])
@@ -118,7 +120,7 @@ class LowerLimbAtlas(object):
 
     @hip_rot_r.setter
     def hip_rot_r(self, value):
-        if len(value)!=3:
+        if len(value) != 3:
             raise ValueError('input vector not of length 3')
         else:
             self._hip_rot_r = np.array([_trim_angle(v) for v in value])
@@ -127,14 +129,14 @@ class LowerLimbAtlas(object):
     @property
     def knee_rot_l(self):
         if self._allow_knee_adduction_dof:
-            return self._knee_rot_l[[0,2]]
+            return self._knee_rot_l[[0, 2]]
         else:
             return self._knee_rot_l[[0]]
 
     @property
     def knee_rot_r(self):
         if self._allow_knee_adduction_dof:
-            return self._knee_rot_r[[0,2]]
+            return self._knee_rot_r[[0, 2]]
         else:
             return self._knee_rot_r[[0]]
 
@@ -142,11 +144,11 @@ class LowerLimbAtlas(object):
     def knee_rot_l(self, value):
         if self._allow_knee_adduction_dof:
             self._knee_rot_l[0] = _trim_angle(value[0])
-            self._knee_rot_l[2] = _trim_angle(value[1])    
+            self._knee_rot_l[2] = _trim_angle(value[1])
         else:
             self._knee_rot_l[0] = _trim_angle(value[0])
 
-        self.ll_l.update_tibiafibula(self._knee_rot_l[[0,2]])
+        self.ll_l.update_tibiafibula(self._knee_rot_l[[0, 2]])
         self.ll_l.update_patella()
 
     @knee_rot_r.setter
@@ -157,16 +159,16 @@ class LowerLimbAtlas(object):
         else:
             self._knee_rot_r[0] = _trim_angle(value[0])
 
-        self.ll_r.update_tibiafibula(self._knee_rot_r[[0,2]])
+        self.ll_r.update_tibiafibula(self._knee_rot_r[[0, 2]])
         self.ll_r.update_patella()
-    
+
     @property
     def shape_mode_weights(self):
         return self._shape_mode_weights[self.shape_modes]
 
     @shape_mode_weights.setter
     def shape_mode_weights(self, value):
-        if len(value)!=len(self.shape_modes):
+        if len(value) != len(self.shape_modes):
             raise ValueError('Length of value does not match length of self.shape_modes ({})'.format(self.shape_modes))
 
         self._shape_mode_weights[self.shape_modes] = value
@@ -176,13 +178,13 @@ class LowerLimbAtlas(object):
     @property
     def shape_model_x(self):
         self._shape_model_x = np.hstack([
-                                self.shape_mode_weights,
-                                self.pelvis_rigid,
-                                self.hip_rot_l,
-                                self.hip_rot_r,
-                                self.knee_rot_l,
-                                self.knee_rot_r,
-                                ])
+            self.shape_mode_weights,
+            self.pelvis_rigid,
+            self.hip_rot_l,
+            self.hip_rot_r,
+            self.knee_rot_l,
+            self.knee_rot_r,
+        ])
         return self._shape_model_x
 
     @shape_model_x.setter
@@ -204,7 +206,7 @@ class LowerLimbAtlas(object):
             self.hip_rot_r,
             self.knee_rot_l,
             self.knee_rot_r,
-            )
+        )
 
     def enable_knee_adduction_correction(self):
         self.ll_l.enable_knee_adduction_correction()
@@ -220,24 +222,23 @@ class LowerLimbAtlas(object):
         self.ll_l.enable_knee_adduction_dof()
         self.ll_r.enable_knee_adduction_dof()
         self._allow_knee_adduction_dof = True
-        self._neutral_params = [[0,],[0,],[0,0,0,0,0,0],[0,0,0],[0,0,0,],[0,0,],[0,0,]]
+        self._neutral_params = [[0, ], [0, ], [0, 0, 0, 0, 0, 0], [0, 0, 0], [0, 0, 0, ], [0, 0, ], [0, 0, ]]
         self.N_PARAMS_KNEE_L = 2
         self.N_PARAMS_KNEE_R = 2
         self.N_PARAMS_RIGID = self.N_PARAMS_PELVIS + \
-                              self.N_PARAMS_HIP_L + self.N_PARAMS_HIP_R +\
+                              self.N_PARAMS_HIP_L + self.N_PARAMS_HIP_R + \
                               self.N_PARAMS_KNEE_L + self.N_PARAMS_KNEE_R
 
     def disable_knee_adduction_dof(self):
         self.ll_l.disable_knee_adduction_dof()
         self.ll_r.disable_knee_adduction_dof()
         self._allow_knee_adduction_dof = False
-        self._neutral_params = [[0,],[0,],[0,0,0,0,0,0],[0,0,0],[0,0,0,],[0,],[0,]]
+        self._neutral_params = [[0, ], [0, ], [0, 0, 0, 0, 0, 0], [0, 0, 0], [0, 0, 0, ], [0, ], [0, ]]
         self.N_PARAMS_KNEE_L = 1
         self.N_PARAMS_KNEE_R = 1
         self.N_PARAMS_RIGID = self.N_PARAMS_PELVIS + \
-                              self.N_PARAMS_HIP_L + self.N_PARAMS_HIP_R +\
+                              self.N_PARAMS_HIP_L + self.N_PARAMS_HIP_R + \
                               self.N_PARAMS_KNEE_L + self.N_PARAMS_KNEE_R
-
 
     # @property
     # def uniformScalingX(self):
@@ -293,13 +294,12 @@ class LowerLimbAtlas(object):
     #     self.kneeRot = value[3]
     #     self.lastTransformSet = self.perBoneScalingX
 
-
     def _update_model_dict(self):
         for model_name, model in self.ll_l.models.items():
-            self.models[model_name+'-l'] = model
+            self.models[model_name + '-l'] = model
 
         for model_name, model in self.ll_r.models.items():
-            self.models[model_name+'-r'] = model
+            self.models[model_name + '-r'] = model
 
         # use the left pelvis as the reference
         self.models['pelvis'] = self.ll_l.models['pelvis']
@@ -371,9 +371,9 @@ class LowerLimbAtlas(object):
         # self._update_model_dict()
 
     def update_all_models(
-        self, pc_weights, pc_modes, pelvis_rigid, hip_rot_l, hip_rot_r,
-        knee_rot_l, knee_rot_r
-        ):
+            self, pc_weights, pc_modes, pelvis_rigid, hip_rot_l, hip_rot_r,
+            knee_rot_l, knee_rot_r
+    ):
         """
         Update the lower limb geometry by pc weights and rigid transformations
 
@@ -389,7 +389,7 @@ class LowerLimbAtlas(object):
         knee_rot_l, knee_rot_r [1-d array]: an array of radian angles for
             tibia-fibula rotation about the knee joint (flexion)
         """
-        
+
         # evaluate shape model
         self.shape_modes = pc_modes
         self.shape_mode_weights = pc_weights

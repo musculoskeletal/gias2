@@ -13,19 +13,20 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 """
 
 import os
+
 os.environ['ETS_TOOLKIT'] = 'qt4'
 
 # from pyface.qt import QtGui, QtCore
-from PySide import QtGui, QtCore
+from PySide import QtGui
 
-from traits.api import HasTraits, Instance, on_trait_change, \
-    Int, Dict
+from traits.api import HasTraits, Instance
 from traitsui.api import View, Item
 from mayavi.core.ui.api import MayaviScene, MlabSceneModel, \
-        SceneEditor
+    SceneEditor
+
 
 ################################################################################
-#The actual visualization
+# The actual visualization
 class Visualisation(HasTraits):
     scene = Instance(MlabSceneModel, ())
 
@@ -41,14 +42,14 @@ class Visualisation(HasTraits):
     # the layout of the dialog screated
     view = View(Item('scene', editor=SceneEditor(scene_class=MayaviScene),
                      height=250, width=300, show_label=False),
-                resizable=True # We need this to resize with the parent widget
+                resizable=True  # We need this to resize with the parent widget
                 )
 
 
 ################################################################################
 # The QWidget containing the visualization, this is pure PyQt4 code.
 class MayaviSceneWidget(QtGui.QWidget):
-    
+
     def __init__(self, parent=None):
         QtGui.QWidget.__init__(self, parent)
         layout = QtGui.QVBoxLayout(self)
@@ -61,9 +62,9 @@ class MayaviSceneWidget(QtGui.QWidget):
 
         # If you want to debug, beware that you need to remove the Qt
         # input hook.
-        #QtCore.pyqtRemoveInputHook()
-        #import pdb ; pdb.set_trace()
-        #QtCore.pyqtRestoreInputHook()
+        # QtCore.pyqtRemoveInputHook()
+        # import pdb ; pdb.set_trace()
+        # QtCore.pyqtRestoreInputHook()
 
         # The edit_traits call will generate the widget to embed.
         self.ui = self.visualisation.edit_traits(parent=self,
@@ -73,4 +74,3 @@ class MayaviSceneWidget(QtGui.QWidget):
         layout.addWidget(self.ui)
         self.ui.setParent(self)
         self.setLayout(layout)
-

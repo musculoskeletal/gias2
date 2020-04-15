@@ -52,7 +52,7 @@ Additions by Alex Pletzer (Pennsylvania State University)
 Optimized Cython port Copyright (c) 2018 Ju Zhang (https://bitbucket.org/jangle/gias2),
 under the MIT license.
 """
-    
+
 # cython: boundscheck=False, nonecheck=False, language_level=3
 
 import cython
@@ -94,7 +94,7 @@ cdef class Vector(object):
 
     cpdef Vector clone(self):
         """ Clone. """
-        return Vector(<double>self.x, <double>self.y, <double>self.z)
+        return Vector(<double> self.x, <double> self.y, <double> self.z)
 
     cpdef Vector negated(self):
         """ Negated. """
@@ -175,7 +175,6 @@ cdef class Vector(object):
     def __repr__(self):
         return 'Vector(%.2f, %.2f, %0.2f)' % (self.x, self.y, self.z)
 
-
 cdef class Vertex(object):
     """
     Class Vertex
@@ -236,7 +235,6 @@ cdef class Plane(object):
     """
     # cdef tuple __slots__ = ('normal', 'w')
 
-
     cdef public double EPSILON
     cdef public Vector normal
     cdef public double w
@@ -258,7 +256,7 @@ cdef class Plane(object):
         return 'normal: {0} w: {1}'.format(self.normal, self.w)
 
     cpdef void splitPolygon(self, Polygon polygon, list coplanarFront,
-        list coplanarBack, list front, list back):
+                            list coplanarBack, list front, list back):
         """
         Split `polygon` by this plane if needed, then put the polygon or polygon
         fragments in the appropriate lists. Coplanar polygons go into either
@@ -266,7 +264,7 @@ cdef class Plane(object):
         respect to this plane. Polygons in front or in back of this plane go into
         either `front` or `back`
         """
-        
+
         # classification of the polygon
         cdef int COPLANAR = 0  # all the vertices are within EPSILON distance from plane
         cdef int FRONT = 1  # all the vertices are in front of the plane
@@ -278,7 +276,7 @@ cdef class Plane(object):
         cdef int loc
         cdef double t, normalDotPlaneNormal, t1, t2
         cdef double EPS = self.EPSILON
-        cdef double NEPS = -1.0*self.EPSILON
+        cdef double NEPS = -1.0 * self.EPSILON
         cdef Vertex vi, vj, v
         cdef Polygon poly
         cdef Vector pos, pos2
@@ -360,7 +358,6 @@ cdef class Plane(object):
                 poly = Polygon(_b, polygon.shared)
                 back.append(poly)  # list op
 
-
 cdef class Polygon(object):
     """
     class Polygon
@@ -406,7 +403,7 @@ cdef class Polygon(object):
         cdef Vertex v
 
         self.vertices.reverse()
-        
+
         # map(lambda v: v.flip(), self.vertices)
         for vi in range(nverts):
             v = self.vertices[vi]
@@ -418,7 +415,6 @@ cdef class Polygon(object):
         return reduce(lambda x, y: x + y,
                       ['Polygon(['] + [repr(v) + ', ' \
                                        for v in self.vertices] + ['])'], '')
-
 
 cdef class BSPNode(object):
     """
@@ -454,7 +450,7 @@ cdef class BSPNode(object):
         cdef Py_ssize_t pi
         cdef BSPNode node = BSPNode()
         cdef Polygon poly
-        
+
         if self.plane:
             node.plane = self.plane.clone()
         if self.front:
@@ -487,7 +483,7 @@ cdef class BSPNode(object):
 
         # for poly in self.polygons:
         #     poly.flip()
-            # x = 100
+        # x = 100
         self.plane.flip()
         if self.front:
             self.front.invert()
@@ -581,7 +577,7 @@ cdef class BSPNode(object):
             self.plane.splitPolygon(
                 poly, self.polygons, self.polygons,
                 front, back
-                )
+            )
         # for poly in polygons[1:]:
         #     # coplanar front and back polygons go into self.polygons
         #     self.plane.splitPolygon(poly, self.polygons, self.polygons,
@@ -595,7 +591,6 @@ cdef class BSPNode(object):
             if not self.back:
                 self.back = BSPNode()
             self.back.build(back)
-
 
 cpdef CSG csgFromPolygons(list polygons):
     cdef CSG csg
@@ -822,15 +817,15 @@ cdef class CSG(object):
             nverts = len(poly.vertices)
             for vi in range(nverts):
                 vert = poly.vertices[vi]
-                x = M1[0]*vert.pos.x + M1[1]*vert.pos.y + M1[2]*vert.pos.z + M1[3]
-                y = M2[0]*vert.pos.x + M2[1]*vert.pos.y + M2[2]*vert.pos.z + M2[3]
-                z = M3[0]*vert.pos.x + M3[1]*vert.pos.y + M3[2]*vert.pos.z + M3[3]
+                x = M1[0] * vert.pos.x + M1[1] * vert.pos.y + M1[2] * vert.pos.z + M1[3]
+                y = M2[0] * vert.pos.x + M2[1] * vert.pos.y + M2[2] * vert.pos.z + M2[3]
+                z = M3[0] * vert.pos.x + M3[1] * vert.pos.y + M3[2] * vert.pos.z + M3[3]
                 vert.pos = Vector(x, y, z)
 
                 if vert.normal is not None:
-                    x = M1[0]*vert.normal.x + M1[1]*vert.normal.y + M1[2]*vert.normal.z
-                    y = M2[0]*vert.normal.x + M2[1]*vert.normal.y + M2[2]*vert.normal.z
-                    z = M3[0]*vert.normal.x + M3[1]*vert.normal.y + M3[2]*vert.normal.z
+                    x = M1[0] * vert.normal.x + M1[1] * vert.normal.y + M1[2] * vert.normal.z
+                    y = M2[0] * vert.normal.x + M2[1] * vert.normal.y + M2[2] * vert.normal.z
+                    z = M3[0] * vert.normal.x + M3[1] * vert.normal.y + M3[2] * vert.normal.z
                     vert.normal = Vector(x, y, z)
 
     cpdef int toVerticesAndPolygons(self, list verts, list polys):
@@ -839,7 +834,7 @@ cdef class CSG(object):
         number of vertex indices in the polygon connectivity list
         (count).
         """
-        
+
         cdef dict vertexIndexMap
         cdef double offset = 1.234567890
         cdef int npolys = len(self.polygons)
@@ -850,7 +845,7 @@ cdef class CSG(object):
         cdef Py_ssize_t pi, vi, si, wi
         cdef list cell, sortedVertexIndex, _p, words
         cdef str vKey
-        
+
         verts = []
         polys = []
         vertexIndexMap = {}
@@ -1033,7 +1028,6 @@ cdef class CSG(object):
 
         return csg
 
-
 def cube(center=[0, 0, 0], radius=[1, 1, 1]):
     """
     Construct an axis-aligned solid cuboid. Optional parameters are `center` and
@@ -1061,17 +1055,17 @@ def cube(center=[0, 0, 0], radius=[1, 1, 1]):
     polygons = list(map(
         lambda v: Polygon(
             list(map(lambda i:
-                Vertex(
-                    Vector(
-                        c.x + r[0] * (2 * bool(i & 1) - 1),
-                        c.y + r[1] * (2 * bool(i & 2) - 1),
-                        c.z + r[2] * (2 * bool(i & 4) - 1)
-                        ),
-                    Vector(
-                        v[1][0], v[1][1], v[1][2]
-                        )
-                    ),
-                v[0])),
+                     Vertex(
+                         Vector(
+                             c.x + r[0] * (2 * bool(i & 1) - 1),
+                             c.y + r[1] * (2 * bool(i & 2) - 1),
+                             c.z + r[2] * (2 * bool(i & 4) - 1)
+                         ),
+                         Vector(
+                             v[1][0], v[1][1], v[1][2]
+                         )
+                     ),
+                     v[0])),
             0),
         [
             [[0, 4, 6, 2], [-1, 0, 0]],
@@ -1084,7 +1078,6 @@ def cube(center=[0, 0, 0], radius=[1, 1, 1]):
     ))
 
     return csgFromPolygons(polygons)
-
 
 def sphere(**kwargs):
     """ Returns a sphere.
@@ -1190,7 +1183,6 @@ def sphere(**kwargs):
 
     return csgFromPolygons(polygons)
 
-
 def cylinder(**kwargs):
     """ Returns a cylinder.
 
@@ -1255,7 +1247,6 @@ def cylinder(**kwargs):
 
     return csgFromPolygons(polygons)
 
-
 def cone(**kwargs):
     """ Returns a cone.
 
@@ -1268,7 +1259,7 @@ def cone(**kwargs):
 
             slices (int): Number of slices, default 16.
     """
-    
+
     cdef list polygons
     cdef double r, taperAngle, sinTaperAngle, cosTaperAngle, dt, t0, i1, t1
     cdef int slices, i
@@ -1356,15 +1347,15 @@ def cup(list centre, list normal, double ri, double ro, int slices, int stacks):
 
     # create cylinder to cut shell
     cend = [
-        centre[0]-normal[0]*ro*1.5,
-        centre[1]-normal[1]*ro*1.5,
-        centre[2]-normal[2]*ro*1.5,
-        ]
-    cyl= cylinder(
+        centre[0] - normal[0] * ro * 1.5,
+        centre[1] - normal[1] * ro * 1.5,
+        centre[2] - normal[2] * ro * 1.5,
+    ]
+    cyl = cylinder(
         start=centre,
         end=cend,
-        radius=ro*1.5
-        )
+        radius=ro * 1.5
+    )
     # create cup
     cup = shell.subtract(cyl)
 
@@ -1402,11 +1393,11 @@ def cylinder_var_radius(**kwargs):
     er = kwargs.get('endr', 1.0)
     slices = kwargs.get('slices', 16)
     stacks = kwargs.get('stacks', 2)
-    stack_l = 1.0/stacks # length of each stack segment
+    stack_l = 1.0 / stacks  # length of each stack segment
     ray = e - s
-    
+
     axisZ = ray.unit()
-    isY = abs(axisZ[1])>0.5
+    isY = abs(axisZ[1]) > 0.5
     axisX = Vector(float(isY), float(not isY), 0).cross(axisZ).unit()
     axisY = axisX.cross(axisZ).unit()
     startNormal = axisZ.negated()
@@ -1416,18 +1407,18 @@ def cylinder_var_radius(**kwargs):
     _verts = {}
 
     def make_vert(stacki, slicei, normalBlend):
-        stackr = stacki*stack_l
-        slicer = slicei/float(slices)
-        angle = slicer*PI*2.0
-        out = axisX*cos(angle) + axisY*sin(angle)
-        r = sr + stackr*(er-sr)
-        pos = s + ray*stackr + out*r
-        normal = out*(1.0 - abs(normalBlend)) + (axisZ*normalBlend)
-        return Vertex(pos, normal)  
-    
+        stackr = stacki * stack_l
+        slicer = slicei / float(slices)
+        angle = slicer * PI * 2.0
+        out = axisX * cos(angle) + axisY * sin(angle)
+        r = sr + stackr * (er - sr)
+        pos = s + ray * stackr + out * r
+        normal = out * (1.0 - abs(normalBlend)) + (axisZ * normalBlend)
+        return Vertex(pos, normal)
+
     def point(stacki, slicei, normalBlend):
         # wrap around
-        if slicei==slices:
+        if slicei == slices:
             slicei = 0
 
         # check if vertex already exists. Duplicated vertices may
@@ -1437,38 +1428,38 @@ def cylinder_var_radius(**kwargs):
             vert = make_vert(stacki, slicei, normalBlend)
             _verts[(stacki, slicei)] = vert
         return vert
-    
+
     for i in range(0, stacks):
         for j in range(0, slices):
             # start side triangle
-            if i==0:
+            if i == 0:
                 polygons.append(
                     Polygon([
                         start.clone(),
-                        point(i, j,   -1.), 
-                        point(i, j+1, -1.)
-                        ], 0)
-                    )
+                        point(i, j, -1.),
+                        point(i, j + 1, -1.)
+                    ], 0)
+                )
             # round side quad
             polygons.append(
                 Polygon([
-                    point(i,   j+1, 0.),
-                    point(i,   j,   0.),
-                    point(i+1, j,   0.),
-                    point(i+1, j+1, 0.)
-                    ], 0)
-                )
-            
+                    point(i, j + 1, 0.),
+                    point(i, j, 0.),
+                    point(i + 1, j, 0.),
+                    point(i + 1, j + 1, 0.)
+                ], 0)
+            )
+
             # end side triangle
-            if i==(stacks-1):
+            if i == (stacks - 1):
                 polygons.append(
                     Polygon([
                         end.clone(),
-                        point(i+1, j+1, 1.), 
-                        point(i+1, j,   1.)
-                        ], 0)
-                    )
-    
+                        point(i + 1, j + 1, 1.),
+                        point(i + 1, j, 1.)
+                    ], 0)
+                )
+
     return csgFromPolygons(polygons)
 
 def poly_2_csg(list vertices, list faces, list vnormals):
@@ -1505,7 +1496,6 @@ def poly_2_csg(list vertices, list faces, list vnormals):
     return csgFromPolygons(polys)
 
 def csg_2_polys(CSG csg):
-
     cdef list polygons, vertices, faces, face_vertex_numbers
     cdef tuple pos
     cdef dict vertex_numbers
@@ -1526,7 +1516,7 @@ def csg_2_polys(CSG csg):
         polygon = polygons[i]
         face_vertex_numbers = []
         nverts = len(polygon.vertices)
-        
+
         for j in range(nverts):
             v = polygon.vertices[j]
             pos = (v.pos.x, v.pos.y, v.pos.z)

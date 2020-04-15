@@ -12,12 +12,12 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
 
-import numpy as np
 from mayavi import mlab
-from gias2.mappluginutils.mayaviviewer import MayaviViewerSceneObject, MayaviViewerObject, colours
+
+from gias2.mappluginutils.mayaviviewer import MayaviViewerSceneObject, MayaviViewerObject
+
 
 class MayaviViewerImagePlaneSceneObject(MayaviViewerSceneObject):
-
     typeName = 'giasscan'
 
     def __init__(self, name, slicerWidget, ISrc):
@@ -38,8 +38,8 @@ class MayaviViewerImagePlaneSceneObject(MayaviViewerSceneObject):
             self.ISrc.remove()
             self.ISrc = None
 
-class MayaviViewerImagePlane(MayaviViewerObject):
 
+class MayaviViewerImagePlane(MayaviViewerObject):
     typeName = 'imageplane'
     _vmax = 1800
     _vmin = -200
@@ -51,8 +51,8 @@ class MayaviViewerImagePlane(MayaviViewerObject):
         self.imageArray = image
         self.sceneObject = None
 
-        if renderArgs==None:
-            self.renderArgs = {'vmin':self._vmin, 'vmax':self._vmax}
+        if renderArgs == None:
+            self.renderArgs = {'vmin': self._vmin, 'vmax': self._vmax}
         else:
             self.renderArgs = renderArgs
             if 'vmax' not in list(self.renderArgs.keys()):
@@ -77,13 +77,13 @@ class MayaviViewerImagePlane(MayaviViewerObject):
         scene.disable_render = True
 
         ISrc = mlab.pipeline.scalar_field(self.imageArray,
-                    colormap=self.renderArgs['colormap']
-                    )
+                                          colormap=self.renderArgs['colormap']
+                                          )
         slicerWidget = scene.mlab.pipeline.image_plane_widget(ISrc,
-                                                            plane_orientation=self._slicePlane,
-                                                            slice_index=0,
-                                                            **self.renderArgs
-                                                            )
+                                                              plane_orientation=self._slicePlane,
+                                                              slice_index=0,
+                                                              **self.renderArgs
+                                                              )
         mlab.outline()
         self.sceneObject = MayaviViewerImagePlaneSceneObject(self.name, slicerWidget, ISrc)
         scene.disable_render = False

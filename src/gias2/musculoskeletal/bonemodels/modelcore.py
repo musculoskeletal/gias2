@@ -12,28 +12,29 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
 
-import numpy as np
-from numpy.linalg import inv
-import copy
 import xml.etree.cElementTree as ET
 
-from gias2.common import transform3D
-from gias2.musculoskeletal import fw_model_landmarks as model_landmarks
-from gias2.learning import PCA
-from gias2.fieldwork.field import geometric_field
+import numpy as np
+from numpy.linalg import inv
 
-#===========================================#
+from gias2.common import transform3D
+from gias2.fieldwork.field import geometric_field
+from gias2.learning import PCA
+from gias2.musculoskeletal import fw_model_landmarks as model_landmarks
+
+
+# ===========================================#
 # accessory functions                       #
-#===========================================#
+# ===========================================#
 class ACSCartesian(object):
     """ Cartesian anatomic coordinate system
     """
 
-    global_cs = np.array([[0,0,0],
-                          [1,0,0],
-                          [0,1,0],
-                          [0,0,1]])
-    
+    global_cs = np.array([[0, 0, 0],
+                          [1, 0, 0],
+                          [0, 1, 0],
+                          [0, 0, 1]])
+
     def __init__(self, o, x, y, z):
         """Define a 3D cartesian coordinate system by an origin point o,
         and unit vectors in each of the coordinates x, y, z.
@@ -43,8 +44,8 @@ class ACSCartesian(object):
         self.y = None
         self.z = None
         self.unit_array = None
-        self.local_transform = None # affine matrix that transfrom from global to local frame
-        self.inv_local_transform = None # affine matrix that transfrom from local to global frame
+        self.local_transform = None  # affine matrix that transfrom from global to local frame
+        self.inv_local_transform = None  # affine matrix that transfrom from local to global frame
         self.update(o, x, y, z)
 
     def update(self, o, x, y, z):
@@ -56,17 +57,17 @@ class ACSCartesian(object):
         self.y = np.array(y)
         self.z = np.array(z)
         self.unit_array = np.array([self.o,
-                                    self.o+self.x,
-                                    self.o+self.y,
-                                    self.o+self.z
+                                    self.o + self.x,
+                                    self.o + self.y,
+                                    self.o + self.z
                                     ])
         # self.local_transform = transform3D.calcAffineMatrixSVD(
-                                    # self.unit_array, self.global_cs
-                                    # )
+        # self.unit_array, self.global_cs
+        # )
         self.local_transform = transform3D.directAffine(
-                                    self.unit_array,
-                                    self.global_cs
-                                    )
+            self.unit_array,
+            self.global_cs
+        )
         self.inv_local_transform = inv(self.local_transform)
 
     def get_unit_array(self):
@@ -74,10 +75,10 @@ class ACSCartesian(object):
 
     def make_unit_array_transform_rigid(self, tx, ty, tz, rx, ry, rz, ro):
         return transform3D.transformRigid3DAboutP(
-                    self.unit_array,
-                    [tx, ty, tz, rx, ry, rz],
-                    ro
-                    )
+            self.unit_array,
+            [tx, ty, tz, rx, ry, rz],
+            ro
+        )
 
     def map_local(self, x):
         """Calculate the local coordinates of points in x with global
@@ -89,7 +90,7 @@ class ACSCartesian(object):
         """
         rotate a 3-vector in global space to the local space
         """
-        return np.dot(self.local_transform[:3,:3], x)
+        return np.dot(self.local_transform[:3, :3], x)
 
     def map_global(self, x):
         """Calculate the global coordinates of points in x with local
@@ -101,7 +102,8 @@ class ACSCartesian(object):
         """
         rotate a 3-vector in the local space to the global space
         """
-        return np.dot(self.inv_local_transform[:3,:3], x)
+        return np.dot(self.inv_local_transform[:3, :3], x)
+
 
 def make_source_landmark_getter(landmark_names, side=None):
     """ Creates a function to return the coordinates of landmarks
@@ -129,18 +131,20 @@ def make_source_landmark_getter(landmark_names, side=None):
 
     return get_source_landmarks
 
-#==================================================#
+
+# ==================================================#
 # region on bone surface                           #
-#==================================================#
+# ==================================================#
 class DiscretisedRegion(object):
     def __init__(self, vertices, faces):
         self.vertices = vertices
         self.faces = faces
 
+
 class AttachmentRegion(DiscretisedRegion):
 
     def __init__(self, name=None, v=None, f=None, matpoints=None, end=None,
-        number=None):
+                 number=None):
         self.vertices = v
         if self.vertices is None:
             self.vertices = []
@@ -241,11 +245,11 @@ class BoneAttachmentRegions(object):
         self.atlas_disc = root.attrib['atlas_disc']
         self.atlas_geof = root.attrib['atlas_geof']
         self.atlas_stl = root.attrib['atlas_stl']
-        self.attachment_source= root.attrib['source']
-        
+        self.attachment_source = root.attrib['source']
+
         self.regions = []
         for l in root:
-            if l.tag=='attachment':
+            if l.tag == 'attachment':
                 s = AttachmentRegion()
                 s._from_xml(l)
                 self.regions.append(s)
@@ -253,15 +257,15 @@ class BoneAttachmentRegions(object):
                 raise IOError('unrecognised attachment file object {}'.format(l.tag))
 
 
-#==================================================#
+# ==================================================#
 # Individual bone models                           #
-#==================================================#
+# ==================================================#
 class BoneModel(object):
 
     def __init__(self, name, gf):
         self.name = name
         self.gf = gf
-        self.acs = ACSCartesian((0,0,0), (1,0,0), (0,1,0), (0,0,1))
+        self.acs = ACSCartesian((0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1))
         self.landmarks = {}
         self._landmark_evaluators = {}
         self._source_field_parameters = self.gf.field_parameters.copy()
@@ -271,12 +275,12 @@ class BoneModel(object):
         for ln in landmark_names:
             if side is None:
                 self._landmark_evaluators[ln] = model_landmarks.makeLandmarkEvaluator(
-                                                    ln, self.gf
-                                                    )
+                    ln, self.gf
+                )
             else:
                 self._landmark_evaluators[ln] = model_landmarks.makeLandmarkEvaluator(
-                                                    ln, self.gf, side=side
-                                                    )
+                    ln, self.gf, side=side
+                )
         self.update_landmarks()
         self.update_acs()
 
@@ -308,11 +312,11 @@ class BoneModel(object):
         """Transform the original model by a rigid
         transformation
         """
-        T = np.array([tx,ty,tz,rx,ry,rz])
+        T = np.array([tx, ty, tz, rx, ry, rz])
         xT = transform3D.transformRigid3D(
-                self._source_field_parameters[:,:,0].T,
-                T)
-        self.gf.field_parameters = xT.T[:,:,np.newaxis]
+            self._source_field_parameters[:, :, 0].T,
+            T)
+        self.gf.field_parameters = xT.T[:, :, np.newaxis]
         self.update_landmarks()
         self.update_acs()
 
@@ -320,11 +324,11 @@ class BoneModel(object):
         """Transform the original model by a rigid
         transformation
         """
-        T = np.array([tx,ty,tz,rx,ry,rz])
+        T = np.array([tx, ty, tz, rx, ry, rz])
         xT = transform3D.transformRigid3DAboutP(
-                self._source_field_parameters[:,:,0].T,
-                T, p)
-        self.gf.field_parameters = xT.T[:,:,np.newaxis]
+            self._source_field_parameters[:, :, 0].T,
+            T, p)
+        self.gf.field_parameters = xT.T[:, :, np.newaxis]
         self.update_landmarks()
         self.update_acs()
 
@@ -332,11 +336,11 @@ class BoneModel(object):
         """Transform the original model by a rigid
         transformation and an isotropic scaling
         """
-        T = np.array([tx,ty,tz,rx,ry,rz,s])
+        T = np.array([tx, ty, tz, rx, ry, rz, s])
         xT = transform3D.transformRigidScale3D(
-                self._source_field_parameters[:,:,0].T,
-                T)
-        self.gf.field_parameters = xT.T[:,:,np.newaxis]
+            self._source_field_parameters[:, :, 0].T,
+            T)
+        self.gf.field_parameters = xT.T[:, :, np.newaxis]
         self.update_landmarks()
         self.update_acs()
 
@@ -344,24 +348,24 @@ class BoneModel(object):
         """Transform the original model by a rigid
         transformation and an isotropic scaling
         """
-        T = np.array([tx,ty,tz,rx,ry,rz,s])
+        T = np.array([tx, ty, tz, rx, ry, rz, s])
         xT = transform3D.transformRigidScale3DAboutP(
-                self._source_field_parameters[:,:,0].T,
-                T, p)
-        self.gf.field_parameters = xT.T[:,:,np.newaxis]
+            self._source_field_parameters[:, :, 0].T,
+            T, p)
+        self.gf.field_parameters = xT.T[:, :, np.newaxis]
         self.update_landmarks()
         self.update_acs()
 
-#==================================================#
-# Multiple bone models                             #
-#==================================================#
-class MultiBoneAtlas(object):
 
-    combined_model_field_basis = {'tri10':'simplex_L3_L3',
-                                  'tri15':'simplex_L4_L4',
-                                  'quad44':'quad_L3_L3',
-                                  'quad55':'quad_L4_L4',
-                                  'quad54':'quad_L4_L3',
+# ==================================================#
+# Multiple bone models                             #
+# ==================================================#
+class MultiBoneAtlas(object):
+    combined_model_field_basis = {'tri10': 'simplex_L3_L3',
+                                  'tri15': 'simplex_L4_L4',
+                                  'quad44': 'quad_L3_L3',
+                                  'quad55': 'quad_L4_L4',
+                                  'quad54': 'quad_L4_L3',
                                   }
 
     def __init__(self, name):
@@ -394,9 +398,9 @@ class MultiBoneAtlas(object):
             combined_mesh_name = self.name
 
         self.combined_model_gf = geometric_field.geometric_field(
-                                combined_gf_name, 3, field_dimensions=2,
-                                field_basis=self.combined_model_field_basis
-                                )
+            combined_gf_name, 3, field_dimensions=2,
+            field_basis=self.combined_model_field_basis
+        )
         self.combined_model_gf.ensemble_field_function.name = combined_ens_name
         self.combined_model_gf.ensemble_field_function.mesh.name = combined_mesh_name
 
@@ -405,18 +409,18 @@ class MultiBoneAtlas(object):
         for mn in model_names:
             print(('loading models: {}'.format(mn)))
             self.models[mn] = model_classes[mn](
-                                mn,
-                                geometric_field.load_geometric_field(
-                                    model_filenames[mn][0],
-                                    model_filenames[mn][1],
-                                    model_filenames[mn][2],
-                                    )
-                                )
+                mn,
+                geometric_field.load_geometric_field(
+                    model_filenames[mn][0],
+                    model_filenames[mn][1],
+                    model_filenames[mn][2],
+                )
+            )
             elem_i = self.combined_model_gf.add_element_with_parameters(
-                        self.models[mn].gf.ensemble_field_function,
-                        self.models[mn].gf.get_field_parameters(),
-                        tol=0
-                        )
+                self.models[mn].gf.ensemble_field_function,
+                self.models[mn].gf.get_field_parameters(),
+                tol=0
+            )
 
             self.model_elem_map[mn] = elem_i
 
@@ -424,8 +428,8 @@ class MultiBoneAtlas(object):
         elem2ens = self.combined_model_gf.ensemble_field_function.mapper._element_to_ensemble_map
         self._combined_param_map = {}
         for mn, combined_elem in list(self.model_elem_map.items()):
-            self._combined_param_map[mn] = [elem2ens[combined_elem][x][0][0] for x in sorted(elem2ens[combined_elem].keys())]
-
+            self._combined_param_map[mn] = [elem2ens[combined_elem][x][0][0] for x in
+                                            sorted(elem2ens[combined_elem].keys())]
 
     def load_combined_pcs(self, filename):
         """ Load the combined lower limb pca model
@@ -441,21 +445,21 @@ class MultiBoneAtlas(object):
         pc_modes [1-d array]: array of integers corresponding to the modes
 
         """
-        
+
         # evaluate combined model params
         combined_model_params = self.combined_pcs.reconstruct(
-                                    self.combined_pcs.getWeightsBySD(pc_modes, pc_weights),
-                                    pc_modes
-                                    ).reshape((3,-1,1))
+            self.combined_pcs.getWeightsBySD(pc_modes, pc_weights),
+            pc_modes
+        ).reshape((3, -1, 1))
 
         # separate params for each model
         for model_name, model in list(self.models.items()):
-            model_params = combined_model_params[:,self._combined_param_map[model_name],:]
+            model_params = combined_model_params[:, self._combined_param_map[model_name], :]
             model.update_gf(model_params)
 
     def update_models_by_combined_params(self, p):
         for model_name, model in list(self.models.items()):
-            model_params = p[:,self._combined_param_map[model_name],:]
+            model_params = p[:, self._combined_param_map[model_name], :]
             model.update_gf(model_params)
 
     def update_models_by_uniform_rigid_scale(self, tx, ty, tz, rx, ry, rz, s):

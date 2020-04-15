@@ -14,7 +14,6 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import pdb
 
-from scipy import *
 from scipy import sparse
 from scipy.optimize import leastsq
 from scipy.spatial import cKDTree as KDTree
@@ -24,6 +23,9 @@ from gias2.fieldwork.field import ensemble_field_function as EFF
 from gias2.fieldwork.field import geometric_field
 from gias2.fieldwork.field.tools import curvature_tools as CT
 from gias2.fieldwork.field.topology import element_types
+
+from numpy import array, newaxis, ones, sqrt, mean, dot, cos, sin, hstack, where, inf, digitize, linspace, zeros, cross, \
+    dstack
 
 
 class geometryFit(object):
@@ -315,8 +317,8 @@ class geometryFit(object):
         print('initial rms:', sqrt(hostMeshObj(hostParam0).mean()))
         # do fit
         hostParamsOpt = \
-        leastsq(hostMeshObj, hostParam0.ravel(), xtol=self.xtol, ftol=self.ftol, maxfev=maxf, epsfcn=self.epsfcn)[
-            0].reshape(3, -1)[:, :, newaxis]
+            leastsq(hostMeshObj, hostParam0.ravel(), xtol=self.xtol, ftol=self.ftol, maxfev=maxf, epsfcn=self.epsfcn)[
+                0].reshape(3, -1)[:, :, newaxis]
         host.set_field_parameters(hostParamsOpt)
         slaveParamsOpt = host.evaluate_geometric_field_at_element_points(0, slaveXi)[:, :, newaxis]
         self.G.set_field_parameters(slaveParamsOpt)
@@ -694,7 +696,8 @@ class geometryFit(object):
         except AttributeError:
             # 1. get indices of dp with similar curvature
             neighbourhoods = \
-            self.dataCurvatureTree.query(list(self.initH[:, newaxis]), neighSize, distance_upper_bound=neighRadius)[1]
+                self.dataCurvatureTree.query(list(self.initH[:, newaxis]), neighSize, distance_upper_bound=neighRadius)[
+                    1]
             # remove missing neighbours
             neighbourhoods = [where(n == self.dataCurvatureTree.n, n[0], n) for n in neighbourhoods]
             # get coordinates of dps in the curv neighb of each ep
@@ -753,7 +756,8 @@ class geometryFit(object):
             epCurvatureTree = KDTree(self.initMeshCurvature[:, newaxis], self.leaf_size)
             # 1. get indices of dp with similar curvature
             self.neighbourhoods = \
-            epCurvatureTree.query(list(self.dataCurvature[:, newaxis]), neighSize, distance_upper_bound=neighRadius)[1]
+                epCurvatureTree.query(list(self.dataCurvature[:, newaxis]), neighSize,
+                                      distance_upper_bound=neighRadius)[1]
             # remove missing neighbours
             self.neighbourhoods = [where(n == epCurvatureTree.n, n[0], n) for n in self.neighbourhoods]
             neighbourhoods = self.neighbourhoods
@@ -906,7 +910,8 @@ class geometryFit(object):
         except AttributeError:
             # 1. get indices of dp with similar curvature
             neighbourhoods = \
-            self.dataCurvatureTree.query(list(self.initH[:, newaxis]), neighSize, distance_upper_bound=neighRadius)[1]
+                self.dataCurvatureTree.query(list(self.initH[:, newaxis]), neighSize, distance_upper_bound=neighRadius)[
+                    1]
             # remove missing neighbours
             neighbourhoods = [where(n == self.dataCurvatureTree.n, n[0], n) for n in neighbourhoods]
             # get coordinates of dps in the curv neighb of each ep
@@ -1167,7 +1172,7 @@ class normalSmoother2(object):
             if len(self.en2el[p]) == 2:
                 E = list(self.en2el[p].items())  # element points mapped to by ensemble point p
                 self.edgePoints.append(((E[0][0], list(E[0][1].keys())[0]), (
-                E[1][0], list(E[1][1].keys())[0])))  # ((element1, elementnode1), (element2, elementnode2))
+                    E[1][0], list(E[1][1].keys())[0])))  # ((element1, elementnode1), (element2, elementnode2))
             # vertex nodes
             elif len(self.en2el[p]) > 2:
                 pass
@@ -1427,7 +1432,7 @@ class tangentSmoother2(object):
             if len(self.en2el[p]) == 2:
                 E = list(self.en2el[p].items())  # element points mapped to by ensemble point p
                 self.edgePoints.append(((E[0][0], list(E[0][1].keys())[0]), (
-                E[1][0], list(E[1][1].keys())[0])))  # ((element1, elementnode1), (element2, elementnode2))
+                    E[1][0], list(E[1][1].keys())[0])))  # ((element1, elementnode1), (element2, elementnode2))
             # vertex nodes
             elif len(self.en2el[p]) > 2:
                 pass
@@ -1597,7 +1602,7 @@ class tangentSmoother(object):
             if len(self.en2el[p]) == 2:
                 E = list(self.en2el[p].items())  # element points mapped to by ensemble point p
                 self.edgePoints.append(((E[0][0], list(E[0][1].keys())[0]), (
-                E[1][0], list(E[1][1].keys())[0])))  # ((element1, elementnode1), (element2, elementnode2))
+                    E[1][0], list(E[1][1].keys())[0])))  # ((element1, elementnode1), (element2, elementnode2))
             # vertex nodes
             elif len(self.en2el[p]) > 2:
                 pass

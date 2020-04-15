@@ -13,13 +13,15 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 """
 
 import shelve
-import vtk
+
 import scipy
-from scipy.linalg import svd, eigh
 import sys
+import vtk
+from scipy.linalg import svd, eigh
+
 from gias2.common import transform3D
-from gias2.registration import alignment_analytic as alignment
 from gias2.mesh import inp
+from gias2.registration import alignment_analytic as alignment
 
 try:
     from mayavi import mlab

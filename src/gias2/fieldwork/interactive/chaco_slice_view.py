@@ -12,13 +12,13 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
 
-from enthought.traits.api import Bool, Any, HasTraits, Instance, Int, Array, Range, on_trait_change, Property, Float
-from enthought.traits.ui.api import View, Group, Item
-from enthought.enable.component_editor import ComponentEditor
 from enthought.chaco.api import Plot, ArrayPlotData, bone, BaseTool
-from enthought.chaco.tools.api import DataPrinter, ZoomTool, PanTool, ImageInspectorTool, ImageInspectorOverlay
+from enthought.chaco.tools.api import ZoomTool, PanTool
+from enthought.enable.component_editor import ComponentEditor
+from enthought.traits.api import Bool, Any, HasTraits, Array, Range, on_trait_change, Property
+from enthought.traits.ui.api import View, Item
+from scipy import arange
 
-from scipy import arange, zeros
 
 class ClickPositionTool(BaseTool):
     """ A tool to get mouse click position
@@ -44,17 +44,17 @@ class ClickPositionTool(BaseTool):
     # is released
     # FIXME: This is not used right now.
     select_mode = Bool(False)
-            
+
     def normal_left_down(self, event):
-        #~ self._update_slices(event)
+        # ~ self._update_slices(event)
         self._update_position(event)
 
-    #~ def normal_right_down(self, event):
-        #~ self._update_slices(event)
-#~ 
-    #~ def normal_mouse_move(self, event):
-        #~ if event.left_down or event.right_down:
-            #~ self._update_slices(event)
+    # ~ def normal_right_down(self, event):
+    # ~ self._update_slices(event)
+    # ~
+    # ~ def normal_mouse_move(self, event):
+    # ~ if event.left_down or event.right_down:
+    # ~ self._update_slices(event)
 
     def _update_position(self, event):
         plot = self.component
@@ -64,50 +64,48 @@ class ClickPositionTool(BaseTool):
 
 
 class slice_viewer(HasTraits):
-
-    #~ start_img = zeros((100,100))
-    plotdata = ArrayPlotData( imagedata = None )
-    plot = Plot( plotdata )
-    #~ imgplot = plot.img_plot( 'imagedata', xbounds=arange(100), ybounds=arange(100), colormap=bone )[0]
+    # ~ start_img = zeros((100,100))
+    plotdata = ArrayPlotData(imagedata=None)
+    plot = Plot(plotdata)
+    # ~ imgplot = plot.img_plot( 'imagedata', xbounds=arange(100), ybounds=arange(100), colormap=bone )[0]
 
     image = Array
-    slicehigh = Property( depends_on=['image'] )
+    slicehigh = Property(depends_on=['image'])
     slicelow = Property
-    slice_range = Range( low='slicelow', high ='slicehigh', mode='slider' )
-    slice_view = View( Item( 'plot', editor=ComponentEditor(), show_label=False),\
-                       Item( name='slice_range'),\
-                       width=800, height=600, resizable=True, title='Slice Viewer' )
-                       
-    
+    slice_range = Range(low='slicelow', high='slicehigh', mode='slider')
+    slice_view = View(Item('plot', editor=ComponentEditor(), show_label=False), \
+                      Item(name='slice_range'), \
+                      width=800, height=600, resizable=True, title='Slice Viewer')
+
     def __init__(self, image):
-        super( slice_viewer, self ).__init__()
-        
-        self.collecting_points = False      # toggle for whether click positions are recorded
+        super(slice_viewer, self).__init__()
+
+        self.collecting_points = False  # toggle for whether click positions are recorded
         self.image = image
-        self.plotdata.set_data( 'imagedata', self.image[ self.slice_range, :, :] )
-        imgplot = self.plot.img_plot( 'imagedata', xbounds=arange(self.image.shape[2]),\
-                                      ybounds=arange(self.image.shape[1]), colormap=bone )[0]
-        
-        self.add_tools( self.plot )
+        self.plotdata.set_data('imagedata', self.image[self.slice_range, :, :])
+        imgplot = self.plot.img_plot('imagedata', xbounds=arange(self.image.shape[2]), \
+                                     ybounds=arange(self.image.shape[1]), colormap=bone)[0]
+
+        self.add_tools(self.plot)
         # image inspector
-        #~ self.imgtool = ImageInspectorTool(imgplot)
-        #~ imgplot.tools.append(self.imgtool)
-        #~ overlay = ImageInspectorOverlay(component=imgplot, image_inspector=self.imgtool,
-                                    #~ bgcolor="white", border_visible=True)
-        #~ imgplot.overlays.append(overlay)
-    
-    def add_tools( self, plot ):
+        # ~ self.imgtool = ImageInspectorTool(imgplot)
+        # ~ imgplot.tools.append(self.imgtool)
+        # ~ overlay = ImageInspectorOverlay(component=imgplot, image_inspector=self.imgtool,
+        # ~ bgcolor="white", border_visible=True)
+        # ~ imgplot.overlays.append(overlay)
+
+    def add_tools(self, plot):
         """ add ClickPositionTool, Zoom and Pan tools to the input plot
         """
-        
-        zoom = ZoomTool( plot, tool_mode='box' )
+
+        zoom = ZoomTool(plot, tool_mode='box')
         plot.overlays.append(zoom)
         pan = PanTool(plot, drag_button="right", constrain_key="shift")
         plot.tools.append(pan)
         datapicker = ClickPositionTool(component=self.plot, callback=self._index_callback)
-        self.plot.tools.append( datapicker )
-            
-    def collected_points( self, npoints, callback ):
+        self.plot.tools.append(datapicker)
+
+    def collected_points(self, npoints, callback):
         """ prepares object for recording the positions of clicks.
         Records npoints points, and calls the callback when done
         """
@@ -115,9 +113,8 @@ class slice_viewer(HasTraits):
         self.points = []
         self.npoints = npoints
         self.collected_points_callback = callback
-        
-    
-    def _index_callback( self, xy ):
+
+    def _index_callback(self, xy):
         """ callback functions for the ClickPositionTool. If collecting_points,
         positions of clicks are appended to self.points and when number
         of collected points == self.npoints, calls the collected_points_callback
@@ -125,22 +122,21 @@ class slice_viewer(HasTraits):
         """
         print('position:', [self.slice_range, xy[1], xy[0]])
         if self.collecting_points:
-            self.points.append( [self.slice_range, xy[1], xy[0]] )
+            self.points.append([self.slice_range, xy[1], xy[0]])
             if len(self.points) == self.npoints:
                 points = self.points
                 self.points = None
                 self.collecting_points = False
-                self.collected_points_callback( points )
+                self.collected_points_callback(points)
                 return
-    
-    def _get_slicehigh( self ):
+
+    def _get_slicehigh(self):
         return self.image.shape[0] - 1
-        
-    def _get_slicelow( self ):
+
+    def _get_slicelow(self):
         return 0
 
-    @on_trait_change('slice_range') 
+    @on_trait_change('slice_range')
     def calculate_slice_image(self):
-        #~ print self.slice_range
-        self.plotdata.set_data( 'imagedata', self.image[self.slice_range, :, :] )
-
+        # ~ print self.slice_range
+        self.plotdata.set_data('imagedata', self.image[self.slice_range, :, :])

@@ -12,6 +12,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
 import logging
+
 import numpy as np
 from scipy.linalg import eig, inv
 from scipy.optimize import leastsq, fmin
@@ -682,8 +683,8 @@ def fitSphereAnalytic(X):
     centre = np.dot(inv(a_matrix), b_matrix)
 
     radius = np.sqrt((np.vstack([X[:, 0] - centre[0],
-                                       X[:, 1] - centre[1],
-                                       X[:, 2] - centre[2]]) ** 2).sum(0).mean())
+                                 X[:, 1] - centre[1],
+                                 X[:, 2] - centre[2]]) ** 2).sum(0).mean())
 
     return centre, radius
 

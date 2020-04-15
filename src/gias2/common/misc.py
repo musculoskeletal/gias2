@@ -12,8 +12,9 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
 
-import sys
 import numpy as np
+import sys
+
 
 def cartesian(arrays, out=None):
     """
@@ -58,12 +59,13 @@ def cartesian(arrays, out=None):
         out = np.zeros([n, len(arrays)], dtype=dtype)
 
     m = n / arrays[0].size
-    out[:,0] = np.repeat(arrays[0], m)
+    out[:, 0] = np.repeat(arrays[0], m)
     if arrays[1:]:
-        cartesian(arrays[1:], out=out[0:m,1:])
+        cartesian(arrays[1:], out=out[0:m, 1:])
         for j in range(1, arrays[0].size):
-            out[j*m:(j+1)*m,1:] = out[0:m,1:]
+            out[j * m:(j + 1) * m, 1:] = out[0:m, 1:]
     return out
+
 
 class ProgressOutput:
     """
@@ -76,12 +78,12 @@ class ProgressOutput:
     total : int
         total number of steps in the task or the maximum value of the task
     """
-    
+
     def __init__(self, task, total):
         self.task = task
         self.total = total
         self.value = 0
-        
+
     def progress(self, value, comment=''):
         """
         Update the progress one the task.
@@ -94,14 +96,14 @@ class ProgressOutput:
             a message for the current step
         """
 
-        self.value = value        
-        percent = int(100.*value/self.total)
+        self.value = value
+        percent = int(100. * value / self.total)
         outcomment = ''
-        if len(comment)>0:
+        if len(comment) > 0:
             outcomment = ": {}".format(comment)
         sys.stdout.write("Progress: {} : {:2d}% {}  \r".format(self.task, percent, outcomment))
         sys.stdout.flush()
-        
+
     def output(self, comment=''):
         """
         Update the completion of the task.
@@ -112,7 +114,7 @@ class ProgressOutput:
             message to display
         """
         outcomment = ''
-        if len(comment)>0:
+        if len(comment) > 0:
             outcomment = ": {}".format(comment)
         sys.stdout.write("\nOutput: {} {}\n".format(self.task, outcomment))
         sys.stdout.flush()

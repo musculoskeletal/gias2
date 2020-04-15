@@ -18,15 +18,13 @@ except ImportError:
     raise ImportError('Mayavi not installed')
 
 import scipy
-from traits.api import HasTraits, Int, Range, Bool, Button, Color, Dict, Tuple, Str, Enum, List, Instance, \
-    on_trait_change
-from traitsui.api import View, Item, HGroup, HSplit, VFlow, VGroup, Tabbed, CheckListEditor, RangeEditor, EnumEditor, \
-    ListEditor, InstanceEditor, TextEditor, Spring, spring
-from traitsui.handler import Handler
-from tvtk.pyface.scene_editor import SceneEditor
-from mayavi.tools.mlab_scene_model import MlabSceneModel
 from mayavi.core.ui.mayavi_scene import MayaviScene
+from mayavi.tools.mlab_scene_model import MlabSceneModel
+from traits.api import HasTraits, Range, Bool, Button, Str, Enum, List, Instance
+from traitsui.api import View, Item, HGroup, HSplit, VGroup, Tabbed, EnumEditor, \
+    TextEditor
 from tvtk.api import tvtk
+from tvtk.pyface.scene_editor import SceneEditor
 
 
 class Fieldvi(HasTraits):

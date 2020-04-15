@@ -13,14 +13,17 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
 import inspect
-import opensim
+
 import numpy as np
+import opensim
+
 # import pdb
 
 try:
     opensim_version = getattr(opensim, '__version__')
 except AttributeError:
     opensim_version = None
+
 
 class Body(object):
 
@@ -59,23 +62,23 @@ class Body(object):
     @property
     def inertia(self):
         m = opensim.Mat33()
-        ma = np.zeros((3,3))
+        ma = np.zeros((3, 3))
         self._osimBody.getInertia(m)
         for i in range(3):
             for j in range(3):
-                ma[i,j] = m.get(i,j)
+                ma[i, j] = m.get(i, j)
         return ma
 
     @inertia.setter
     def inertia(self, I):
         _I = np.array(I)
-        if len(_I.shape)==1:
+        if len(_I.shape) == 1:
             inertia = opensim.Inertia(_I[0], _I[1], _I[2])
         else:
             inertia = opensim.Inertia(
-                        _I[0,0], _I[1,1], _I[2,2],
-                        _I[0,1], _I[0,2], _I[1,2],
-                        )
+                _I[0, 0], _I[1, 1], _I[2, 2],
+                _I[0, 1], _I[0, 2], _I[1, 2],
+            )
         self._osimBody.setInertia(inertia)
 
     @property
@@ -88,7 +91,7 @@ class Body(object):
     def scaleFactors(self, s):
         v = opensim.Vec3(s[0], s[1], s[2])
         self._osimBody.scale(v)
-    
+
     def scale(self, scaleFactors, scaleMass=False):
         v = opensim.Vec3(scaleFactors[0], scaleFactors[1], scaleFactors[2])
         self._osimBody.scale(v, scaleMass)
@@ -115,12 +118,12 @@ class Body(object):
         #     geoset.insert(fi, dgnew)
 
         # remove existing geoms
-        if len(filenames)!=nGeoms:
+        if len(filenames) != nGeoms:
             raise ValueError(
                 'Expected {} filenames, got {}'.format(
                     nGeoms, len(filenames)
-                    )
                 )
+            )
 
         # add new geoms
         for fi, fn in enumerate(filenames):
@@ -134,15 +137,16 @@ class Body(object):
         #         if oldfilename==visibles.getGeometryFileName(i):
         #             visibles.setGeometryFileName(i, filename)
 
+
 class PathPoint(object):
 
     def __init__(self, p):
         self._isConditionalPathPoint = False
         self._isMovingPathPoint = False
-        if p.getConcreteClassName()=='MovingPathPoint':
+        if p.getConcreteClassName() == 'MovingPathPoint':
             self._osimPathPoint = opensim.MovingPathPoint_safeDownCast(p)
             self._isMovingPathPoint = True
-        elif p.getConcreteClassName()=='ConditionalPathPoint':
+        elif p.getConcreteClassName() == 'ConditionalPathPoint':
             self._osimPathPoint = opensim.ConditionalPathPoint_safeDownCast(p)
             self._isConditionalPathPoint = True
         else:
@@ -171,7 +175,7 @@ class PathPoint(object):
         return Body(self._osimPathPoint.getBody())
 
     def scale(self, sf):
-        raise(NotImplementedError, 'Consider using Muscle.scale.')
+        raise (NotImplementedError, 'Consider using Muscle.scale.')
         # state = opensim.State()
         # scaleset = opensim.ScaleSet() # ???
         # scaleset.setScale([integer]) #???
@@ -189,11 +193,11 @@ class PathPoint(object):
         """
         Return the SimmSpline of a given axis (x, y, or z) if self.isMovingPathPoint
         """
-        if axis=='x':
+        if axis == 'x':
             func = self._osimPathPoint.getXFunction()
-        elif axis=='y':
+        elif axis == 'y':
             func = self._osimPathPoint.getYFunction()
-        elif axis=='z':
+        elif axis == 'z':
             func = self._osimPathPoint.getZFunction()
 
         ss = opensim.SimmSpline_safeDownCast(func)
@@ -241,16 +245,16 @@ class PathPoint(object):
         return x_params, y_params, z_params
 
     def _updateSimmSplineParams(self, axis, params):
-        
+
         ss = self._getSimmSpline(axis)
         ssLength = ss.getSize()
         x, y = params
-        if (len(x)!=ssLength) or (len(y)!=ssLength):
-            raise(
+        if (len(x) != ssLength) or (len(y) != ssLength):
+            raise (
                 ValueError(
                     'Input parameters must be of length {}'.format(ssLength)
-                    )
                 )
+            )
         for i in range(ssLength):
             ss.setX(i, x[i])
             ss.setY(i, y[i])
@@ -298,8 +302,8 @@ class PathPoint(object):
     #     if newfunc.getConcreteClassName()=='MultiplierFunction':
     #         oldfunc = opensim.MultiplierFunction_safeDownCast(newfunc).getFunction()
     #         owner.setFunction(oldfunc.clone())
-    
-    
+
+
 class Muscle(object):
 
     def __init__(self, m):
@@ -335,7 +339,7 @@ class Muscle(object):
     @optimalFiberLength.setter
     def optimalFiberLength(self, tsl):
         self._osimMuscle.setOptimalFiberLength(tsl)
-    
+
     def getPathPoint(self, i):
         gp = self._osimMuscle.getGeometryPath()
         pathPoints = gp.getPathPointSet()
@@ -403,36 +407,38 @@ class CoordinateSet(object):
     def defaultValue(self, x):
         self._cs.setDefaultValue(x)
 
+
 class wrapObject(object):
 
-	def __init__(self, WrObj):
-		self._wrapObject = WrObj
+    def __init__(self, WrObj):
+        self._wrapObject = WrObj
 
-	@property
-	def name(self):
-		return self._wrapObject.getName()
+    @property
+    def name(self):
+        return self._wrapObject.getName()
 
-	@name.setter
-	def name(self, name):
-		self._wrapObject.setName(name)
+    @name.setter
+    def name(self, name):
+        self._wrapObject.setName(name)
 
-	def getDimensions(self):
-		return self._wrapObject.getDimensionsString()
+    def getDimensions(self):
+        return self._wrapObject.getDimensionsString()
 
-	def scale(self, scaleFactors):
-		v = opensim.Vec3(scaleFactors[0], scaleFactors[1], scaleFactors[2])
-		self._wrapObject.scale(v)
-    
+    def scale(self, scaleFactors):
+        v = opensim.Vec3(scaleFactors[0], scaleFactors[1], scaleFactors[2])
+        self._wrapObject.scale(v)
+
+
 class Joint(object):
 
     def __init__(self, j):
-        if j.getConcreteClassName()=='CustomJoint':
+        if j.getConcreteClassName() == 'CustomJoint':
             self._osimJoint = opensim.CustomJoint_safeDownCast(j)
             self._isCustomJoint = True
         else:
             self._osimJoint = j
             self._isCustomJoint = False
-        
+
         self._initCoordSets()
         if self.isCustomJoint:
             self._initSpatialTransform()
@@ -480,10 +486,10 @@ class Joint(object):
             inspect.getmembers(
                 self.spatialTransform,
                 lambda m: inspect.ismethod(m) and m.__func__ in m.im_class.__dict__.values()
-                )
             )
+        )
         if _method_name not in _bound_methods:
-            raise(ValueError('Unknown axis {}'.format(_method_name)))
+            raise (ValueError('Unknown axis {}'.format(_method_name)))
 
         tfunc = _bound_methods[_method_name]().get_function()
         ss = opensim.SimmSpline_safeDownCast(tfunc)
@@ -516,21 +522,21 @@ class Joint(object):
             inspect.getmembers(
                 self.spatialTransform,
                 lambda m: inspect.ismethod(m) and m.__func__ in m.im_class.__dict__.values()
-                )
             )
+        )
         if _method_name not in _bound_methods:
-            raise(ValueError('Unknown axis {}'.format(_method_name)))
+            raise (ValueError('Unknown axis {}'.format(_method_name)))
 
         tfunc = _bound_methods[_method_name]().get_function()
         ss = opensim.SimmSpline_safeDownCast(tfunc)
         ssLength = ss.getSize()
 
-        if (len(x)!=ssLength) or (len(y)!=ssLength):
-            raise(
+        if (len(x) != ssLength) or (len(y) != ssLength):
+            raise (
                 ValueError(
                     'Input parameters must be of length {}'.format(ssLength)
-                    )
                 )
+            )
         for i in range(ssLength):
             ss.setX(i, x[i])
             ss.setY(i, y[i])
@@ -544,7 +550,7 @@ class Joint(object):
         v = opensim.Vec3()
         self._osimJoint.getLocationInParent(v)
         return np.array([v.get(i) for i in range(3)])
-    
+
     @locationInParent.setter
     def locationInParent(self, x):
         v = opensim.Vec3(x[0], x[1], x[2])
@@ -555,7 +561,7 @@ class Joint(object):
         v = opensim.Vec3()
         self._osimJoint.getLocation(v)
         return np.array([v.get(i) for i in range(3)])
-    
+
     @location.setter
     def location(self, x):
         v = opensim.Vec3(x[0], x[1], x[2])
@@ -566,7 +572,7 @@ class Joint(object):
         v = opensim.Vec3()
         self._osimJoint.getOrientationInParent(v)
         return np.array([v.get(i) for i in range(3)])
-    
+
     @orientationInParent.setter
     def orientationInParent(self, x):
         v = opensim.Vec3(x[0], x[1], x[2])
@@ -577,7 +583,7 @@ class Joint(object):
         v = opensim.Vec3()
         self._osimJoint.getOrientation(v)
         return np.array([v.get(i) for i in range(3)])
-    
+
     @orientation.setter
     def orientation(self, x):
         v = opensim.Vec3(x[0], x[1], x[2])
@@ -604,20 +610,21 @@ class Joint(object):
 
         self._osimJoint.scale(scaleset)
 
+
 class Scale(object):
 
     def __init__(self, sfactors=None, name=None, segname=None):
 
-        if len(sfactors)!=3:
-            raise(ValueError, 'sfactors must be of length 3')
+        if len(sfactors) != 3:
+            raise (ValueError, 'sfactors must be of length 3')
 
         self._osimScale = opensim.Scale()
         if sfactors is not None:
             v = opensim.Vec3(
-                    sfactors[0],
-                    sfactors[1],
-                    sfactors[2],
-                    )
+                sfactors[0],
+                sfactors[1],
+                sfactors[2],
+            )
             self._osimScale.setScaleFactors(v)
         if segname is not None:
             self._osimScale.setSegmentName(segname)
@@ -649,14 +656,15 @@ class Scale(object):
     @scaleFactors.setter
     def scaleFactors(self, sfactors):
         v = opensim.Vec3(
-                    sfactors[0],
-                    sfactors[1],
-                    sfactors[2],
-                    )
+            sfactors[0],
+            sfactors[1],
+            sfactors[2],
+        )
         self._osimScale.setScaleFactors(v)
 
     def apply(self, isapply):
         self._osimScale.setApply(isapply)
+
 
 class Marker(object):
     """
@@ -690,7 +698,7 @@ class Marker(object):
 
     @property
     def offset(self):
-        if opensim_version==4.0:
+        if opensim_version == 4.0:
             v = self._osimMarker.get_location(v)
         else:
             v = opensim.Vec3()
@@ -700,7 +708,7 @@ class Marker(object):
     @offset.setter
     def offset(self, x):
         v = opensim.Vec3(x[0], x[1], x[2])
-        if opensim_version==4.0:
+        if opensim_version == 4.0:
             self._osimMarker.set_location(v)
         else:
             self._osimMarker.setOffset(v)
@@ -717,6 +725,7 @@ class Marker(object):
     def offset(self, x):
         v = opensim.Vec3(x[0], x[1], x[2])
         self._osimMarker.setOffset(v)
+
 
 class Model(object):
 
@@ -785,7 +794,7 @@ class Model(object):
             if (wObjects.getSize() != 0):
                 for wi in range(wObjects.getSize()):
                     w = wObjects.get(wi)
-                    self.wrapObjects[w.getName()] = wrapObject(w)		
+                    self.wrapObjects[w.getName()] = wrapObject(w)
 
     def scale(self, state, *scales):
         """
@@ -806,5 +815,3 @@ class Model(object):
         v = self._model.updVisualizer()
         v.show(state)
         return v
-
-

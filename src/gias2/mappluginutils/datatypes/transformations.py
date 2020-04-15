@@ -14,6 +14,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import numpy as np
 
+
 class Transform(object):
     transformType = None
 
@@ -33,20 +34,26 @@ class Transform(object):
     def setP(self, P):
         self.P = np.array(P)
 
+
 class AffineTransform(Transform):
     transformType = 'affine'
+
 
 class RigidTransform(Transform):
     transformType = 'rigid'
 
+
 class RigidTransformAboutPoint(Transform):
     transformType = 'rigid_about_point'
+
 
 class RigidScaleTransform(Transform):
     transformType = 'rigidscale'
 
+
 class RigidScaleTransformAboutPoint(Transform):
     transformType = 'rigidscale_about_point'
+
 
 class RigidPCModesTransform(Transform):
     transformType = 'rigidpcmodes'
