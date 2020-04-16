@@ -11,7 +11,7 @@ License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
-
+import logging
 import shelve
 
 import numpy
@@ -25,6 +25,8 @@ from gias2.common.geoprimitives import LineElement3D
 
 # ======================================================================#
 from gias2.common.math import norm
+
+log = logging.getLogger(__name__)
 
 
 class spline_parametric(object):
@@ -286,7 +288,7 @@ class pointCrawlerImage(object):
 
         # get the path
         if debug:
-            print('tracing between', p1, ' and', self.p2)
+            log.debug('tracing between', p1, ' and', self.p2)
 
         # starting-paths loop
         while (initialPath < len(initialPaths)):
@@ -304,7 +306,7 @@ class pointCrawlerImage(object):
                     d = euclidean(p, self.p2)
                     it += 1
                     if debug:
-                        print(it, p, d)
+                        log.debug(it, p, d)
                 else:
                     # failed
                     break
@@ -318,7 +320,7 @@ class pointCrawlerImage(object):
         # find shortest path
         pathLengths = [self._calcPathLength(p) for p in goodPaths]
         if len(pathLengths) == 0:
-            print('ERROR: pointCrawler: trace unsuccessful, aborted')
+            log.debug('ERROR: pointCrawler: trace unsuccessful, aborted')
             return None, None
         else:
             shortestPathI = numpy.argmin([self._calcPathLength(p) for p in goodPaths])
@@ -333,7 +335,7 @@ class pointCrawlerImage(object):
                 line = LineElement3D(bestPath[0], path[1])
                 return line, bestPath
             else:
-                print('ERROR: pointCrawler: length 1 path')
+                log.debug('ERROR: pointCrawler: length 1 path')
                 return None, None
 
     def _initialPathSearch(self, centre, n=10):
@@ -344,7 +346,7 @@ class pointCrawlerImage(object):
         V, O = self._getSubVolume(centre)
         coords = numpy.array(V.nonzero()).transpose() + O
         if len(coords) == 0:
-            print('warning: no non-zero pixels')
+            log.debug('warning: no non-zero pixels')
             return None
         else:
 
@@ -372,7 +374,7 @@ class pointCrawlerImage(object):
         V, O = self._getSubVolume(centre)
         coords = numpy.array(V.nonzero()).transpose() + O
         if len(coords) == 0:
-            print('warning: no non-zero pixels')
+            log.debug('warning: no non-zero pixels')
             return None
         else:
 
@@ -518,7 +520,7 @@ class pointCrawlerData(object):
 
         # get the path
         if debug:
-            print('tracing between', p1, ' and', self.p2)
+            log.debug('tracing between', p1, ' and', self.p2)
 
         # starting-paths loop
         while (initialPath < len(initialPaths)):
@@ -538,7 +540,7 @@ class pointCrawlerData(object):
                     d = euclidean(p, self.p2)
                     it += 1
                     if debug:
-                        print(it, p, d)
+                        log.debug(it, p, d)
                 else:
                     # failed
                     break
@@ -582,7 +584,7 @@ class pointCrawlerData(object):
         try:
             nCoords = self.data[nI]
         except IndexError:
-            print('warning: no neighbours at starting point')
+            log.debug('warning: no neighbours at starting point')
             return None
         else:
             # line from centre to target point
@@ -602,7 +604,7 @@ class pointCrawlerData(object):
         try:
             nCoords = self.data[nI]
         except IndexError:
-            print('warning: no neighbours at starting point')
+            log.debug('warning: no neighbours at starting point')
             return None
         else:
             # line from centre to target point
@@ -635,10 +637,10 @@ def fitCurveEPDP(curve, data, pInit, debug=0):
     p = pInit.copy()
     nParams = pInit.shape[1]
     if debug:
-        print('dim:', dim)
-        print('p shape:', p.shape)
-        print('x0 shape:', x0.shape)
-        print('nParams:', nParams)
+        log.debug('dim:', dim)
+        log.debug('p shape:', p.shape)
+        log.debug('x0 shape:', x0.shape)
+        log.debug('nParams:', nParams)
 
     def obj(x):
         # ~ pdb.set_trace()
@@ -652,7 +654,7 @@ def fitCurveEPDP(curve, data, pInit, debug=0):
         # for each ep, find dist to closest dp
         err = numpy.array([((data - epI) ** 2.0).sum(1).min() for epI in ep])
         if debug:
-            print('curve fitting rms:', numpy.sqrt(err.mean()))
+            log.debug('curve fitting rms:', numpy.sqrt(err.mean()))
         return err
 
     def objWithSmoothing(x):
@@ -681,7 +683,7 @@ def fitCurveEPDP(curve, data, pInit, debug=0):
 
 
         if debug:
-            print('curve fitting rms:', numpy.sqrt(err.mean()))
+            log.debug('curve fitting rms:', numpy.sqrt(err.mean()))
         return err
 
     # ~ xOpt = leastsq( obj, x0, ftol=ftol, xtol=xtol, epsfcn=eps )[0]
@@ -707,10 +709,10 @@ def fitCurveDPEP(curve, data, pInit, debug=0):
     p = pInit.copy()
     nParams = pInit.shape[1]
     if debug:
-        print('dim:', dim)
-        print('p shape:', p.shape)
-        print('x0 shape:', x0.shape)
-        print('nParams:', nParams)
+        log.debug('dim:', dim)
+        log.debug('p shape:', p.shape)
+        log.debug('x0 shape:', x0.shape)
+        log.debug('nParams:', nParams)
 
     def obj(x):
         # ~ pdb.set_trace()
@@ -724,7 +726,7 @@ def fitCurveDPEP(curve, data, pInit, debug=0):
         # for each ep, find dist to closest dp
         err, i = epTree.query(list(data))
         if debug:
-            print('curve fitting rms:', numpy.sqrt(err.mean()))
+            log.debug('curve fitting rms:', numpy.sqrt(err.mean()))
         return err
 
     def objWithSmoothing(x):
@@ -754,7 +756,7 @@ def fitCurveDPEP(curve, data, pInit, debug=0):
         err += penalty[i]
 
         if debug:
-            print('curve fitting rms:', numpy.sqrt(err.mean()))
+            log.debug('curve fitting rms:', numpy.sqrt(err.mean()))
         return err
 
     # ~ xOpt = leastsq( obj, x0, ftol=ftol, xtol=xtol, epsfcn=eps )[0]

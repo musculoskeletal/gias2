@@ -12,13 +12,16 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
 import copy
-
 import itertools
+import logging
+
 import numpy as np
 from scipy.spatial.ckdtree import cKDTree
 from scipy.stats import mode
 
 from gias2.mesh import simplemesh
+
+log = logging.getLogger(__name__)
 
 
 def make_sub_mesh(sm, faceinds):
@@ -44,7 +47,7 @@ def set_1ring_faces(sm):
     """
     Create a dict of the adjacent faces of every face in sm
     """
-    print('setting 1-ring for faces')
+    log.debug('setting 1-ring for faces')
 
     faces_1ring_faces = {}
     # share_edge_sets = [None, None, None]
@@ -129,7 +132,7 @@ def remove_small_regions(sm):
 
     # partition mesh by connected regions
     region_faces, face_labels = partition_regions(sm, np.inf)
-    print('found {} regions'.format(len(region_faces)))
+    log.debug('found {} regions'.format(len(region_faces)))
 
     # get largest region
     largest_reg = None
@@ -139,7 +142,7 @@ def remove_small_regions(sm):
             largest_reg = rn
             largest_reg_nfaces = len(rf)
 
-    print('keeping largest region with {} faces'.format(largest_reg_nfaces))
+    log.debug('keeping largest region with {} faces'.format(largest_reg_nfaces))
 
     # create new mesh with just the largest region
     largest_region_mesh = make_sub_mesh(sm, region_faces[largest_reg])
@@ -156,7 +159,7 @@ def remove_small_regions_2(sm, k):
 
     # partition mesh by connected regions
     region_faces, face_labels = partition_regions(sm, np.inf)
-    print('found {} regions'.format(len(region_faces)))
+    log.debug('found {} regions'.format(len(region_faces)))
 
     # find regions to keep
     keep_faces = []
@@ -166,7 +169,7 @@ def remove_small_regions_2(sm, k):
 
     # create mesh with kept regions
     new_mesh = make_sub_mesh(sm, keep_faces)
-    print('keeping {} faces'.format(len(keep_faces)))
+    log.debug('keeping {} faces'.format(len(keep_faces)))
 
     return new_mesh
 
@@ -177,9 +180,9 @@ def partition_mesh(sm, maxfaces, minfaces):
     """
 
     region_faces, face_labels = partition_regions(sm, maxfaces)
-    print('merging {} regions'.format(len(region_faces)))
+    log.debug('merging {} regions'.format(len(region_faces)))
     merge_regions(sm, region_faces, face_labels, minfaces)
-    print('making {} region meshes'.format(len(region_faces)))
+    log.debug('making {} region meshes'.format(len(region_faces)))
     region_sms = make_region_meshes(sm, region_faces)
     return region_sms
 

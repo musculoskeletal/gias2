@@ -12,12 +12,15 @@ License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
+import logging
 
 import numpy as np
 import sys
 from scipy import optimize
 
 from gias2.registration import alignment_fitting
+
+log = logging.getLogger(__name__)
 
 
 def _make_x0(ll, npcs, landmark_names, target_landmarks, source_landmarks, init_pc_weights=None):
@@ -44,7 +47,7 @@ def _make_x0(ll, npcs, landmark_names, target_landmarks, source_landmarks, init_
 
     for name in reg_landmarks:
         if name not in landmark_names:
-            print('Could not find {} pelvis landmarks. Using zero initial rigid transformations'.format(name))
+            log.debug('Could not find {} pelvis landmarks. Using zero initial rigid transformations'.format(name))
             do_rigid = False
 
     if do_rigid:
@@ -66,11 +69,11 @@ def _make_x0(ll, npcs, landmark_names, target_landmarks, source_landmarks, init_
             epsfcn=1e-6,
             outputErrors=1,
         )
-        print('init rigid transform: {}'.format(init_rigid))
-        print('init rigid fit error {} -> {}'.format(*fit_errors))
+        log.debug('init rigid transform: {}'.format(init_rigid))
+        log.debug('init rigid fit error {} -> {}'.format(*fit_errors))
         # fitted_errors = np.sqrt(((_target - fitted_landmarks)**2.0).sum(1))
-        # print('fitted errors: {}'.format(fitted_errors))
-        # print('fitted ldmks: {}'.format(fitted_landmarks))
+        # log.debug('fitted errors: {}'.format(fitted_errors))
+        # log.debug('fitted ldmks: {}'.format(fitted_landmarks))
     else:
         init_rigid = np.zeros(6, dtype=float)
 
@@ -180,7 +183,7 @@ def _lower_limb_atlas_landmark_fit(ll_model, target_landmark_coords, landmark_na
         m2 = mweight * (x_split[0] ** 2.0).sum()
         sys.stdout.write('SSDist: {:12.6f}, mdistance: {:8.5f}\r'.format(ssdist, m2))
         sys.stdout.flush()
-        # print('SSDist: {:12.6f}, mdistance: {:8.5f}'.format(ssdist, m2))
+        # log.debug('SSDist: {:12.6f}, mdistance: {:8.5f}'.format(ssdist, m2))
 
         # total error
         total_error = ssdist + m2
@@ -204,7 +207,7 @@ def _lower_limb_atlas_landmark_fit(ll_model, target_landmark_coords, landmark_na
 
     #     # calc squared mahalanobis distance
     #     m2 = mweight * (x_split[0]**2.0).sum()
-    #     print('SSDist: {:12.6f}, mdistance: {:8.5f}'.format(ssdist, m2))
+    #     log.debug('SSDist: {:12.6f}, mdistance: {:8.5f}'.format(ssdist, m2))
 
     # =========================================================================#
     # make initial parameters
@@ -220,12 +223,12 @@ def _lower_limb_atlas_landmark_fit(ll_model, target_landmark_coords, landmark_na
     #     callback = default_callback
 
     # run minimisation
-    print(' ')
+    log.debug(' ')
     opt_results_1 = optimize.minimize(lower_limb_landmark_reg_obj,
                                       x0, callback=callback,
                                       **minimise_args
                                       )
-    print(' ')
+    log.debug(' ')
     xopt1_split = _x_splitter(opt_results_1['x'])
     x_history.append(xopt1_split)
     ll_model.update_all_models(xopt1_split[0], pc_modes,
@@ -322,7 +325,7 @@ def fit(ll_model, target_landmark_coords, landmark_names,
     if not multi_fit:
         # run single fit
         if verbose:
-            print('Running single lower limb fit')
+            log.debug('Running single lower limb fit')
 
         return _lower_limb_atlas_landmark_fit(
             ll_model, target_landmark_coords, landmark_names, pc_modes,
@@ -331,7 +334,7 @@ def fit(ll_model, target_landmark_coords, landmark_names,
     else:
         # run multi-stage fit
         if verbose:
-            print(('Running {}-stage lower limb fit'.format(n_iterations)))
+            log.debug(('Running {}-stage lower limb fit'.format(n_iterations)))
 
         x_history = []
         opt_landmark_dist = []
@@ -362,11 +365,11 @@ def fit(ll_model, target_landmark_coords, landmark_names,
                     ])
 
             if verbose:
-                print(('it: {}'.format(it + 1)))
-                print(('modes: {}'.format(pc_modes[it])))
-                print(('mweight: {}'.format(mweight[it])))
-                print(('minargs: {}'.format(minimise_args[it])))
-                print(('x0: {}'.format(x0)))
+                log.debug(('it: {}'.format(it + 1)))
+                log.debug(('modes: {}'.format(pc_modes[it])))
+                log.debug(('mweight: {}'.format(mweight[it])))
+                log.debug(('minargs: {}'.format(minimise_args[it])))
+                log.debug(('x0: {}'.format(x0)))
 
             x_hist_it, opt_dist_it, opt_rmse_it, info_it = _lower_limb_atlas_landmark_fit(
                 ll_model, target_landmark_coords, landmark_names,
@@ -383,6 +386,6 @@ def fit(ll_model, target_landmark_coords, landmark_names,
             output_info.append(info_it)
 
             if verbose:
-                print(('it: {}, landmark rmse: {}'.format(it + 1, opt_rmse_it)))
+                log.debug(('it: {}, landmark rmse: {}'.format(it + 1, opt_rmse_it)))
 
     return x_history, opt_landmark_dist, opt_landmark_rmse, output_info

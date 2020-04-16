@@ -11,6 +11,7 @@ License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
+import logging
 
 import numpy
 from mayavi.core.ui.mayavi_scene import MayaviScene
@@ -25,6 +26,8 @@ from gias2.fieldwork.field import geometric_field
 from gias2.fieldwork.field.tools import spline_tools, fitting_tools
 from gias2.fieldwork.field.topology import element_types
 from gias2.fieldwork.interactive.geometric_field_interactor import point_picker_3
+
+log = logging.getLogger(__name__)
 
 
 class Viewer(HasTraits):
@@ -196,7 +199,7 @@ class Viewer(HasTraits):
         self.picker.undo_pick()
 
     def _repositionNodeButton_fired(self):
-        print('pick node to move, then a point for its new position')
+        log.debug('pick node to move, then a point for its new position')
         self.picker.set_number_of_points_to_pick(2)
         self.picker.set_callback_mode('reposition')
         self.picker.do_callback = 1
@@ -211,7 +214,7 @@ class Viewer(HasTraits):
         self.element = element_types.create_element(self.elementToAdd)
         # get number of points needed
         element_points = self.element.get_number_of_ensemble_points()
-        print('element requires', element_points, 'points.')
+        log.debug('element requires', element_points, 'points.')
         self.picker.set_number_of_points_to_pick(element_points)
         self.picker.set_callback_mode('addElement')
         self.picker.do_callback = 1
@@ -227,7 +230,7 @@ class Viewer(HasTraits):
         c = geometric_field.geometric_field('curve', 3, ensemble_field_function=cEns)
 
         self.curve = c
-        print('pick curve start and end positions')
+        log.debug('pick curve start and end positions')
         self.picker.set_number_of_points_to_pick(2)
         self.picker.set_callback_mode('addCurve')
         self.picker.do_callback = 1
@@ -356,7 +359,7 @@ class Viewer(HasTraits):
             # change its coordinates to the 2nd picked point
             newParams = pickedPoints[1][:, numpy.newaxis]
 
-            print('moving node ' + str(nodeN) + ' to ' + str(newParams))
+            log.debug('moving node ' + str(nodeN) + ' to ' + str(newParams))
             self.MB.modifyPoint(nodeN, newParams)
 
         self.picker.do_callback = 0
@@ -430,7 +433,7 @@ class MeshBuilder(object):
     def addElementByPoints(self, e, points):
         p = numpy.array(points).transpose()[:, :, numpy.newaxis]
         if self.GF.add_element_with_parameters(e, p):
-            print('element added')
+            log.debug('element added')
         return
 
     def modifyPoint(self, pointN, newParams):
@@ -459,7 +462,7 @@ class MeshBuilder(object):
         try:
             pathPoints, pathCloud = self.crawler.trace(picked_points[0], picked_points[1], debug=0)
         except RuntimeError:
-            print('could not find path between points', picked_points)
+            log.debug('could not find path between points', picked_points)
             return
         else:
             # initialise curve p0

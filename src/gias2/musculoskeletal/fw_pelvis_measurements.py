@@ -14,6 +14,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 """
 
 import copy
+import logging
 import pickle
 
 import numpy
@@ -23,6 +24,8 @@ from gias2.musculoskeletal import fw_model_landmarks as fml
 from gias2.musculoskeletal import fw_pelvis_model_data as pmd
 from gias2.musculoskeletal import model_alignment
 from gias2.musculoskeletal import pelvis_hjc_estimation as HJC
+
+log = logging.getLogger(__name__)
 
 
 class Measurement(object):
@@ -104,7 +107,7 @@ class PelvisMeasurements(object):
         m.sort()
         for mi in m:
             if self.measurements[mi] is not None:
-                print(mi, ':', self.measurements[mi].value)
+                log.debug(mi, ':', self.measurements[mi].value)
 
     def _alignToAnatomicCS(self):
 

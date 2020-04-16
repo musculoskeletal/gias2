@@ -12,8 +12,11 @@ License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
+import logging
 
 import scipy
+
+log = logging.getLogger(__name__)
 
 
 class mapper:
@@ -48,7 +51,7 @@ class mapper:
         self.number_of_ensemble_points = self.field.mesh.get_number_of_ensemble_points()
 
         if not self.number_of_ensemble_points:
-            print('ERROR: mapper.set_parent_field: empty parent mesh')
+            log.debug('ERROR: mapper.set_parent_field: empty parent mesh')
             return
         else:
             # initialise ensemble to element map
@@ -78,7 +81,7 @@ class mapper:
         i = 0
 
         if self.debug:
-            print('sorted element points:', ep)
+            log.debug('sorted element points:', ep)
 
         # account for points connected to hanging nodes
         while ep[i][0] == -1:
@@ -89,7 +92,7 @@ class mapper:
         for j in range(i, len(ep)):
 
             if self.debug:
-                print('mapping ep:', ep[j])
+                log.debug('mapping ep:', ep[j])
 
             # loop through each element point in the connectivity dict
             (e, p) = ep[j]
@@ -97,7 +100,7 @@ class mapper:
             if (e, p) not in assigned:
 
                 if self.debug:
-                    print('assigning global', gp, 'to', [(e, p)] + self.field.mesh.connectivity[(e, p)])
+                    log.debug('assigning global', gp, 'to', [(e, p)] + self.field.mesh.connectivity[(e, p)])
 
                 # update ensemble to element map
                 try:
@@ -126,15 +129,15 @@ class mapper:
                     assigned.append((ec, pc))
 
                 if self.debug:
-                    print('assigned:', assigned)
+                    log.debug('assigned:', assigned)
                 gp += 1
 
         if self.debug:
-            print('element to ensemble map:', self._element_to_ensemble_map)
+            log.debug('element to ensemble map:', self._element_to_ensemble_map)
 
         # map hanging points
         if self.debug:
-            print('i:', i)
+            log.debug('i:', i)
         # for each hanging point
         for h in range(i):
             hp = self.field.mesh.hanging_points[h]
@@ -154,11 +157,11 @@ class mapper:
             # if local
             weights = self.field.basis[self.field.mesh.elements[host_element].type].eval(host_element_c)
             if self.debug:
-                print('host_element_c:', host_element_c, 'weights:', weights)
-                print('host_gp:', host_gp)
+                log.debug('host_element_c:', host_element_c, 'weights:', weights)
+                log.debug('host_gp:', host_gp)
 
             if isinstance(weights, int):
-                print('ERROR: mapper._map_ensemble_to_element: unable to evaluate weights')
+                log.debug('ERROR: mapper._map_ensemble_to_element: unable to evaluate weights')
                 return
             else:
                 # update maps for connected element points

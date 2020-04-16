@@ -14,7 +14,11 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 ################################################################################
 # Create some data
+import logging
+
 import numpy
+
+log = logging.getLogger(__name__)
 
 elements = 3
 height = 10
@@ -80,7 +84,7 @@ class MvtPicker(object):
         self.mouse_mvt = True
 
     def on_button_release(self, obj, evt):
-        print('release!')
+        log.debug('release!')
         if not self.mouse_mvt:
             x, y = obj.GetEventPosition()
             self.picker.pick((x, y, 0), fig.scene.renderer)
@@ -89,7 +93,7 @@ class MvtPicker(object):
             tmp = (self.points_plot.mlab_source.points - self.picker.pick_position) ** 2.0
             # find nearest data point
             nearest_point = tmp.sum(axis=1).argmin()
-            print('nearest point:', nearest_point)
+            log.debug('nearest point:', nearest_point)
             self.picked_points.append(nearest_point)
 
         self.mouse_mvt = False
@@ -98,13 +102,13 @@ class MvtPicker(object):
         obj = tvtk.to_tvtk(obj)
         picked = obj.actors
 
-        print('point number', obj.point_id)
-        print('point coordinates', obj.pick_position)
+        log.debug('point number', obj.point_id)
+        log.debug('point coordinates', obj.pick_position)
         # calculate distance to all data points from picked point
         tmp = (self.points_plot.mlab_source.points - obj.pick_position) ** 2.0
         # find nearest data point
         nearest_point = tmp.sum(axis=1).argmin()
-        print('nearest point:', nearest_point)
+        log.debug('nearest point:', nearest_point)
         self.picked_points.append(nearest_point)
 
         return None

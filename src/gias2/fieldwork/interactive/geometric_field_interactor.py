@@ -11,12 +11,15 @@ License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
+import logging
 
 import numpy as np
 from mayavi import mlab
 from tvtk.api import tvtk
 
 from gias2.fieldwork.field.tools import spline_tools
+
+log = logging.getLogger(__name__)
 
 
 class point_picker(object):
@@ -63,12 +66,12 @@ class point_picker(object):
             tmp = (self.points_plot.mlab_source.points - self.picker.pick_position) ** 2.0
             # find nearest data point
             nearest_point = tmp.sum(axis=1).argmin()
-            print('point:', nearest_point)
+            log.debug('point:', nearest_point)
             self.picked_points.append(nearest_point)
-            print('points picked:', self.picked_points)
+            log.debug('points picked:', self.picked_points)
 
             if len(self.picked_points) == self.n:
-                print('adding element...')
+                log.debug('adding element...')
                 self.parent._picking_done()
                 self.mouse_mvt = False
                 return
@@ -151,7 +154,7 @@ class point_picker_3(object):
         if self.do_callback:
 
             p = obj.GetPickPosition()
-            print(p)
+            log.debug(p)
             self.picked_points[self.pickedn, :] = p
             self.pickedn += 1
 
@@ -274,7 +277,7 @@ class element_adder(object):
         self.element = element
         # get number of points needed
         element_points = self.element.get_number_of_ensemble_points()
-        print('element requires', element_points, 'points.')
+        log.debug('element requires', element_points, 'points.')
 
         self.picker.set_number_of_points_to_pick(element_points)
         mlab.show()
@@ -284,7 +287,7 @@ class element_adder(object):
         numbers. Re-draws the field plot with the new element """
 
         if self.gf.add_element(self.element, self.picker.picked_points):
-            print('element_added')
+            log.debug('element_added')
             self.field_plot.remove()
             self.field_plot = self.gf._plot_field(10, glyph='sphere')
 
@@ -362,7 +365,7 @@ class element_adder_data(object):
         self.element = element
         # get number of points needed
         element_points = self.element.get_number_of_ensemble_points()
-        print('element requires', element_points, 'points.')
+        log.debug('element requires', element_points, 'points.')
         self.picker.set_number_of_points_to_pick(element_points)
         self.picker.set_callback_mode('add_element')
         self.picker.do_callback = 1
@@ -375,7 +378,7 @@ class element_adder_data(object):
         one line element.
         """
         self.curve = curve
-        print('pick curve start and end positions')
+        log.debug('pick curve start and end positions')
         self.picker.set_number_of_points_to_pick(2)
         self.picker.set_callback_mode('add_curve')
         self.picker.do_callback = 1
@@ -386,7 +389,7 @@ class element_adder_data(object):
     def _add_element_callback(self, picked_points):
         p = np.array(picked_points).transpose()[:, :, np.newaxis]
         if self.gf.add_element_with_parameters(self.element, p):
-            print('element added')
+            log.debug('element added')
         return 1
 
     def _modify_point_callback(self, picked_points):
@@ -408,7 +411,7 @@ class element_adder_data(object):
         try:
             pathPoints, pathCloud = self.crawler.trace(picked_points[0], picked_points[1], debug=0)
         except RuntimeError:
-            print('could not find path between points', picked_points)
+            log.debug('could not find path between points', picked_points)
             return
         else:
             # initialise curve p0

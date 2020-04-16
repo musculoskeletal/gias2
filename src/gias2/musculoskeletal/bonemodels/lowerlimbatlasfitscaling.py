@@ -12,6 +12,7 @@ License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
+import logging
 
 import numpy as np
 import sys
@@ -19,6 +20,8 @@ from scipy import optimize
 
 from gias2.musculoskeletal.bonemodels import modelcore
 from gias2.registration import alignment_fitting
+
+log = logging.getLogger(__name__)
 
 
 # import pdb
@@ -99,7 +102,7 @@ def _lower_limb_atlas_landmark_fit_multi_scaling(ll_model, target_landmark_coord
         # calc sum of squared distance between target and source landmarks
         ssdist = ((target_landmark_coords - source_x) ** 2.0).sum()
 
-        # print(('SSDist: {:12.6f}'.format(ssdist)))
+        # log.debug(('SSDist: {:12.6f}'.format(ssdist)))
         sys.stdout.write('SSDist: {:12.6f}\r'.format(ssdist))
         sys.stdout.flush()
 
@@ -183,7 +186,7 @@ def _lower_limb_atlas_landmark_fit_uniform_scaling(ll_model, target_landmark_coo
         # calc sum of squared distance between target and source landmarks
         ssdist = ((target_landmark_coords - source_x) ** 2.0).sum()
 
-        # print(('SSDist: {:12.6f}'.format(ssdist)))
+        # log.debug(('SSDist: {:12.6f}'.format(ssdist)))
         sys.stdout.write('SSDist: {:12.6f}\r'.format(ssdist))
         sys.stdout.flush()
 
@@ -302,7 +305,7 @@ def fit(ll_model, target_landmark_coords, landmark_names,
     if not multi_fit:
         # run single fit
         if verbose:
-            print('Running single lower limb fit')
+            log.debug('Running single lower limb fit')
 
         if uniform_scale:
             return _lower_limb_atlas_landmark_fit_uniform_scaling(
@@ -316,7 +319,7 @@ def fit(ll_model, target_landmark_coords, landmark_names,
     else:
         # run multi-stage fit
         if verbose:
-            print(('Running {}-stage lower limb fit'.format(n_iterations)))
+            log.debug(('Running {}-stage lower limb fit'.format(n_iterations)))
 
         x_history = []
         opt_landmark_dist = []
@@ -365,10 +368,10 @@ def fit(ll_model, target_landmark_coords, landmark_names,
                     raise ValueError('Uniform fit cannot follow multiscale fit')
 
             if verbose:
-                print(('it: {}'.format(it + 1)))
-                print(('scaling: {}'.format(bones_to_scale[it])))
-                print(('minargs: {}'.format(minimise_args[it])))
-                print(('x0: {}'.format(x0)))
+                log.debug(('it: {}'.format(it + 1)))
+                log.debug(('scaling: {}'.format(bones_to_scale[it])))
+                log.debug(('minargs: {}'.format(minimise_args[it])))
+                log.debug(('x0: {}'.format(x0)))
 
             if uniform_scale:
                 previous_uniform_scale = True
@@ -390,6 +393,6 @@ def fit(ll_model, target_landmark_coords, landmark_names,
             output_info.append(info_it)
 
             if verbose:
-                print(('it: {}, landmark rmse: {}'.format(it + 1, opt_rmse_it)))
+                log.debug(('it: {}, landmark rmse: {}'.format(it + 1, opt_rmse_it)))
 
     return x_history, opt_landmark_dist, opt_landmark_rmse, output_info

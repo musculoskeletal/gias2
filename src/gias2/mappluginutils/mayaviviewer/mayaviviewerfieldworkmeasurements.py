@@ -11,10 +11,13 @@ License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
+import logging
 
 import numpy as np
 
 from gias2.mappluginutils.mayaviviewer import MayaviViewerSceneObject, MayaviViewerObject
+
+log = logging.getLogger(__name__)
 
 
 class MayaviViewerFieldworkMeasurementsSceneObject(MayaviViewerSceneObject):
@@ -57,7 +60,7 @@ class MayaviViewerFemurMeasurements(MayaviViewerObject):
         self._text2d = text2d
         self.sceneObject = None
 
-        print('FEMUR MEASUREMENT INITIALISED')
+        log.debug('FEMUR MEASUREMENT INITIALISED')
 
     def setVisibility(self, visible):
         self.sceneObject.setVisibility(visible)
@@ -72,7 +75,7 @@ class MayaviViewerFemurMeasurements(MayaviViewerObject):
 
     def draw(self, scene):
 
-        print('DRAWING MEASUREMENTS')
+        log.debug('DRAWING MEASUREMENTS')
         self.sceneObject = MayaviViewerFieldworkMeasurementsSceneObject(self.name)
 
         # draw axes
@@ -109,7 +112,7 @@ class MayaviViewerFemurMeasurements(MayaviViewerObject):
 
     def _addText3D(self, scene, name, value, unit, mOrigin, offset):
 
-        print('DRAWING 3D TEXT')
+        log.debug('DRAWING 3D TEXT')
 
         textOrigin = np.array(mOrigin) + np.array(offset)
         textLine = np.array([mOrigin, textOrigin]).T

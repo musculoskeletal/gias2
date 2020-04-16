@@ -11,7 +11,7 @@ License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
-
+import logging
 import xml.etree.cElementTree as ET
 
 import numpy as np
@@ -21,6 +21,8 @@ from gias2.common import transform3D
 from gias2.fieldwork.field import geometric_field
 from gias2.learning import PCA
 from gias2.musculoskeletal import fw_model_landmarks as model_landmarks
+
+log = logging.getLogger(__name__)
 
 
 # ===========================================#
@@ -407,7 +409,7 @@ class MultiBoneAtlas(object):
         self.models = {}
         self.model_elem_map = {}
         for mn in model_names:
-            print(('loading models: {}'.format(mn)))
+            log.debug(('loading models: {}'.format(mn)))
             self.models[mn] = model_classes[mn](
                 mn,
                 geometric_field.load_geometric_field(

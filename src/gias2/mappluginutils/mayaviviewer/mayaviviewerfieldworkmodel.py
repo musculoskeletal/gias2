@@ -11,11 +11,14 @@ License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
+import logging
 
 import numpy as np
 
 from gias2.fieldwork.field import geometric_field
 from gias2.mappluginutils.mayaviviewer import MayaviViewerSceneObject, MayaviViewerObject, colours
+
+log = logging.getLogger(__name__)
 
 
 class MayaviViewerFieldworkModelSceneObject(MayaviViewerSceneObject):
@@ -117,23 +120,23 @@ class MayaviViewerFieldworkModel(MayaviViewerObject):
             T = self.model.triangulator._triangulate(self.discret)
 
             if self.mergeGFVertices:
-                print(np.unique(T).shape)
-                print(np.where(P == 0.0)[0].shape)
+                log.debug(np.unique(T).shape)
+                log.debug(np.where(P == 0.0)[0].shape)
 
                 P, T, self._uniqueVertexIndices, vertMap = self.model.triangulator._mergePoints2(P.T)
                 P = P.T
 
-                print(np.unique(T).shape)
-                print(np.where(P == 0.0)[0].shape)
+                log.debug(np.unique(T).shape)
+                log.debug(np.where(P == 0.0)[0].shape)
 
                 if S != None:
                     S = S[self.uniqueVertexIndices]
 
             if (S == None) or (S == 'none'):
-                print('S = None')
+                log.debug('S = None')
                 mayaviMesh = scene.mlab.triangular_mesh(P[0], P[1], P[2], T, name=self.name, **self.renderArgs)
             else:
-                print(S)
+                log.debug(S)
                 mayaviMesh = scene.mlab.triangular_mesh(P[0], P[1], P[2], T, scalars=S, name=self.name,
                                                         **self.renderArgs)
 

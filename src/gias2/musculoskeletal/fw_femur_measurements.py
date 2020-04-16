@@ -15,6 +15,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 """
 
 import copy
+import logging
 import pickle
 
 import numpy as np
@@ -24,6 +25,8 @@ from scipy.spatial import distance
 from gias2.common import geoprimitives as FT
 from gias2.musculoskeletal import fw_model_landmarks as fml
 from gias2.registration import alignment_analytic as alignment
+
+log = logging.getLogger(__name__)
 
 
 def _norm(v):
@@ -199,7 +202,7 @@ class FemurMeasurements(object):
         m = list(self.measurements.keys())
         m.sort()
         for mi in m:
-            print('{} : {}'.format(mi, self.measurements[mi].value))
+            log.debug('{} : {}'.format(mi, self.measurements[mi].value))
 
     def _evaluateGF(self):
         self.EP = self.GF.evaluate_geometric_field(self.epD).T
@@ -848,11 +851,11 @@ class NeckMinXSectionFit(object):
         ftol = 1e-6
 
         # ~ X0 = np.hstack( (t, initialN) )
-        print('initP:', initialP)
-        print('initN:', initialN)
+        log.debug('initP:', initialP)
+        log.debug('initN:', initialN)
 
         X0 = np.hstack((initialP, initialN))
-        print('\nStarting neck search')
+        log.debug('\nStarting neck search')
         if self.useCallback:
             callBack = self._callback
             callBack(X0)
@@ -885,7 +888,7 @@ class NeckMinXSectionFit(object):
         # ~ X0 = np.hstack( (t, initialN) )
         self.planeN = N
         X0 = initialP
-        print('\nStarting neck search')
+        log.debug('\nStarting neck search')
         if self.useCallback:
             callBack = self._callbackFixedN
             callBack(X0)

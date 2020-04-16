@@ -11,7 +11,7 @@ License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
-
+import logging
 import shelve
 
 import numpy
@@ -23,10 +23,12 @@ from gias2.common import transform3D
 from gias2.mesh import inp
 from gias2.registration import alignment_analytic as alignment
 
+log = logging.getLogger(__name__)
+
 try:
     from mayavi import mlab
 except ImportError:
-    print('WARNING: Mayavi not installed, simpleMesh.disp will not work')
+    log.debug('WARNING: Mayavi not installed, simpleMesh.disp will not work')
 
 
 def _loadSimpleMesh(filename):
@@ -197,7 +199,7 @@ class SimpleMesh(object):
         each vertex V. r is the number of vertices away from V.
         """
 
-        print('finding neighbourhoods of size {}'.format(r))
+        log.debug('finding neighbourhoods of size {}'.format(r))
         self.neighbourhoodSize = r
         self.neighbourFaces = []
         self.neighbourVertices = []
@@ -222,7 +224,7 @@ class SimpleMesh(object):
         for each vertex, get the set of its neighbouring vertices
         and faces.
         """
-        print('setting 1-ring for vertices')
+        log.debug('setting 1-ring for vertices')
         self.faces1Ring = {}
         self.vertices1Ring = {}
         for fi, f in enumerate(self.f):
@@ -249,7 +251,7 @@ class SimpleMesh(object):
         if not self.has1Ring:
             self.set1Ring()
 
-        print('setting 1-ring for faces')
+        log.debug('setting 1-ring for faces')
 
         faces_1ring_faces = {}
         # share_edge_sets = [None, None, None]
@@ -318,7 +320,7 @@ class SimpleMesh(object):
         all neighbouring vertices up to nsize edges away.
         """
         # self.saliencyCoeff = saliencyCoeff
-        print('calculating normals...')
+        log.debug('calculating normals...')
 
         self.calcFaceProperties()
         if not self.has1Ring:
@@ -371,7 +373,7 @@ class SimpleMesh(object):
             try:
                 l, e = eigh(V)
             except ValueError:
-                print('WARNING: singular V for vertex', vi)
+                log.debug('WARNING: singular V for vertex', vi)
                 l = numpy.zeros(3)
                 e = numpy.eye(3)
             else:
@@ -415,7 +417,7 @@ class SimpleMesh(object):
         Orient vertex normals to be consistent
         """
 
-        print('filtering normals...')
+        log.debug('filtering normals...')
         aligned = numpy.zeros(len(self.v), dtype=bool)
         # front = set([0])
         front = set([self.f.min(), ])
@@ -527,14 +529,14 @@ class SimpleMesh(object):
         else:
             self.set1Ring()
 
-            print('finding boundary vertices')
+            log.debug('finding boundary vertices')
             boundaryVertexInd = []
             for vi in range(len(self.v)):
                 try:
                     if len(self.vertices1Ring[vi]) != len(self.faces1Ring[vi]):
                         boundaryVertexInd.append(vi)
                 except KeyError:
-                    print("WARNING: no neighbours for vertex", vi)
+                    log.debug("WARNING: no neighbours for vertex", vi)
                     pass
 
             self.boundaryVertexInd = boundaryVertexInd

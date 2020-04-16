@@ -12,9 +12,12 @@ License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
+import logging
 
 from numpy import array, hstack, where, argwhere, sort, histogram, digitize, zeros, exp, unique
 from scipy.spatial import cKDTree
+
+log = logging.getLogger(__name__)
 
 
 def filterCurv(C, cMin, cMax):
@@ -91,7 +94,7 @@ def matchBins(x, yPD):
             # ~ pd = n / (lenX * (xSorted[xI] - lBin) )
             pd = n / lenX
 
-        print(pd, lBin, ypd, xI)
+        log.debug(pd, lBin, ypd, xI)
         n = 0
         lBin = xSorted[xI]
 
@@ -106,7 +109,7 @@ def matchBins2(x, yCDF):
     """
     xSorted = sort(x)
     xCDF = (yCDF * len(x)).astype(int) - 1
-    print(xCDF)
+    log.debug(xCDF)
     xBinsNew = xSorted[xCDF]
 
     return hstack((xSorted[0], xBinsNew))
@@ -187,7 +190,7 @@ def smoothCurvField1(points, curvature):
         W = W / W.sum()
         # calculate smoothed curvature at point - weighted average
         newCurv[i] = (cNeigh * W).sum()
-        print(dNeigh)
+        log.debug(dNeigh)
 
     return newCurv
 

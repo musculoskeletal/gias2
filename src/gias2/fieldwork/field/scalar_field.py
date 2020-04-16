@@ -13,6 +13,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 """
 
 import copy
+import logging
 import shelve
 
 import itertools
@@ -23,6 +24,8 @@ from scipy.optimize import leastsq
 from scipy.spatial import cKDTree
 
 from gias2.fieldwork.field import ensemble_field_function as EFF
+
+log = logging.getLogger(__name__)
 
 
 def loadScalarField(filename, ensFilename=None, meshFilename=None, path=None):
@@ -429,7 +432,7 @@ def fitScalarFieldEPDP(SF, data, evalD, ftol=None, xtol=None, epsfcn=None, maxit
         d = data - v
         d *= d
         # ~ print 'it:', it, ' rms:', numpy.sqrt( d.mean() )
-        print('rms:', numpy.sqrt(d.mean()))
+        log.debug('rms:', numpy.sqrt(d.mean()))
         # ~ it+=1
         return d * d
 
@@ -454,7 +457,7 @@ def fitScalarFieldDPEP(SF, data, evalD, dpepi, ftol=None, xtol=None, epsfcn=None
         d = data - v
         d *= d
         # ~ print 'it:', it, ' rms:', numpy.sqrt( d.mean() )
-        print('rms:', numpy.sqrt(d.mean()))
+        log.debug('rms:', numpy.sqrt(d.mean()))
         # ~ it+=1
         return d
 

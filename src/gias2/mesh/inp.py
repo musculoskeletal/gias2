@@ -13,8 +13,12 @@ License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
+import logging
 
 import numpy as np
+
+log = logging.getLogger(__name__)
+
 
 COMMENTCHARS = '**'
 ELEMNODES = {'C3D8R': 8,
@@ -241,7 +245,7 @@ class InpReader(object):
                 else:
                     doScan = 0
 
-            print(('loaded %d nodes' % (len(nodes))))
+            log.debug(('loaded %d nodes' % (len(nodes))))
 
         return nodeNumbers, nodes
 
@@ -314,7 +318,7 @@ class InpReader(object):
                     else:
                         doScan = 0
 
-            print(('loaded %s %s elements' % (len(elems), elemType)))
+            log.debug(('loaded %s %s elements' % (len(elems), elemType)))
 
         # get only nodes of the mesh
         _nodesDict = dict(zip(nodeNumbers, nodes))
@@ -429,7 +433,7 @@ class InpReader(object):
                     else:
                         doScan = 0
 
-            print(('loaded %s %s elements' % (len(elems), elemType)))
+            log.debug(('loaded %s %s elements' % (len(elems), elemType)))
 
         return elemNumbers, elems, elemType
 
@@ -458,7 +462,7 @@ class InpReader(object):
                 else:
                     doScan = 0
 
-            print('loaded {} elements in elset {}'.format(len(elset), name))
+            log.debug('loaded {} elements in elset {}'.format(len(elset), name))
 
         return elset
 

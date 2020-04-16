@@ -11,16 +11,19 @@ License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
+import logging
 
 from numpy import array, sort, where, unique, zeros, arange
 from scipy.spatial import cKDTree
 from scipy.spatial.distance import pdist, squareform
 from scipy.special import comb
 
+log = logging.getLogger(__name__)
+
 try:
     from mayavi import mlab
 except ImportError:
-    print('WARNING: Mayavi not imported, no 3-D visualisation')
+    log.debug('WARNING: Mayavi not imported, no 3-D visualisation')
 
 
 class mesh_triangulator(object):
@@ -247,7 +250,7 @@ def findDuplicatePointsTree(P):
 
             uniqueCount += 1
 
-    print(uniqueCount, 'unique points')
+    log.debug(uniqueCount, 'unique points')
 
     return dupGroups, dupMap
 
@@ -284,7 +287,7 @@ def findDuplicatePoints2(P):
 
             uniqueCount += 1
 
-    print(uniqueCount, 'unique points')
+    log.debug(uniqueCount, 'unique points')
 
     return dupGroups, dupMap
 
@@ -334,7 +337,7 @@ def findDuplicatePoints3(P):
         skip[nPoints - 1] = True
         uniqueCount += 1
 
-    print(uniqueCount, 'unique points')
+    log.debug(uniqueCount, 'unique points')
 
     return dupGroups, dupMap
 

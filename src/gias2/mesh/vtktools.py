@@ -13,6 +13,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 """
 
 import copy
+import logging
 import pickle
 import warnings
 from os import path
@@ -24,6 +25,8 @@ from vtk.util import numpy_support
 
 from gias2.mesh import plywriter
 from gias2.mesh import simplemesh
+
+log = logging.getLogger(__name__)
 
 
 class Writer(object):
@@ -356,7 +359,7 @@ class Reader(object):
         self._nPoints = P.GetNumberOfTuples()
 
         if self.verbose:
-            print('loading %(np)i points in %(d)i dimensions' % {'np': self._nPoints, 'd': self._dimensions})
+            log.debug('loading %(np)i points in %(d)i dimensions' % {'np': self._nPoints, 'd': self._dimensions})
 
         self._points = numpy_support.vtk_to_numpy(P)
 
@@ -382,7 +385,7 @@ class Reader(object):
         self._triangles = X[:, 1:].copy()
 
         if self.verbose:
-            print('loaded %(f)i faces' % {'f': self._nFaces})
+            log.debug('loaded %(f)i faces' % {'f': self._nFaces})
 
     def _loadVertexNormals(self):
         ptsNormals = self.polydata.GetPointData().GetNormals()
@@ -394,7 +397,7 @@ class Reader(object):
             self._vertexNormals = None
 
         if self.verbose:
-            print('loaded %(f)i vertex normals' % {'f': self._nVertexNormals})
+            log.debug('loaded %(f)i vertex normals' % {'f': self._nVertexNormals})
 
     def getSimplemesh(self):
         S = simplemesh.SimpleMesh(self._points, self._triangles)
@@ -423,7 +426,7 @@ class PolydataReader:
         self.fileName = filename
 
     def loadData(self):
-        print("opening", self.fileName)
+        log.debug("opening", self.fileName)
         self.file = open(self.fileName, "r")
         self.file.seek(0, 2)
         self.fileEnd = self.file.tell()
@@ -437,10 +440,10 @@ class PolydataReader:
                 foundNumPoints = True
                 line = line.split()
                 self.numPoints = int(line[1])
-                print(str(self.numPoints) + " points in file")
+                log.debug(str(self.numPoints) + " points in file")
 
         if foundNumPoints == False:
-            print("Unable to find number of points!")
+            log.debug("Unable to find number of points!")
 
             # determine number of faces in the data
         self.file.seek(0)
@@ -451,17 +454,17 @@ class PolydataReader:
                 foundNumFaces = True
                 line = line.split()
                 self.numFaces = int(line[1])
-                print(str(self.numFaces) + " faces in file")
+                log.debug(str(self.numFaces) + " faces in file")
 
         if foundNumFaces == False:
-            print("Unable to find number of Faces!")
+            log.debug("Unable to find number of Faces!")
 
     def getPoints(self):
 
         try:
             self.numPoints
         except AttributeError:
-            print("number of points unknown. Run .loadData() first")
+            log.debug("number of points unknown. Run .loadData() first")
         else:
             self.file.seek(0)
             foundPoints = False
@@ -471,7 +474,7 @@ class PolydataReader:
                 line = self.file.readline()
                 if line.find("POINTS") > -1:
                     foundPoints = True
-                    print("getting points...")
+                    log.debug("getting points...")
                     self.points = zeros([self.numPoints, 3], dtype=float)
                     pointCounter = 0
 
@@ -482,18 +485,18 @@ class PolydataReader:
                             self.points[pointCounter, :] = pointLine[0 + 3 * a:3 + 3 * a]
                             pointCounter += 1
 
-                    print("Got " + str(self.points.shape[0]) + " points")
+                    log.debug("Got " + str(self.points.shape[0]) + " points")
                     return self.points
 
             if foundPoints == False:
-                print("No points found!")
+                log.debug("No points found!")
 
     def getPointNormals(self):
 
         try:
             self.numPoints
         except AttributeError:
-            print("number of points unknown. Run .loadData() first")
+            log.debug("number of points unknown. Run .loadData() first")
         else:
             self.file.seek(0)
             foundNormals = False
@@ -503,7 +506,7 @@ class PolydataReader:
                 line = self.file.readline()
                 if line.find("NORMALS") > -1:
                     foundNormals = True
-                    print("getting point normals...")
+                    log.debug("getting point normals...")
                     self.pointNormals = zeros([self.numPoints, 3], dtype=float)
                     normalCounter = 0
 
@@ -514,17 +517,17 @@ class PolydataReader:
                             self.pointNormals[normalCounter, :] = normalLine[0 + 3 * a:3 + 3 * a]
                             normalCounter += 1
 
-                    print("Got " + str(self.pointNormals.shape[0]) + " point normals")
+                    log.debug("Got " + str(self.pointNormals.shape[0]) + " point normals")
                     return self.pointNormals
 
             if foundNormals == False:
-                print("No point Normals found!")
+                log.debug("No point Normals found!")
 
     def getFaces(self):
         try:
             self.numFaces
         except AttributeError:
-            print("number of faces unknown. Run .loadData() first")
+            log.debug("number of faces unknown. Run .loadData() first")
         else:
             self.file.seek(0)
             foundFaces = False
@@ -534,7 +537,7 @@ class PolydataReader:
                 line = self.file.readline()
                 if line.find("POLYGONS") > -1:
                     foundFaces = True
-                    print("getting faces...")
+                    log.debug("getting faces...")
                     self.faces = zeros([self.numFaces, 3], dtype=int)
                     faceCounter = 0
 
@@ -544,18 +547,18 @@ class PolydataReader:
                         self.faces[faceCounter, :] = faceLine[1:4]
                         faceCounter += 1
 
-                    print("Got " + str(self.faces.shape[0]) + " faces")
+                    log.debug("Got " + str(self.faces.shape[0]) + " faces")
                     return self.faces
 
             if foundFaces == False:
-                print("No faces found!")
+                log.debug("No faces found!")
 
     def getCurvature(self):
 
         try:
             self.numPoints
         except AttributeError:
-            print("number of points unknown. Run .loadData() first")
+            log.debug("number of points unknown. Run .loadData() first")
         else:
             self.file.seek(0)
             foundCurv = False
@@ -565,7 +568,7 @@ class PolydataReader:
                 line = self.file.readline()
                 if line.find("Curvature") > -1:
                     foundCurv = True
-                    print("Getting curvature values...")
+                    log.debug("Getting curvature values...")
 
                     self.curv = zeros([self.numPoints], dtype=float)
                     curvCounter = 0
@@ -579,11 +582,11 @@ class PolydataReader:
 
                     self.curvMean = self.curv.mean()
                     self.curvSD = self.curv.std()
-                    print("Got " + str(self.curv.shape[0]) + " curvature values")
+                    log.debug("Got " + str(self.curv.shape[0]) + " curvature values")
                     return self.curvMean, self.curvSD
 
             if foundCurv == False:
-                print("No curvature values found!")
+                log.debug("No curvature values found!")
 
     def getEdgePoints(self, sd):
 
@@ -606,7 +609,7 @@ class PolydataReader:
                     self.edgePoints.append(self.points[i])
                     counter += 1
 
-            print(str(counter) + " edge points found at " + str(sd) + " SD")
+            log.debug(str(counter) + " edge points found at " + str(sd) + " SD")
             return self.edgePoints
 
 
@@ -651,10 +654,10 @@ def array2vtkImage(arrayImage, dtype, flipDim=False, retImporter=False, extent=N
     arr = array(arrayImage, dtype=dtype, order='C')
 
     if dtype == int16:
-        # print('setting data scalar to int16')
+        # log.debug('setting data scalar to int16')
         imageImporter.SetDataScalarTypeToShort()
     elif dtype == uint8:
-        # print('setting data scalar to uint8')
+        # log.debug('setting data scalar to uint8')
         imageImporter.SetDataScalarTypeToUnsignedChar()
     else:
         raise ValueError('Unsupported datatype {}'.format(dtype))
@@ -854,7 +857,7 @@ def polygons2Polydata(vertices, faces, vcolours=None, fcolours=None, vnormals=No
         )
         P.GetPointData().SetNormals(vtk_vnormals)
         P.Modified()
-        print('normals set')
+        log.debug('normals set')
 
     return P
 
@@ -888,7 +891,7 @@ def polygons2Tri(vertices, faces, clean=False, normals=False):
 
     # clean mesh
     if clean:
-        print("cleaning...")
+        log.debug("cleaning...")
         cleaner = vtk.vtkCleanPolyData()
         if vtk.VTK_MAJOR_VERSION < 6:
             cleaner.SetInput(getPreviousOutput())
@@ -904,7 +907,7 @@ def polygons2Tri(vertices, faces, clean=False, normals=False):
 
     # filter normals
     if normals:
-        print("filtering normals...")
+        log.debug("filtering normals...")
         normal = vtk.vtkPolyDataNormals()
         if vtk.VTK_MAJOR_VERSION < 6:
             normal.SetInput(getPreviousOutput())
@@ -962,7 +965,7 @@ def polydataFromImage(vtkImage, params, disp=0, pipeline=False):
 
     # testing - gaussian smoothing to binary image
     if params.smoothImage:
-        print('smoothing image...')
+        log.debug('smoothing image...')
         imageSmoother = vtk.vtkImageGaussianSmooth()
         imageSmoother.SetStandardDeviation(params.imgSmthSD)
         imageSmoother.SetRadiusFactor(params.imgSmthRadius)
@@ -978,7 +981,7 @@ def polydataFromImage(vtkImage, params, disp=0, pipeline=False):
         previousFilter = imageSmoother
 
     # triangulate image to create mesh  
-    print("extracting contour...")
+    log.debug("extracting contour...")
     # contourExtractor = vtk.vtkContourFilter()
     # contourExtractor.GenerateTrianglesOn()
     contourExtractor = vtk.vtkMarchingCubes()  # causes artefact faces in the corner of the volume
@@ -999,7 +1002,7 @@ def polydataFromImage(vtkImage, params, disp=0, pipeline=False):
     previousFilter = contourExtractor
 
     # triangle filter
-    print("filtering triangles...")
+    log.debug("filtering triangles...")
     triFilter = vtk.vtkTriangleFilter()
 
     if vtk.VTK_MAJOR_VERSION < 6:
@@ -1015,7 +1018,7 @@ def polydataFromImage(vtkImage, params, disp=0, pipeline=False):
 
     # smooth polydata
     if params.smoothIt:
-        print("smoothing...")
+        log.debug("smoothing...")
         smoother = vtk.vtkSmoothPolyDataFilter()
         smoother.SetNumberOfIterations(params.smoothIt)
         smoother.SetFeatureEdgeSmoothing(params.smoothFeatureEdge)
@@ -1044,7 +1047,7 @@ def polydataFromImage(vtkImage, params, disp=0, pipeline=False):
         # if disp:
         #   RenderPolyData( decimator.GetOutput() )
 
-        print("decimating using quadric...")
+        log.debug("decimating using quadric...")
         decimator = vtk.vtkQuadricDecimation()
         decimator.SetTargetReduction(params.deciRatio)
 
@@ -1061,7 +1064,7 @@ def polydataFromImage(vtkImage, params, disp=0, pipeline=False):
 
     # clean mesh
     if params.clean:
-        print("cleaning...")
+        log.debug("cleaning...")
         cleaner = vtk.vtkCleanPolyData()
         cleaner.SetConvertLinesToPoints(1)
         cleaner.SetConvertStripsToPolys(1)
@@ -1082,7 +1085,7 @@ def polydataFromImage(vtkImage, params, disp=0, pipeline=False):
 
     # filter normals
     if params.filterNormal:
-        print("filtering normals...")
+        log.debug("filtering normals...")
         normal = vtk.vtkPolyDataNormals()
         normal.SetAutoOrientNormals(1)
         normal.SetComputePointNormals(1)
@@ -1100,7 +1103,7 @@ def polydataFromImage(vtkImage, params, disp=0, pipeline=False):
         previousFilter = normal
 
     if params.calcCurvature:
-        print("calculating curvature...")
+        log.debug("calculating curvature...")
         curvature = vtk.vtkCurvatures()
         curvature.SetCurvatureTypeToMean()
 
@@ -1297,9 +1300,9 @@ def image2Simplemesh(imageArray, index2Coord, isoValue, deciRatio=None, smoothIt
     SMImg = simplemesh.SimpleMesh(v=V, f=T)
     SM = simplemesh.SimpleMesh(v=index2Coord(V, zShift=zShift), f=T)
     SM.data = {'vertexnormal': N}
-    print('image-to-mesh done')
-    print('vertices: {}'.format(SM.v.shape[0]))
-    print('faces: {}'.format(SM.f.shape[0]))
+    log.debug('image-to-mesh done')
+    log.debug('vertices: {}'.format(SM.v.shape[0]))
+    log.debug('faces: {}'.format(SM.f.shape[0]))
     return SM, SMImg, polydata
 
 
@@ -1394,7 +1397,7 @@ def optimiseMesh(sm, deciratio, clean=False):
     )
 
     if clean:
-        print("cleaning...")
+        log.debug("cleaning...")
         cleaner = vtk.vtkCleanPolyData()
         if vtk.VTK_MAJOR_VERSION < 6:
             cleaner.SetInput(poly)
@@ -1409,7 +1412,7 @@ def optimiseMesh(sm, deciratio, clean=False):
         getPreviousOutput = cleaner.GetOutput
 
     # decimate polydata
-    print("decimating using quadric...")
+    log.debug("decimating using quadric...")
     decimator = vtk.vtkQuadricDecimation()
     if vtk.VTK_MAJOR_VERSION < 6:
         if not clean:

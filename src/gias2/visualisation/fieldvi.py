@@ -11,11 +11,7 @@ License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
-
-try:
-    from mayavi import mlab
-except ImportError:
-    raise ImportError('Mayavi not installed')
+import logging
 
 import scipy
 from mayavi.core.ui.mayavi_scene import MayaviScene
@@ -25,6 +21,13 @@ from traitsui.api import View, Item, HGroup, HSplit, VGroup, Tabbed, EnumEditor,
     TextEditor
 from tvtk.api import tvtk
 from tvtk.pyface.scene_editor import SceneEditor
+
+try:
+    from mayavi import mlab
+except ImportError:
+    raise ImportError('Mayavi not installed')
+
+log = logging.getLogger(__name__)
 
 
 class Fieldvi(HasTraits):
@@ -390,7 +393,7 @@ class Fieldvi(HasTraits):
             del self.dataRenderArgs[name]
             del self.dataScalar[name]
         except KeyError:
-            print('data', name, 'does not exist')
+            log.debug('data', name, 'does not exist')
         else:
             self.dataList.remove(name)
             self.PCGeomList.remove[name + '::data']
@@ -583,11 +586,11 @@ class Fieldvi(HasTraits):
         self.scene.disable_render = False
 
     def _refreshGFScalars_fired(self):
-        print('refresh scalars!')
+        log.debug('refresh scalars!')
         self.GFScalarList = self.GFScalarData[self.GFList0]
 
     def _refreshTriScalars_fired(self):
-        print('refresh scalars!')
+        log.debug('refresh scalars!')
         self.triScalarList = list(self.triScalarData[self.triList0].keys())
 
     def _triVisible_changed(self):
@@ -678,7 +681,7 @@ class Fieldvi(HasTraits):
             V = coords
         renderArgs = self.triRenderArgs.get(name)
         scalar = self.triScalarData.get(name).get(self.triScalarList0)
-        # print('scalar:', scalar)
+        # log.debug('scalar:', scalar)
         try:
             if scalar is None:
                 if 'color' not in renderArgs:
@@ -792,7 +795,7 @@ class Fieldvi(HasTraits):
                 d = self.scalarData[scalarName]
             return d
         else:
-            print('ERROR: no scalar data called', scalarName)
+            log.debug('ERROR: no scalar data called', scalarName)
             return None
 
     def drawElementBoundaries(self, name, GD, evaluatorMaker, nNodesElemMap, elemBasisMap, renderArgs):
@@ -861,7 +864,7 @@ class Fieldvi(HasTraits):
                         S = S[self.uniqueVertexIndices]
 
             if (S is None) or (S == 'none'):
-                print('S = None')
+                log.debug('S = None')
                 self.sceneObjectGF[name] = self.scene.mlab.triangular_mesh(P[0], P[1], P[2], T, name=name, **renderArgs)
             else:
                 # print S
@@ -1216,21 +1219,21 @@ class Fieldvi(HasTraits):
             self.joints[0].angle = scipy.deg2rad(self.RBAX0)
             self._updateRigidBodies()
         else:
-            print('Axis 0 not defined')
+            log.debug('Axis 0 not defined')
 
     def _RBAX1_changed(self):
         if len(self.joints) > 1:
             self.joints[1].angle = scipy.deg2rad(self.RBAX1)
             self._updateRigidBodies()
         else:
-            print('Axis 1 not defined')
+            log.debug('Axis 1 not defined')
 
     def _RBAX2_changed(self):
         if len(self.joints) > 2:
             self.joints[2].angle = scipy.deg2rad(self.RBAX2)
             self._updateRigidBodies()
         else:
-            print('Axis 2 not defined')
+            log.debug('Axis 2 not defined')
 
     # =========================================================================#
     # image picker
@@ -1238,7 +1241,7 @@ class Fieldvi(HasTraits):
     def _ipw_pick_callback(self, obj, evt):
         img_coords = scipy.around(obj.GetCurrentCursorPosition()).astype(int)
         img_val = obj.GetCurrentImageValue()
-        print(('picked location: {}, value: {}'.format(img_coords, img_val)))
+        log.debug(('picked location: {}, value: {}'.format(img_coords, img_val)))
         self._ipw_picked_obj = obj
         self._ipw_picked_points.append(img_coords)
 

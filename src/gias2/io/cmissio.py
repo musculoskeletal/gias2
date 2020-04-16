@@ -11,8 +11,11 @@ License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
+import logging
 
 from numpy import array, arange, loadtxt
+
+log = logging.getLogger(__name__)
 
 
 # ======================================================================#
@@ -24,7 +27,7 @@ def readIpdataOld(fileName):
     try:
         file = open(fileName, 'r')
     except IOError:
-        print('ERROR: readIpdata: unable to open', fileName)
+        log.debug('ERROR: readIpdata: unable to open', fileName)
         return
 
     header = None
@@ -97,7 +100,7 @@ def readIpnode(fileName, extra=False):
     try:
         file = open(fileName, 'r')
     except IOError:
-        print('ERROR: ipnode_reader: unable to open', fileName)
+        log.debug('ERROR: ipnode_reader: unable to open', fileName)
         return
 
     parameters = []
@@ -142,13 +145,13 @@ def writeIpnode(templateName, writeName, header, data):
     try:
         template = open(templateName, 'r')
     except IOError:
-        print('ERROR: writeIpnode: unable to open template file', templateName)
+        log.debug('ERROR: writeIpnode: unable to open template file', templateName)
         return
 
     try:
         writeFile = open(writeName, 'w')
     except IOError:
-        print('ERROR: writeIpnode: unable to open write file', writeName)
+        log.debug('ERROR: writeIpnode: unable to open write file', writeName)
         return
 
     dataCount = 0
@@ -177,7 +180,7 @@ def readExdata(filename, fieldsToRead=None):
     try:
         f = open(filename, 'r')
     except IOError:
-        print('ERROR: unable to open', filename)
+        log.debug('ERROR: unable to open', filename)
         return
 
     # read header
@@ -260,13 +263,13 @@ def writeExdata(templateName, writeName, header, data, fields):
     try:
         template = open(templateName, 'r')
     except IOError:
-        print('ERROR: writeExdata: unable to open template file', templateName)
+        log.debug('ERROR: writeExdata: unable to open template file', templateName)
         return
 
     try:
         writeFile = open(writeName, 'w')
     except IOError:
-        print('ERROR: writeExdata: unable to open write file', writeName)
+        log.debug('ERROR: writeExdata: unable to open write file', writeName)
         return
 
     lines = template.readlines()

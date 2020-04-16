@@ -13,11 +13,13 @@ License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
+import logging
 
 import scipy
 
 import gias2.fieldwork.field.ensemble_field_function as E
 
+log = logging.getLogger(__name__)
 BASIS_TYPE = {'tri6': 'simplex_L2_L2'}
 
 
@@ -301,7 +303,7 @@ def three_quad_ring(number_of_quads, height, radius, debug=0):
     """
 
     if debug:
-        print('Generating three_quad_ring with:', number_of_quads, height, radius, '\n')
+        log.debug('Generating three_quad_ring with:', number_of_quads, height, radius, '\n')
 
     dimensions = 2
     elements = number_of_quads
@@ -474,7 +476,7 @@ def two_quad_ring(number_of_quads, height=None, radius=None):
         if isinstance(radius, float) or isinstance(radius, int):
             radius = [radius] * 3
         elif len(radius) != 3:
-            print('ERROR: radius must be scalar or 3 long')
+            log.debug('ERROR: radius must be scalar or 3 long')
             return None
 
         theta = scipy.linspace(0.0, 2.0 * scipy.pi, elements * 2 + 1)
@@ -603,7 +605,7 @@ def sphere(azimuth_divs, incline_divs, radius, inclination_max):
         # connect lower cap to closest ring, or upper cap
         for i in range(azimuth_divs * 2):
             if not sphere.connect_element_points([(0, 1 + azimuth_divs + i), (1, i)]):
-                print('ERROR: tri_shapes.sphere: connecting failed')
+                log.debug('ERROR: tri_shapes.sphere: connecting failed')
                 return None
 
         element_i += 1
@@ -613,9 +615,9 @@ def sphere(azimuth_divs, incline_divs, radius, inclination_max):
         start = ring_elements[lower_ring] * 5
         for i in range(ring_elements[lower_ring] * 4):
             if not sphere.connect_element_points([(element_i, start + i), (element_i + 1, i)]):
-                print('ERROR: tri_shapes.sphere: connecting failed:', [(element_i, start + i), (element_i + 1, i)])
-                print('start:', start)
-                print('i_range:', ring_elements[lower_ring] * 4)
+                log.debug('ERROR: tri_shapes.sphere: connecting failed:', [(element_i, start + i), (element_i + 1, i)])
+                log.debug('start:', start)
+                log.debug('i_range:', ring_elements[lower_ring] * 4)
                 return None
 
         element_i += 1
@@ -625,9 +627,9 @@ def sphere(azimuth_divs, incline_divs, radius, inclination_max):
         start = ring_elements[upper_ring + lower_rings] * 7
         for i in range(ring_elements[upper_ring + lower_rings] * 2):
             if not sphere.connect_element_points([(element_i, start + i), (element_i + 1, i)]):
-                print('ERROR: tri_shapes.sphere: connecting failed:', [(element_i, start + i), (element_i + 1, i)])
-                print('start:', start)
-                print('i_range:', ring_elements[upper_ring + lower_rings + 1] * 2)
+                log.debug('ERROR: tri_shapes.sphere: connecting failed:', [(element_i, start + i), (element_i + 1, i)])
+                log.debug('start:', start)
+                log.debug('i_range:', ring_elements[upper_ring + lower_rings + 1] * 2)
                 return None
 
         element_i += 1

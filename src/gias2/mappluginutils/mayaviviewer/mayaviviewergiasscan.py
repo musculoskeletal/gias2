@@ -11,10 +11,13 @@ License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
+import logging
 
 from mayavi import mlab
 
 from gias2.mappluginutils.mayaviviewer import MayaviViewerSceneObject, MayaviViewerObject
+
+log = logging.getLogger(__name__)
 
 
 class MayaviViewerGiasScanSceneObject(MayaviViewerSceneObject):
@@ -79,7 +82,7 @@ class MayaviViewerGiasScan(MayaviViewerObject):
         try:
             I = self.scan.I
         except AttributeError:
-            print('scan is None:', self.name)
+            log.debug('scan is None:', self.name)
 
         ISrc = mlab.pipeline.scalar_field(I, colormap=self.renderArgs['colormap'])
         slicerWidget = scene.mlab.pipeline.image_plane_widget(ISrc,

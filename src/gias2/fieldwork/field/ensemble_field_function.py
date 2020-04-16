@@ -307,7 +307,7 @@ class ensemble_field_function:
             self.map_parameters()
             return 1
         else:
-            print('ERROR: ensemble_field_function.set_mesh: mesh must be flat')
+            log.debug('ERROR: ensemble_field_function.set_mesh: mesh must be flat')
             return
 
     # ==================================================================#
@@ -326,12 +326,12 @@ class ensemble_field_function:
         if element.is_element:
             n = self.mesh.add_element(element)
             if n is None:
-                print('ERROR: ensemble_field_function.add_element: unable to add element to mesh')
+                log.debug('ERROR: ensemble_field_function.add_element: unable to add element to mesh')
                 return
         else:
             n = self._add_subfield(element)
             if n is None:
-                print('ERROR: ensemble_field_function.add_element: unable to add subfield to mesh')
+                log.debug('ERROR: ensemble_field_function.add_element: unable to add subfield to mesh')
                 return
 
         return n
@@ -350,11 +350,11 @@ class ensemble_field_function:
             if element:
                 n = self.mesh.add_element(element)
                 if n is None:
-                    print('ERROR: ensemble_field_function.create_element: unable to add element to mesh')
+                    log.debug('ERROR: ensemble_field_function.create_element: unable to add element to mesh')
                     return
                 n_all.append(n)
             else:
-                print('ERROR ensemble_field_function.create_element: unable to create element')
+                log.debug('ERROR ensemble_field_function.create_element: unable to create element')
                 return
 
         return tuple(n_all)
@@ -428,7 +428,7 @@ class ensemble_field_function:
         if self.mapper.do_mapping():
             return 1
         else:
-            print('ERROR: ensemble_field_function.map_parameters failed')
+            log.debug('ERROR: ensemble_field_function.map_parameters failed')
             return
 
     # ==================================================================#
@@ -476,7 +476,7 @@ class ensemble_field_function:
 
         # don't do anything if already flat
         if self.is_flat():
-            print('Mesh is already flat, flattening aborted')
+            log.debug('Mesh is already flat, flattening aborted')
             return self, None, None
 
         # ==============================================================#
@@ -529,7 +529,7 @@ class ensemble_field_function:
                 # a list of new element numbers of elements from submesh e_i
                 ELEMENT_MAP[e_i] = e_i_new
                 if debug:
-                    print(ELEMENT_MAP)
+                    log.debug(ELEMENT_MAP)
                     # ======================================================#
                 # use sub.mesh.connectivity to connect up subfield elements             
                 # connect non-hanging points first
@@ -548,9 +548,9 @@ class ensemble_field_function:
                             ELEMENT_POINT_MAP[(e_i, sub_ensemble_i)].append((sub_2_new_elem_map[k[0]], k[1]))
                         except KeyError:
                             if debug:
-                                print('e_i:' + str(e_i) + ' e_i_new:' + str(e_i_new) + ' k:' + str(k))
-                                print(sub_2_new_elem_map[k[0]])
-                                print(k[1])
+                                log.debug('e_i:' + str(e_i) + ' e_i_new:' + str(e_i_new) + ' k:' + str(k))
+                                log.debug(sub_2_new_elem_map[k[0]])
+                                log.debug(k[1])
                             ELEMENT_POINT_MAP[(e_i, sub_ensemble_i)] = [(sub_2_new_elem_map[k[0]], k[1])]
 
                         # if element point was connected
@@ -701,14 +701,14 @@ class ensemble_field_function:
         element_parameters = self.mapper.get_element_parameters(element, self.parameters)
 
         if element_parameters is None:
-            print(
+            log.debug(
                 'ERROR: ensemble_field_function.evaluate_field_at_element_point: unable to get element parameters from mapper')
             return None
         else:
             try:
                 point_values = element_parameters[point]
             except IndexError:
-                print('ERROR: ensemble_field_function.evaluate_field_at_element_point: invalid point in element')
+                log.debug('ERROR: ensemble_field_function.evaluate_field_at_element_point: invalid point in element')
                 return None
             else:
                 return point_values[0]
@@ -912,7 +912,7 @@ class ensemble_field_function:
         if isinstance(density, int):
             density = [density] * self.dimensions
         elif len(density) != self.dimensions:
-            print('ERROR: evaluate_field_in_element: needed', self.dimensions, 'density values. Got', len(density))
+            log.debug('ERROR: evaluate_field_in_element: needed', self.dimensions, 'density values. Got', len(density))
             return 0
 
         try:
@@ -1016,8 +1016,8 @@ class ensemble_field_function:
         positions XI
         """
         if self.debug:
-            print('element_parameters:', element_parameters)
-            print('XIs:', XI)
+            log.debug('element_parameters:', element_parameters)
+            log.debug('XIs:', XI)
 
         ## cubic hermite simplex testing ##
         # ~ if element_type == 'tri3e':
@@ -1062,7 +1062,7 @@ class ensemble_field_function:
         try:
             element = self.mesh.elements[element_number]
         except KeyError:
-            print('ERROR ensemble_field_function.get_element_point_evaluator: invalid element')
+            log.debug('ERROR ensemble_field_function.get_element_point_evaluator: invalid element')
             return None
         else:
             # if element is an element....
@@ -1074,7 +1074,7 @@ class ensemble_field_function:
             # else element is a subfield
             else:
                 # ~ evaluator = self.submesh_map[ element ].get_element_point_evaluator( element_number )
-                print('ERROR: ensemble_field_function.get_element_point_evaluator: element', element_number,
+                log.debug('ERROR: ensemble_field_function.get_element_point_evaluator: element', element_number,
                       'is a subfield')
                 return None
 
@@ -1290,7 +1290,7 @@ def load_eff_shelve(filename, E, meshfn=None, filedir=None, force=False):
                     except IOError:
                         pass
                 else:
-                    print('WARNING: no mesh loaded')
+                    log.debug('WARNING: no mesh loaded')
 
             for s in S['subfields']:
                 if s[1][:len(filedir)] == filedir:
@@ -1312,7 +1312,7 @@ def load_eff_shelve(filename, E, meshfn=None, filedir=None, force=False):
                 elif S.get('mesh'):
                     E.mesh = mesh.load_mesh(S['mesh'], path=filedir)
                 else:
-                    print('WARNING: no mesh loaded')
+                    log.debug('WARNING: no mesh loaded')
             for s in S['subfields']:
                 sub_eff = ensemble_field_function(None, None)
                 if s[1][:len(filedir)] == filedir:
@@ -1468,7 +1468,7 @@ class EFFJSONReader(object):
                 try:
                     self.eff.mesh = mesh.load_mesh(eff_dict['mesh'], path=self._file_dir)
                 except IOError:
-                    print('Mesh failed to load, ignoring.')
+                    log.debug('Mesh failed to load, ignoring.')
                     pass
         else:
             if meshfn is not None:
@@ -1476,7 +1476,7 @@ class EFFJSONReader(object):
             elif eff_dict.get('mesh'):
                 self.eff.mesh = mesh.load_mesh(eff_dict['mesh'], path=self._file_dir)
             else:
-                print('WARNING: no mesh loaded')
+                log.debug('WARNING: no mesh loaded')
 
     def _parse_subfields(self, eff_dict):
         for _sn in eff_dict['subfields']:

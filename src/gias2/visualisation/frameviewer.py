@@ -3,10 +3,13 @@ Module for viewing framesets in a matplotlib widget
 """
 
 import json
+import logging
 
 import matplotlib.pyplot as plt
 from matplotlib.image import AxesImage
 from matplotlib.widgets import Slider, Button
+
+log = logging.getLogger(__name__)
 
 
 class FrameViewer(object):
@@ -102,7 +105,7 @@ class FrameViewer(object):
             img_x = mevent.xdata
             img_y = mevent.ydata
             img_frame_num = self._frame_number()
-            print(
+            log.debug(
                 'image {} picked at {}, {}'.format(
                     img_frame_num, img_x, img_y
                 )
@@ -147,14 +150,14 @@ class FrameViewer(object):
         f = self._frame_number()
         if len(self.picked_points[f]):
             last_p = self.picked_points[f].pop()
-            print('removed point {},{}'.format(last_p[0], last_p[1]))
+            log.debug('removed point {},{}'.format(last_p[0], last_p[1]))
             self._update_picked()
 
     def _on_save(self, event):
         with open(self.pick_out_path, 'w') as f:
             json.dump(self.picked_points, f, indent=4, sort_keys=True)
-        print('picked points saved to {}'.format(self.pick_out_path))
+        log.debug('picked points saved to {}'.format(self.pick_out_path))
 
     def _on_close(self, event):
-        print('Use the window close button')
+        log.debug('Use the window close button')
         # plt.close(self.fig)

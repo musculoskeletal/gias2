@@ -12,6 +12,7 @@ License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
+import logging
 
 import numpy as np
 import sys
@@ -19,6 +20,8 @@ from scipy import optimize
 
 from gias2.musculoskeletal.bonemodels import modelcore
 from gias2.registration import alignment_fitting
+
+log = logging.getLogger(__name__)
 
 
 def _make_x0(ll, npcs, target_landmarks, source_landmarks, init_pc_weights=None):
@@ -97,7 +100,7 @@ def _lower_limb_atlas_landmark_fit(ll_model, target_landmark_coords, landmark_na
         m2 = mweight * (x_split[0] ** 2.0).sum()
         sys.stdout.write('SSDist: {:12.6f}, mdistance: {:8.5f}\r'.format(ssdist, m2))
         sys.stdout.flush()
-        # print('SSDist: {:12.6f}, mdistance: {:8.5f}'.format(ssdist, m2))
+        # log.debug('SSDist: {:12.6f}, mdistance: {:8.5f}'.format(ssdist, m2))
 
         # total error
         total_error = ssdist + m2
@@ -120,7 +123,7 @@ def _lower_limb_atlas_landmark_fit(ll_model, target_landmark_coords, landmark_na
 
     #     # calc squared mahalanobis distance
     #     m2 = mweight * (x_split[0]**2.0).sum()
-    #     print('SSDist: {:12.6f}, mdistance: {:8.5f}'.format(ssdist, m2))
+    #     log.debug('SSDist: {:12.6f}, mdistance: {:8.5f}'.format(ssdist, m2))
 
     # =========================================================================#
     # make initial parameters
@@ -136,12 +139,12 @@ def _lower_limb_atlas_landmark_fit(ll_model, target_landmark_coords, landmark_na
     #     callback = default_callback
 
     # run minimisation
-    print(' ')
+    log.debug(' ')
     opt_results_1 = optimize.minimize(lower_limb_landmark_reg_obj,
                                       x0, callback=callback,
                                       **minimise_args
                                       )
-    print(' ')
+    log.debug(' ')
     xopt1_split = _x_splitter(opt_results_1['x'])
     x_history.append(xopt1_split)
     ll_model.update_all_models(xopt1_split[0], pc_modes,
@@ -236,7 +239,7 @@ def fit(ll_model, target_landmark_coords, landmark_names,
     if not multi_fit:
         # run single fit
         if verbose:
-            print('Running single lower limb fit')
+            log.debug('Running single lower limb fit')
 
         return _lower_limb_atlas_landmark_fit(
             ll_model, target_landmark_coords, landmark_names, pc_modes,
@@ -245,7 +248,7 @@ def fit(ll_model, target_landmark_coords, landmark_names,
     else:
         # run multi-stage fit
         if verbose:
-            print(('Running {}-stage lower limb fit'.format(n_iterations)))
+            log.debug(('Running {}-stage lower limb fit'.format(n_iterations)))
 
         x_history = []
         opt_landmark_dist = []
@@ -276,11 +279,11 @@ def fit(ll_model, target_landmark_coords, landmark_names,
                     ])
 
             if verbose:
-                print(('it: {}'.format(it + 1)))
-                print(('modes: {}'.format(pc_modes[it])))
-                print(('mweight: {}'.format(mweight[it])))
-                print(('minargs: {}'.format(minimise_args[it])))
-                print(('x0: {}'.format(x0)))
+                log.debug(('it: {}'.format(it + 1)))
+                log.debug(('modes: {}'.format(pc_modes[it])))
+                log.debug(('mweight: {}'.format(mweight[it])))
+                log.debug(('minargs: {}'.format(minimise_args[it])))
+                log.debug(('x0: {}'.format(x0)))
 
             x_hist_it, opt_dist_it, opt_rmse_it, info_it = _lower_limb_atlas_landmark_fit(
                 ll_model, target_landmark_coords, landmark_names,
@@ -297,6 +300,6 @@ def fit(ll_model, target_landmark_coords, landmark_names,
             output_info.append(info_it)
 
             if verbose:
-                print(('it: {}, landmark rmse: {}'.format(it + 1, opt_rmse_it)))
+                log.debug(('it: {}, landmark rmse: {}'.format(it + 1, opt_rmse_it)))
 
     return x_history, opt_landmark_dist, opt_landmark_rmse, output_info

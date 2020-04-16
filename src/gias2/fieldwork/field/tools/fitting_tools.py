@@ -62,8 +62,8 @@ def fitAffine(data, target, xtol=1e-5, maxfev=0, sample=None, verbose=0, outputE
     dataFitted = transform3D.transformAffine(data, t)
     rmsOpt = np.sqrt(((dataFitted - target) ** 2.0).sum(1).mean())
     if verbose:
-        print('initial RMS: {}'.format(rms0))
-        print('final RMS: {}'.format(rmsOpt))
+        log.debug('initial RMS: {}'.format(rms0))
+        log.debug('final RMS: {}'.format(rmsOpt))
 
     if outputErrors:
         return t, dataFitted, (rms0, rmsOpt)
@@ -94,13 +94,13 @@ def fitTranslation(data, target, xtol=1e-5, maxfev=0, sample=None, verbose=0, ou
 
     rms0 = np.sqrt(obj(t0).mean())
     if verbose:
-        print('initial RMS: {}'.format(rms0))
+        log.debug('initial RMS: {}'.format(rms0))
 
     xOpt = leastsq(obj, t0, xtol=xtol, maxfev=maxfev)[0]
 
     rmsOpt = np.sqrt(obj(xOpt).mean())
     if verbose:
-        print('final RMS: {}'.format(rmsOpt))
+        log.debug('final RMS: {}'.format(rmsOpt))
 
     dataFitted = data + xOpt
     if outputErrors:
@@ -133,13 +133,13 @@ def fitRigid(data, target, t0=None, xtol=1e-3, maxfev=0, sample=None, verbose=0,
     t0 = np.array(t0)
     rms0 = np.sqrt(obj(t0).mean())
     if verbose:
-        print('initial RMS: {}'.format(rms0))
+        log.debug('initial RMS: {}'.format(rms0))
 
     xOpt = leastsq(obj, t0, xtol=xtol, maxfev=maxfev, epsfcn=epsfcn)[0]
 
     rmsOpt = np.sqrt(obj(xOpt).mean())
     if verbose:
-        print('final RMS: {}'.format(rmsOpt))
+        log.debug('final RMS: {}'.format(rmsOpt))
 
     dataFitted = transform3D.transformRigid3DAboutCoM(data, xOpt)
     if outputErrors:
@@ -173,13 +173,13 @@ def fitRigidFMin(data, target, t0=None, xtol=1e-3, maxfev=0, sample=None, verbos
     t0 = np.array(t0)
     rms0 = np.sqrt(obj(t0).mean())
     if verbose:
-        print('initial RMS: {}'.format(rms0))
+        log.debug('initial RMS: {}'.format(rms0))
 
     xOpt = fmin(obj, t0, xtol=xtol, maxiter=maxfev)
 
     rmsOpt = np.sqrt(obj(xOpt).mean())
     if verbose:
-        print('final RMS: {}'.format(rmsOpt))
+        log.debug('final RMS: {}'.format(rmsOpt))
 
     dataFitted = transform3D.transformRigid3DAboutCoM(data, xOpt)
     if outputErrors:
@@ -212,13 +212,13 @@ def fitRigidScale(data, target, t0=None, xtol=1e-3, maxfev=0, sample=None, verbo
     t0 = np.array(t0)
     rms0 = np.sqrt(obj(t0).mean())
     if verbose:
-        print('initial RMS: {}'.format(rms0))
+        log.debug('initial RMS: {}'.format(rms0))
 
     xOpt = leastsq(obj, t0, xtol=xtol, maxfev=maxfev)[0]
 
     rmsOpt = np.sqrt(obj(xOpt).mean())
     if verbose:
-        print('final RMS: {}'.format(rmsOpt))
+        log.debug('final RMS: {}'.format(rmsOpt))
 
     dataFitted = transform3D.transformRigidScale3DAboutCoM(data, xOpt)
     if outputErrors:
@@ -881,7 +881,7 @@ def fitSurface(gObjType, GF, data, GD, sobD, sobW, normalD, normalW,
     """
     both EPDP and DPEP
     """
-    print(xtol)
+    log.debug(xtol)
     if sobObj == None:
         sobObj = GFF.makeSobelovPenalty2D(GF, sobD, sobW)
     if nObj == None:
@@ -995,18 +995,18 @@ def fitSurfacePerItSearch(gObjType, GF, data, GD, sobD, sobW, normalD, normalW, 
     printInputs = 1
 
     if printInputs:
-        print('gObjType:', gObjType)
-        print('data shape:', data.shape)
-        print('GD:', GD)
-        print('sobD:', sobD)
-        print('sobW:', sobW)
-        print('normalD:', normalD)
-        print('normalW:', normalW)
-        print('fixedNodes:', fixedNodes)
-        print('sampleElems:', sampleElems)
-        print('xtol:', xtol)
-        print('maxIt:', itMax)
-        print('itMaxPerIt:', itMaxPerIt)
+        log.debug('gObjType:', gObjType)
+        log.debug('data shape:', data.shape)
+        log.debug('GD:', GD)
+        log.debug('sobD:', sobD)
+        log.debug('sobW:', sobW)
+        log.debug('normalD:', normalD)
+        log.debug('normalW:', normalW)
+        log.debug('fixedNodes:', fixedNodes)
+        log.debug('sampleElems:', sampleElems)
+        log.debug('xtol:', xtol)
+        log.debug('maxIt:', itMax)
+        log.debug('itMaxPerIt:', itMaxPerIt)
 
     sobObj = GFF.makeSobelovPenalty2D(GF, sobD, sobW)
     normalSmoother = GFF.normalSmoother2(GF.ensemble_field_function.flatten()[0])
@@ -1089,7 +1089,7 @@ def hostMeshFit(hostGF, slaveGF, slaveObj, slaveXi=None, maxIt=0,
     # # calc slave node xi in host
     # if slaveXi==None:
     #     if verbose:
-    #         print('calculating slave xi...')
+    #         log.debug('calculating slave xi...')
     #     slaveXi = np.array([hostGF.findXi(0, node)[0] for node in slaveGF.field_parameters[:,:,0].T])
     #     #~ pdb.set_trace()
     #     #~ savetxt( 'host_mesh_fitting/slaveXi.txt', slaveXi )
@@ -1195,11 +1195,11 @@ def hostMeshFitMulti(hostGF, slaveGF, slaveObj, slaveXi=None, maxIt=0,
     """ host mesh fit self.G using host (geometric_field) as the 
     host mesh and slaveObj as the objective function to minimise
     """
-    print('host mesh fit...')
+    log.debug('host mesh fit...')
     # calc slave node xi in host
     if slaveXi == None:
         if verbose:
-            print('calculating slave xi...')
+            log.debug('calculating slave xi...')
         slaveXi = hostGF.find_closest_material_points(slaveGF.field_parameters[:, :, 0].T,
                                                       initGD=[40, 40, 40],
                                                       verbose=False)[0]
@@ -1251,7 +1251,7 @@ def hostMeshFitMulti(hostGF, slaveGF, slaveObj, slaveXi=None, maxIt=0,
     maxf = maxIt * (hostGF.get_number_of_points() * 3)
 
     if verbose:
-        print('HMF initial rms: {}'.format(np.sqrt(hostMeshObj(hostParam0).mean())))
+        log.debug('HMF initial rms: {}'.format(np.sqrt(hostMeshObj(hostParam0).mean())))
 
     # do fit
     hostParamsOpt = leastsq(hostMeshObj, hostParam0.ravel(), xtol=xtol, maxfev=maxf)[0].reshape((3, -1, 1))
@@ -1269,7 +1269,7 @@ def hostMeshFitMulti(hostGF, slaveGF, slaveObj, slaveXi=None, maxIt=0,
     finalHostRMS = np.sqrt(hostMeshObj(hostParamsOpt.ravel().copy()).mean())
     finalSlaveRMS = np.sqrt(slaveObj(slaveParamsOpt.ravel().copy()).mean())
     if verbose:
-        print('final host rms: {}, final slave rms: {}'.format(finalHostRMS, finalSlaveRMS))
+        log.debug('final host rms: {}, final slave rms: {}'.format(finalHostRMS, finalSlaveRMS))
 
     return hostParamsOpt, slaveParamsOpt, slaveXi, finalSlaveRMS
 
@@ -1278,11 +1278,11 @@ def hostMeshFitMultiPerItSearch(data, hostGF, slaveGF, slaveGObjType, slaveGD,
                                 slaveSobD, slaveSobW, slaveND, slaveNW, hostSobD=[4, 4, 4], hostSobW=1e-5,
                                 dataWeights=None, slaveXi=None, xtol=1e-6, maxIt=5, maxItPerIt=2, treeArgs=None,
                                 fitOutputCallback=None, fixedSlaveNodes=None, verbose=True):
-    print('host mesh fit...')
+    log.debug('host mesh fit...')
     # calc slave node xi in host
     if slaveXi == None:
         if verbose:
-            print('calculating slave xi...')
+            log.debug('calculating slave xi...')
         slaveXi = hostGF.find_closest_material_points(
             slaveGF.field_parameters[:, :, 0].T,
             initGD=[40, 40, 40],
@@ -1402,11 +1402,11 @@ def hostMeshFitPoints(host_mesh, slave_points, slave_func, slave_xi=None, max_it
     slave_xi: material coordinates of slave point in host mesh
     slave_rmse_opt: RMS of fitted slave_func error vector
     """
-    print('host mesh fit...')
+    log.debug('host mesh fit...')
     # calc slave node xi in host
     if slave_xi == None:
         if verbose:
-            print('calculating slave xi...')
+            log.debug('calculating slave xi...')
         slave_xi = host_mesh.find_closest_material_points(
             slave_points,
             initGD=[100, 100, 100],
@@ -1461,7 +1461,7 @@ def hostMeshFitPoints(host_mesh, slave_points, slave_func, slave_xi=None, max_it
     maxf = max_it * (host_mesh.get_number_of_points() * 3)
 
     if verbose:
-        print(('HMF initial rms: {:6.4f}'.format(np.sqrt(host_func(host_x_0).mean()))))
+        log.debug(('HMF initial rms: {:6.4f}'.format(np.sqrt(host_func(host_x_0).mean()))))
 
     # do fit
     host_x_opt = leastsq(
@@ -1475,7 +1475,7 @@ def hostMeshFitPoints(host_mesh, slave_points, slave_func, slave_xi=None, max_it
     host_rmse_opt = np.sqrt(host_func(host_x_opt.ravel().copy()).mean())
     slave_rmse_opt = np.sqrt(slave_func(slave_points_opt).mean())
     if verbose:
-        print(('final host rms: {:6.4f}, final slave rms: {:6.4f}'.format(
+        log.debug(('final host rms: {:6.4f}, final slave rms: {:6.4f}'.format(
             host_rmse_opt,
             slave_rmse_opt
         )

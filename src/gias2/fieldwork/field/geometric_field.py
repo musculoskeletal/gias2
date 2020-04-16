@@ -14,6 +14,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import copy
 import json
+import logging
 import os
 import shelve
 import sys
@@ -34,10 +35,12 @@ from gias2.fieldwork.field.tools import misc
 from gias2.fieldwork.field.tools import triangulate
 from gias2.fieldwork.field.topology import element_types
 
+log = logging.getLogger(__name__)
+
 try:
     from mayavi import mlab
 except ImportError:
-    print('Mayavi not imported, 3D visualisation will be disabled')
+    log.debug('Mayavi not imported, 3D visualisation will be disabled')
 
 
 # !!!!breaks ASM!!!!
@@ -320,7 +323,7 @@ class geometric_field:
         if self.field_parameters is not None:
             return self.field_parameters.copy()
         else:
-            print("no field parameters set")
+            log.debug("no field parameters set")
             return None
 
             # ==================================================================#
@@ -399,7 +402,7 @@ class geometric_field:
         try:
             self.points[point_number].set_field_parameters(new_parameters)
         except KeyError:
-            print('ERROR: geometric_field.modify_geometric_point: invalid point number {}'.format(point_number))
+            log.debug('ERROR: geometric_field.modify_geometric_point: invalid point number {}'.format(point_number))
             return
         else:
             self.field_parameters[:, self.points_to_ensemble_map[point_number], :] = new_parameters
@@ -438,8 +441,8 @@ class geometric_field:
         element points of the element being added.
         """
         if debug:
-            print(self.points_to_ensemble_map)
-            print(points)
+            log.debug(self.points_to_ensemble_map)
+            log.debug(points)
 
         # check for right number of points
         element_points = element.get_number_of_ensemble_points()
@@ -460,8 +463,8 @@ class geometric_field:
                 # get element point tuple for current connection point
                 connected_eps = self.ensemble_field_function.mapper.get_ensemble_point_element_points(ensemble_point)
                 if debug:
-                    print('existing point {}'.format(p))
-                    print('connecting {} to {}'.format((e_number, ep), connected_eps))
+                    log.debug('existing point {}'.format(p))
+                    log.debug('connecting {} to {}'.format((e_number, ep), connected_eps))
 
                 # connect
                 connected_eps.append((e_number, ep))
@@ -469,7 +472,7 @@ class geometric_field:
             else:
 
                 if debug:
-                    print('new point {}'.format(p))
+                    log.debug('new point {}'.format(p))
 
                 # otherwise point maps to a new ensemble point    
                 # ~ new_ensemble_point = max( self.ensemble_to_points_map.keys() ) + 1
@@ -520,7 +523,7 @@ class geometric_field:
         element_points = element.get_number_of_ensemble_points()
         parameters = numpy.array(parameters)
         if parameters.shape[0:2] != (self.dimensions, element_points):
-            print(
+            log.debug(
                 'ERROR: geometric_field.add_element_with_parameters: parameters length/dimension mismatch. need {}/{}'.format(
                     self.dimensions, element_points
                 )
@@ -642,7 +645,7 @@ class geometric_field:
         for e in pointMap:
             ep.append((e, list(pointMap[e].keys())[0]))
 
-        print('element points to hang: {}'.format(ep))
+        log.debug('element points to hang: {}'.format(ep))
         self.ensemble_field_function.connect_to_hanging_point(elem, ep, mode, xi)
         self.ensemble_field_function.map_parameters()
 
@@ -1202,7 +1205,7 @@ class geometric_field:
         """
 
         if verbose:
-            print('searching for closest material point for %i points' % (len(dataPoints)))
+            log.debug('searching for closest material point for %i points' % (len(dataPoints)))
 
         if initGD is None:
             initGD = numpy.ones(self.ensemble_field_function.dimensions, dtype=int) * 40
@@ -1354,13 +1357,13 @@ class geometric_field:
         if self.ensemble_field_function.dimensions == 1:
             # draw curve
             if not self.ensemble_field_function.mesh.get_number_of_elements():
-                print('No field found')
+                log.debug('No field found')
             else:
                 self._draw_curve(field_eval_density, name=name, figure=f, tube_radius=0.5)
         elif self.ensemble_field_function.dimensions == 2:
             # draw surface
             if not self.ensemble_field_function.mesh.get_number_of_elements():
-                print('No field found')
+                log.debug('No field found')
             else:
                 if not curvature:
                     self._draw_surface(field_eval_density, name=name, figure=f, scalar=scalar)
@@ -1425,7 +1428,7 @@ class geometric_field:
         """ using triangulate to draw the interpolated surface
         """
         if self.field_parameters is None:
-            print('no field parameters')
+            log.debug('no field parameters')
             return
         else:
             self.triangulator.params = self.field_parameters
@@ -1435,7 +1438,7 @@ class geometric_field:
     def _draw_surface_curvature(self, field_eval_density, curvature, name, figure=None):
 
         if self.field_parameters is None:
-            print('no field parameters')
+            log.debug('no field parameters')
             return
         else:
             K, H, k1, k2 = self.evaluate_curvature_in_mesh(field_eval_density)
@@ -1448,7 +1451,7 @@ class geometric_field:
     def _draw_surface_curvature_binned(self, field_eval_density, curvature, name, bins, cMin, cMax, fig=None):
 
         if self.field_parameters is None:
-            print('no field parameters')
+            log.debug('no field parameters')
             return
         else:
             K, H, k1, k2 = self.evaluate_curvature_in_mesh(field_eval_density)
@@ -1522,7 +1525,7 @@ class geometric_field:
         """
 
         if not self.ensemble_field_function.mesh.get_number_of_elements():
-            print('No field found')
+            log.debug('No field found')
             return
         else:
             evaluation = []
@@ -2513,10 +2516,10 @@ def load_gf_shelve(filename, G, ensfn=None, meshfn=None, filedir=None, force=Fal
                 F = EFF.load_ensemble(S['ensemble_field'], meshFilename=meshfn, path=filedir)
             except IOError:
                 if force:
-                    print('WARNING: no ensemble field function loaded, ignoring.')
+                    log.debug('WARNING: no ensemble field function loaded, ignoring.')
                     F = None
         else:
-            print('WARNING: no ensemble field function loaded')
+            log.debug('WARNING: no ensemble field function loaded')
             F = None
 
         G.name = S['name']
@@ -2657,12 +2660,12 @@ class GeometricFieldJSONReader(object):
                                                                     path=self._file_dir)
             except IOError:
                 if self.force:
-                    print('Cannot open {}, ignoring'.format(gf_dict['ensemble_field']))
+                    log.debug('Cannot open {}, ignoring'.format(gf_dict['ensemble_field']))
                     pass
                 else:
                     raise IOError('Cannot open {}'.format(gf_dict['ensemble_field']))
         else:
-            print('WARNING: no ensemble field function loaded')
+            log.debug('WARNING: no ensemble field function loaded')
 
         if self.gf.ensemble_field_function is not None:
             self.gf.triangulator.f = self.gf.ensemble_field_function

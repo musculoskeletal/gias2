@@ -9,9 +9,12 @@ This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
 """
+import logging
 
 from numpy import array, dot, kron, zeros, ones, sqrt, where, newaxis
 from scipy.linalg import det
+
+log = logging.getLogger(__name__)
 
 # basis matrices of implemented bases for tensor product basis 
 basis_matrices_map = {'linear_lagrange': array([[1.0, -1.0],
@@ -221,7 +224,7 @@ class tensor_product_basis:
 
         # check x to be of right dimensionality
         if len(x) != self.dimensions:
-            print('ERROR: wrong number of xi, need', self.dimensions)
+            log.debug('ERROR: wrong number of xi, need', self.dimensions)
             return None
         else:
             # get phis for each dimension
@@ -2611,7 +2614,7 @@ class simplex_H2_H2_area:
         L = self._cart2area(x)
 
         if debug:
-            print(L)
+            log.debug(L)
 
         X = self._calc_poly(L)
         phi = dot(self.A, X)
@@ -2681,7 +2684,7 @@ class simplex_H3_H3_area:
         self.phi[7] = -self.b[1] * (l22 * l0 + L) + self.b[0] * (l1 * l22 + L)  # du2/dx1
 
         if debug:
-            print(self.phi)
+            log.debug(self.phi)
 
         return self.phi.copy()
 

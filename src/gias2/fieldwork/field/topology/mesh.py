@@ -14,12 +14,15 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 """
 
 import json
+import logging
 import os
 import shelve
 
 from numpy import linspace, sort
 
 from gias2.fieldwork.field.topology import element_types
+
+log = logging.getLogger(__name__)
 
 
 # =============================================================================#
@@ -246,14 +249,14 @@ class mesh_ensemble:
         element_points = list(self.connectivity.keys())
         element_points.sort()
         if self.debug:
-            print('sorted element points:', element_points)
+            log.debug('sorted element points:', element_points)
         for element_point in element_points:
             # check if point has already been assigned a global number
             if (element_point not in assigned):
                 # record element points assigned
                 assigned += [element_point] + self.connectivity[element_point]
                 if self.debug:
-                    print('assigned:', assigned)
+                    log.debug('assigned:', assigned)
 
                 # if not a hanging point, count as an ensemble point
                 if element_point[0] != -1:
@@ -310,10 +313,10 @@ class mesh_ensemble:
         for point in common_points:
 
             if point not in list(self.connectivity.keys()):
-                print('ERROR: toplogy.connect: point', point, 'does not exist')
+                log.debug('ERROR: toplogy.connect: point', point, 'does not exist')
                 avail_keys = list(self.connectivity.keys())
                 avail_keys.sort()
-                print('available points to connect:\n', avail_keys)
+                log.debug('available points to connect:\n', avail_keys)
                 return None
 
             other = list(common_points[:])
@@ -421,11 +424,11 @@ class mesh_ensemble:
 
                 return 1
             else:
-                print('ERROR: topology.add_hanging_point: incorrect number of element coordinates. Need',
+                log.debug('ERROR: topology.add_hanging_point: incorrect number of element coordinates. Need',
                       self.elements[host_element].dimensions, ', got', len(element_coordinates))
                 return None
         else:
-            print('ERROR: topology.add_hanging_point: element', host_element, 'does not exist')
+            log.debug('ERROR: topology.add_hanging_point: element', host_element, 'does not exist')
             return None
 
     # ==================================================================#

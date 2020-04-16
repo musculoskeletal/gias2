@@ -11,6 +11,7 @@ License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
+import logging
 import traceback
 
 import scipy
@@ -19,6 +20,8 @@ from gias2.fieldwork.field import geometric_field
 from gias2.fieldwork.field import geometric_field_fitter as GFF
 from gias2.fieldwork.field.tools import fitting_tools
 from gias2.learning import PCA_fitting
+
+log = logging.getLogger(__name__)
 
 
 # fitting class, does rigid, HMF, and normal fits, not specific to pelvis mesh
@@ -140,7 +143,7 @@ class MeshFitter(object):
     def align(self, initTranslation=None, initRotation=None, initScale=None, sampleData=200):
         """align template mesh to data using translation, rotation and scale
         """
-        print('aligning...')
+        log.debug('aligning...')
 
         gfEP = self.templateGF.evaluate_geometric_field(self.alignEPD).T
 
@@ -177,7 +180,7 @@ class MeshFitter(object):
     def alignRigid(self, initTranslation=None, initRotation=None, sampleData=200):
         """align template mesh to data using translation, rotation and scale
         """
-        print('aligning...')
+        log.debug('aligning...')
 
         gfEP = self.templateGF.evaluate_geometric_field(self.alignEPD).T
 
@@ -212,7 +215,7 @@ class MeshFitter(object):
     def HMF(self):
         """Host mesh fit template mesh to data using a single element host mesh.
         """
-        print('host-mesh fitting...')
+        log.debug('host-mesh fitting...')
 
         slaveGF = self.templateGF
         slaveP0 = slaveGF.get_field_parameters()
@@ -250,7 +253,7 @@ class MeshFitter(object):
 
         self.HMFHostGF = hostGF
         self.HMFGFParams = slaveParamsOpt.copy()
-        print('HMF fit rms: %(rms)6.4f' % {'rms': self.HMFError})
+        log.debug('HMF fit rms: %(rms)6.4f' % {'rms': self.HMFError})
 
         return self.HMFError
 
@@ -258,7 +261,7 @@ class MeshFitter(object):
         """Host mesh fit template mesh to data using a multi-element host mesh.
         """
 
-        print('host-mesh fitting with multiple host elements...')
+        log.debug('host-mesh fitting with multiple host elements...')
 
         slaveGF = self.templateGF
         slaveP0 = slaveGF.get_field_parameters()
@@ -298,7 +301,7 @@ class MeshFitter(object):
         self.HMFGFParams = slaveParamsOpt.copy()
         self.HMFSlaveXi = slaveXi
         self.HMFError = HMFError
-        print('HMF fit rms: %(rms)6.4f' % {'rms': self.HMFError})
+        log.debug('HMF fit rms: %(rms)6.4f' % {'rms': self.HMFError})
 
         return self.HMFError
 
@@ -307,7 +310,7 @@ class MeshFitter(object):
         and closest-point updates per n iterations where n is defined by
         self.HMFMaxItPerIt.
         """
-        print('host-mesh fitting with multiple host elements and closes point search per n iterations...')
+        log.debug('host-mesh fitting with multiple host elements and closes point search per n iterations...')
 
         slaveGF = self.templateGF
         slaveP0 = slaveGF.get_field_parameters()
@@ -332,7 +335,7 @@ class MeshFitter(object):
         self.HMFGFParams = slaveParamsOpt.copy()
         self.HMFSlaveXi = slaveXi
         self.HMFError = HMFError
-        print('HMF fit rms: %(rms)6.4f' % {'rms': self.HMFError})
+        log.debug('HMF fit rms: %(rms)6.4f' % {'rms': self.HMFError})
 
         return self.HMFError
 
@@ -364,7 +367,7 @@ class MeshFitter(object):
         pcFitter = PCA_fitting.PCFit(pc=pc)
         pcFitter.xtol = self.PCFitXtol
 
-        print('\npc fitting...')
+        log.debug('\npc fitting...')
         # rigid fit template gf
         rigidOpt, rigidPOpt = pcFitter.rigidFit(gObj, x0=rigidMode0T0)
         self.templateGF.set_field_parameters(rigidPOpt.reshape((3, -1, 1)))
@@ -387,15 +390,15 @@ class MeshFitter(object):
         self.PCFitError = scipy.sqrt(gObj(rigidModeNPOpt).mean())  # obj returns squared error
 
         self.PCGFParams = rigidModeNPOpt.reshape((3, -1, 1)).copy()
-        print('pc fit rms: %(pcrms)6.4f' % {'pcrms': self.PCFitError})
-        print('mode weights: ' + ' '.join(['%(0)5.3f' % {'0': i} for i in rigidModeNOpt[6:]]))
+        log.debug('pc fit rms: %(pcrms)6.4f' % {'pcrms': self.PCFitError})
+        log.debug('mode weights: ' + ' '.join(['%(0)5.3f' % {'0': i} for i in rigidModeNOpt[6:]]))
 
         return self.PCFitError
 
     def meshFit(self):
         """Fit template mesh to data by optimisation of nodal parameters.
         """
-        print('fitting...')
+        log.debug('fitting...')
         self.templateGF, gfFitPOpt, \
         self.meshFitError = fitting_tools.fitSurfacePerItSearch(
             self.meshFitObjMode, self.templateGF,
@@ -411,7 +414,7 @@ class MeshFitter(object):
         )
 
         self.meshFitGFParams = self.templateGF.get_field_parameters()
-        print('mesh fit rms: %(rms)6.4f' % {'rms': self.meshFitError})
+        log.debug('mesh fit rms: %(rms)6.4f' % {'rms': self.meshFitError})
         return self.meshFitError
 
     def fitterMeshFit(self, drms=0.0, output=True):
@@ -427,7 +430,7 @@ class MeshFitter(object):
 
         # ~ self.meshFitError = 0.0
         self.fitterMeshFitGFParams = self.templateGF.get_field_parameters()
-        print('mesh fit rms: %(rms)6.4f' % {'rms': self.fitterMeshFitError})
+        log.debug('mesh fit rms: %(rms)6.4f' % {'rms': self.fitterMeshFitError})
         return self.fitterMeshFitError
 
     def logFitErrors(self, logger):
@@ -443,5 +446,5 @@ class MeshFitter(object):
         if filename is None:
             filename = self.gfSaveFileStr % {'jobName': self.jobName}
 
-        print('...saving GF to... ' + filename)
+        log.debug('...saving GF to... ' + filename)
         self.templateGF.save_geometric_field(filename)

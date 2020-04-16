@@ -13,6 +13,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 """
 
 import copy
+import logging
 
 import numpy
 from scipy.optimize import fmin
@@ -25,6 +26,8 @@ from gias2.musculoskeletal import fw_femur_model_data as fmd
 from gias2.musculoskeletal import fw_model_landmarks
 from gias2.registration import alignment_analytic
 from gias2.registration import alignment_fitting
+
+log = logging.getLogger(__name__)
 
 
 def normaliseVector(v):
@@ -471,7 +474,7 @@ def alignFemurLandmarksPC(gf, pc, landmarks, GFParamsCallback=None, mw0=1.0, mwn
             targetLandmarks.append(lc)
             landmarkNodes.append(femurLandmarkNodes[ln])
         else:
-            print('WARNING: landmark %s unsupported')
+            log.debug('WARNING: landmark %s unsupported')
 
     if hasFHC:
         targetLandmarks.append(targetFHC)

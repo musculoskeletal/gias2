@@ -19,9 +19,12 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 # dimension: dimension of the element
 # interior: tuple of tuples of the range of value define in the interior 
 #           of the elements for each dimension
+import logging
 
 from numpy import array, cos, sin, eye, pi, sqrt, linspace, newaxis, all, any, bitwise_and, bitwise_or, hstack
 from scipy.linalg import det
+
+log = logging.getLogger(__name__)
 
 
 class edge(object):
@@ -297,7 +300,7 @@ class triBezier(Element):
     def is_interior(self, coords):
 
         if len(coords) != self.dimensions:
-            print('ERROR: tri.is_interior: wrong number of input coordinates. Need', self.dimensions, ', got',
+            log.debug('ERROR: tri.is_interior: wrong number of input coordinates. Need', self.dimensions, ', got',
                   len(coords))
             return 0
         else:
@@ -306,7 +309,7 @@ class triBezier(Element):
     def is_boundary(self, coords):
 
         if len(coords) != self.dimensions:
-            print('ERROR: tri.is_interior: wrong number of input coordinates. Need', self.dimensions, ', got',
+            log.debug('ERROR: tri.is_interior: wrong number of input coordinates. Need', self.dimensions, ', got',
                   len(coords))
             return 0
         else:
@@ -324,7 +327,7 @@ class tri_equilateral(Element):
     def is_interior(self, coords):
 
         if len(coords) != 2:
-            print('ERROR: quad.is_interior: wrong number of input coordinates. Need', self.dimensions, ', got',
+            log.debug('ERROR: quad.is_interior: wrong number of input coordinates. Need', self.dimensions, ', got',
                   len(coords))
             return 0
         else:
@@ -336,7 +339,7 @@ class tri_equilateral(Element):
     def is_boundary(self, coords):
         t = 1.0e-10  # tolerance
         if len(coords) != 2:
-            print('ERROR: quad.is_interior: wrong number of input coordinates. Need', self.dimensions, ', got',
+            log.debug('ERROR: quad.is_interior: wrong number of input coordinates. Need', self.dimensions, ', got',
                   len(coords))
             return 0
         else:

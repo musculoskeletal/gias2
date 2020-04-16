@@ -11,7 +11,7 @@ License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
-
+import logging
 import pdb
 
 from scipy import sparse
@@ -26,6 +26,8 @@ from gias2.fieldwork.field.topology import element_types
 
 from numpy import array, newaxis, ones, sqrt, mean, dot, cos, sin, hstack, where, inf, digitize, linspace, zeros, cross, \
     dstack
+
+log = logging.getLogger(__name__)
 
 
 class geometryFit(object):
@@ -172,26 +174,26 @@ class geometryFit(object):
     def meshFit(self, it=0, errorOutput=False, verbose=True):
         self.it = 0
         if verbose:
-            print('mesh fit...')
+            log.debug('mesh fit...')
         # ~ pdb.set_trace()
         maxFEval = it * self.p0.shape[0]
 
         initRMS = sqrt(self.objMesh(self.p0).mean())
         if verbose:
-            print('initial rms:', initRMS)
+            log.debug('initial rms:', initRMS)
 
         output = leastsq(self.objMesh, self.p0, ftol=self.ftol, xtol=self.xtol, epsfcn=self.epsfcn, maxfev=maxFEval)
 
         finalRMS = sqrt(self.objMesh(output[0]).mean())
         if verbose:
-            print('final rms:', finalRMS)
+            log.debug('final rms:', finalRMS)
 
         self.G.set_field_parameters(output[0].reshape((self.G.dimensions, -1, 1)))
         ep_coord = self.G.evaluate_geometric_field(self.eval_d)
 
         finalRMSDist = sqrt(mean(self.findClosestErr(ep_coord.T)))
         if verbose:
-            print('final rms distance:', finalRMSDist)
+            log.debug('final rms distance:', finalRMSDist)
 
         if errorOutput:
             return self.reshapeParams(output[0]), output, (initRMS, finalRMS, finalRMSDist)
@@ -199,7 +201,7 @@ class geometryFit(object):
             return self.reshapeParams(output[0]), output
 
     def affineFit(self, it=0):
-        print(' affine fit...')
+        log.debug(' affine fit...')
         self.it = 0
         T0 = array([[1.0, 0.0, 0.0, 0.0],
                     [0.0, 1.0, 0.0, 0.0],
@@ -215,7 +217,7 @@ class geometryFit(object):
 
     def rigidScaleFit(self):
         self.it = 0
-        print('rigid and scaling fit...')
+        log.debug('rigid and scaling fit...')
         # tx,ty,tz,rx,ry,rz,sx,sy,sz
         T0 = array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0])
         output = leastsq(self.objRigidScale, T0, ftol=self.ftol, xtol=self.xtol, epsfcn=self.epsfcn)
@@ -248,7 +250,7 @@ class geometryFit(object):
 
     def rigidFit(self, it=0):
         self.it = 0
-        print('rigid fit...')
+        log.debug('rigid fit...')
         # tx,ty,tz,rx,ry,rz
         T0 = array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         maxFEval = it * 6
@@ -280,10 +282,10 @@ class geometryFit(object):
         """ host mesh fit self.G using host (geometric_field) as the 
         host mesh and slaveObj as the objective function to minimise
         """
-        print('host mesh fit...')
+        log.debug('host mesh fit...')
         # calc slave node xi in host
         if slaveXi is None:
-            print('calculating slave xi...')
+            log.debug('calculating slave xi...')
             slaveXi = array([host.findXi(0, node) for node in self.G.field_parameters[:, :, 0].T])
             # ~ savetxt( 'host_mesh_fitting/slaveXi.txt', slaveXi )
 
@@ -314,7 +316,7 @@ class geometryFit(object):
         self.it = 0
         maxf = maxIt * (host.get_number_of_points() * 3)
 
-        print('initial rms:', sqrt(hostMeshObj(hostParam0).mean()))
+        log.debug('initial rms:', sqrt(hostMeshObj(hostParam0).mean()))
         # do fit
         hostParamsOpt = \
             leastsq(hostMeshObj, hostParam0.ravel(), xtol=self.xtol, ftol=self.ftol, maxfev=maxf, epsfcn=self.epsfcn)[
@@ -325,7 +327,7 @@ class geometryFit(object):
 
         finalHostRMS = sqrt(hostMeshObj(hostParamsOpt.ravel().copy()).mean())
         finalSlaveRMS = sqrt(slaveObj(slaveParamsOpt.ravel().copy()).mean())
-        print('final host rms:', finalHostRMS, ' final slave rms:', finalSlaveRMS)
+        log.debug('final host rms:', finalHostRMS, ' final slave rms:', finalSlaveRMS)
 
         return hostParamsOpt, slaveParamsOpt, slaveXi, finalSlaveRMS
 
@@ -356,7 +358,7 @@ class geometryFit(object):
         pNew = dot(T, self.p0Affine)[:3, :].ravel()
 
         d = self._obj(pNew)
-        print('it', self.it, '\trms:', sqrt((d).mean()))
+        log.debug('it', self.it, '\trms:', sqrt((d).mean()))
         self.it += 1
 
         return d
@@ -383,7 +385,7 @@ class geometryFit(object):
         T[:3, :3] = dot(dot(Rx, Ry), Rz)
         pNew = dot(T, self.p0Affine)[:3, :].ravel()
         d = self._obj(pNew)
-        print('it', self.it, '\trms:', sqrt((d).mean()))
+        log.debug('it', self.it, '\trms:', sqrt((d).mean()))
         self.it += 1
         return d
 
@@ -393,7 +395,7 @@ class geometryFit(object):
         # ~ print T
         pNew = dot(self.T, self.p0Affine)[:3, :].ravel()
         d = self._obj(pNew)
-        print('it', self.it, '\trms:', sqrt((d).mean()))
+        log.debug('it', self.it, '\trms:', sqrt((d).mean()))
         self.it += 1
 
         return d
@@ -407,7 +409,7 @@ class geometryFit(object):
             dNorm, dCurv = self.normSmoother.smoothObj(self.reshapeParams(params))
             D = hstack((dGeom, dNorm, dCurv))
 
-            print('it', self.it,
+            log.debug('it', self.it,
                   ' geom:', sqrt((dGeom).mean()),
                   ' norm:', sqrt((dNorm).mean()),
                   ' curv:', sqrt((dCurv).mean()),
@@ -415,7 +417,7 @@ class geometryFit(object):
             self.it += 1
             return D
         else:
-            print('it', self.it, '\trms:', sqrt((dGeom).mean()))
+            log.debug('it', self.it, '\trms:', sqrt((dGeom).mean()))
             self.it += 1
             return dGeom
 
@@ -472,7 +474,7 @@ class geometryFit(object):
         # calculate error
         d = self.findClosestErr(ep_coord)
         dPenalty = self.dotPenalty(p)
-        print('geom error:', sqrt(d.mean()), '\tpenalty:', sqrt(dPenalty.mean()))
+        log.debug('geom error:', sqrt(d.mean()), '\tpenalty:', sqrt(dPenalty.mean()))
         return hstack((d, dPenalty))
 
     def _objGeometryDotPenalty2(self, params):
@@ -486,7 +488,7 @@ class geometryFit(object):
         d = d * d
 
         dPenalty = self.dotPenalty(p)[d_i]
-        print('geom error:', sqrt(d.mean()), '\tpenalty:', sqrt(dPenalty.mean()))
+        log.debug('geom error:', sqrt(d.mean()), '\tpenalty:', sqrt(dPenalty.mean()))
         return d + dPenalty
 
     def _objGeometryDotAreaPenalty(self, params):
@@ -578,7 +580,7 @@ class geometryFit(object):
             nCurv = []
             for n_i, n in enumerate(neighbourhoods):
                 if self.dataTree.n in n:
-                    print('WARNING: no data points found in neighbourhood for element point', n_i)
+                    log.debug('WARNING: no data points found in neighbourhood for element point', n_i)
                     nCurv.append(ones(neighSize) * inf)
                 else:
                     nCurv.append(self.dataCurvature[n])
@@ -633,7 +635,7 @@ class geometryFit(object):
             nCurv = []
             for n_i, n in enumerate(neighbourhoods):
                 if self.epTree.n in n:
-                    print('WARNING: no element points found in neighbourhood for data point', n_i)
+                    log.debug('WARNING: no element points found in neighbourhood for data point', n_i)
                     nCurv.append(ones(neighSize) * inf)
                 else:
                     nCurv.append(self.initMeshCurvature[n])
@@ -694,7 +696,7 @@ class geometryFit(object):
                 self.similarCurvDPCoord = []
                 for n_i, n in enumerate(neighbourhoods):
                     if self.dataCurvatureTree.n in n:
-                        print('WARNING: no data points found in neighbourhood for element point', n_i)
+                        log.debug('WARNING: no data points found in neighbourhood for element point', n_i)
                         self.similarCurvDPCoord.append(ones((neighSize, 3)) * inf)
                     else:
                         self.similarCurvDPCoord.append(self.data[n])
@@ -754,7 +756,7 @@ class geometryFit(object):
             similarCurvEPCoord = []
             for n_i, n in enumerate(neighbourhoods):
                 if self.initMeshCurvature.shape[0] in n:
-                    print('WARNING: no element points found in neighbourhood for data point', n_i)
+                    log.debug('WARNING: no element points found in neighbourhood for data point', n_i)
                     similarCurvEPCoord.append(ones((neighSize, 3)) * inf)
                 else:
                     similarCurvEPCoord.append(ep_coord[n])
@@ -1972,7 +1974,7 @@ class elementAreaPenalty1(object):
 
         self.aR0 = aElem / aElem.max()
 
-        print('max element area:', aElem.max())
+        log.debug('max element area:', aElem.max())
         return
 
     def obj(self, params):
@@ -1996,7 +1998,7 @@ class elementAreaPenalty1(object):
         # get largest area and divide the rest by it
         d = self.aR0 - aElem / aElem.max()
         d = self.w * d * d
-        print('area rms', sqrt(d.sum()))
+        log.debug('area rms', sqrt(d.sum()))
 
         return d
 
