@@ -1,5 +1,12 @@
 # GIAS2 Change log
 
+## 0.7.0
+- removed all print statements, replaced by logging
+- TODO configure default logging
+- From here on:
+  - python 2 support for be discontinued
+  - pep8 naming convention will be implemented
+
 ## 0.6.17
 - code clean up
 - added VTK as a dependency
