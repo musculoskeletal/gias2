@@ -11,15 +11,20 @@ License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
+from typing import Optional, Union, Tuple
 
 import numpy
-from numpy.linalg import svd, det
 from numpy.linalg import inv
+from numpy.linalg import svd, det
 
 from gias2.common import math
 
 
-def calcAffineMatrix(scale=None, trans=None, shear=None, rot=None):
+def calcAffineMatrix(
+        scale: Optional[numpy.ndarray] = None,
+        trans: Optional[numpy.ndarray] = None,
+        shear: Optional[numpy.ndarray] = None,
+        rot: Optional[numpy.ndarray] = None) -> numpy.ndarray:
     T = numpy.array([[1.0, 0.0, 0.0, 0.0],
                      [0.0, 1.0, 0.0, 0.0],
                      [0.0, 0.0, 1.0, 0.0],
@@ -64,7 +69,7 @@ def calcAffineMatrix(scale=None, trans=None, shear=None, rot=None):
     return T
 
 
-def calcRigidAffineMatrix(t, com=None):
+def calcRigidAffineMatrix(t: numpy.ndarray, com: Optional[numpy.ndarray] = None):
     """
     calculates an affine transformation matrix that applies a
     rigid transform equivalent to that produced by the rigid
@@ -115,7 +120,7 @@ def calcRigidAffineMatrix(t, com=None):
     return T
 
 
-def transformRigid3D(x, t):
+def transformRigid3D(x: numpy.ndarray, t: numpy.ndarray) -> numpy.ndarray:
     """ applies a rigid transform to list of points x.
     T = (tx,ty,tz,rx,ry,rz)
     """
@@ -141,7 +146,7 @@ def transformRigid3D(x, t):
     return numpy.dot(T, X)[:3, :].T
 
 
-def transformRigid3DAboutCoM(x, t):
+def transformRigid3DAboutCoM(x: numpy.ndarray, t: numpy.ndarray) -> numpy.ndarray:
     """ applies a rigid transform to list of points x.
     T = (tx,ty,tz,rx,ry,rz), rotation is about center of mass. Rotates
     then translates.
@@ -152,7 +157,7 @@ def transformRigid3DAboutCoM(x, t):
     return xOT + com
 
 
-def transformRigid3DAboutP(x, t, P):
+def transformRigid3DAboutP(x: numpy.ndarray, t: numpy.ndarray, P: numpy.ndarray) -> numpy.ndarray:
     """ applies a rigid transform to list of points x.
     T = (tx,ty,tz,rx,ry,rz), rotation is about point P. Rotates
     then translates.
@@ -162,7 +167,7 @@ def transformRigid3DAboutP(x, t, P):
     return xOT + P
 
 
-def transformRigidScale3DAboutCoM(x, t):
+def transformRigidScale3DAboutCoM(x: numpy.ndarray, t: numpy.ndarray) -> numpy.ndarray:
     """ applies a rigid + scale transform to list of points x.
     T = (tx,ty,tz,rx,ry,rz,sx,sy,sz), rotation and scaling is about center of mass. 
     Scales, rotates, then translates.
@@ -174,34 +179,34 @@ def transformRigidScale3DAboutCoM(x, t):
     return xOT + com
 
 
-def transformRigidScale3DAboutP(x, t, P):
+def transformRigidScale3DAboutP(x: numpy.ndarray, t: numpy.ndarray, p: numpy.ndarray) -> numpy.ndarray:
     """ applies a rigid + scale transform to list of points x.
     T = (tx,ty,tz,rx,ry,rz,sx,sy,sz), rotation and scaling is about point P. 
     Scales, rotates, then translates.
     """
-    xO = x - P
+    xO = x - p
     xOS = transformScale3D(xO, t[6:])
     xOT = transformRigid3D(xOS, t[:6])
-    return xOT + P
+    return xOT + p
 
 
-def transformScale3D(x, S):
+def transformScale3D(x: numpy.ndarray, s: float) -> numpy.ndarray:
     """ applies scaling to a list of points x. S = (sx,sy,sz)
     """
-    return numpy.multiply(x, S)
+    return numpy.multiply(x, s)
 
 
-def transformRigidScale3D(x, t):
+def transformRigidScale3D(x: numpy.ndarray, t: numpy.ndarray) -> numpy.ndarray:
     return transformScale3D(transformRigid3D(x, t[:6]), t[6])
 
 
-def transformAffine(x, t):
+def transformAffine(x: numpy.ndarray, t: numpy.ndarray) -> numpy.ndarray:
     """ applies affine transform t (shape = (3,4) or (4,4)) to list of points x
     """
     return numpy.dot(t[:3, :], numpy.vstack((x.T, numpy.ones(x.shape[0]))))[:3, :].T
 
 
-def transformRotateAboutP(x, r, P):
+def transformRotateAboutP(x: numpy.ndarray, r: numpy.ndarray, P: numpy.ndarray) -> numpy.ndarray:
     """
     rotate points x about P by r=[rx,ry,rz]
     """
@@ -214,7 +219,7 @@ def transformRotateAboutP(x, r, P):
     return xR
 
 
-def directAffine(u, ut):
+def directAffine(u: numpy.ndarray, ut: numpy.ndarray) -> numpy.ndarray:
     """ calculate the affine transformation using least squares direct
     method (Kumar)
     """
@@ -269,33 +274,12 @@ def directAffine(u, ut):
     return T
 
 
-def transformRotateAboutAxisOld(x, theta, p0, p1, p2=None, p3=None):
-    # create orthogonal vectors with p0 and p1
-    p0 = numpy.array(p0)
-    v1 = math.norm(numpy.subtract(p1, p0))
-    v2 = math.norm(numpy.cross(v1, v1 * [2.0, 0, 0]))
-    v3 = math.norm(numpy.cross(v1, v2))
-
-    # if p2 is None:
-    #   p2 = p0 + math.norm(numpy.cross(p1-p0, numpy.multiply(p1,[2.0,0,0])-p0))
-    #   p3 = p0 + math.norm(numpy.cross(p1-p0, p2-p0))
-
-    # transform v to global x - T0
-    cs_global = numpy.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=float)
-    cs_local = numpy.array([p0, p0 + v1, p0 + v2, p0 + v3], dtype=float)
-    T0 = directAffine(cs_local, cs_global)
-    x0 = transformAffine(x, T0)
-
-    # rotate about x with theta
-    x1 = transformRigid3DAboutP(x0, [0, 0, 0, theta, 0, 0], (0, 0, 0))
-
-    # apply inverse of T0
-    x2 = transformAffine(x1, inv(numpy.vstack([T0, [0, 0, 0, 1]])))
-
-    return x2
-
-
-def transformRotateAboutAxis(x, theta, p0, p1, retmat=False):
+def transformRotateAboutAxis(
+        x: numpy.ndarray,
+        theta: float,
+        p0: numpy.ndarray,
+        p1: numpy.ndarray,
+        retmat: bool = False) -> Union[numpy.ndarray, Tuple[numpy.ndarray, numpy.ndarray]]:
     """
     Rotate point x by angle theta about an axis defined by 2 points p0, p1.
     http://paulbourke.net/geometry/rotate/
@@ -346,7 +330,13 @@ def transformRotateAboutAxis(x, theta, p0, p1, retmat=False):
         return q.T + p0
 
 
-def transformRotateAboutCartCS(x, r, o, v1, v2, v3):
+def transformRotateAboutCartCS(
+        x: numpy.ndarray,
+        r: numpy.ndarray,
+        o: numpy.ndarray,
+        v1: numpy.ndarray,
+        v2: numpy.ndarray,
+        v3: numpy.ndarray) -> numpy.ndarray:
     """
     rotate about an arbitrary cartesian coordinate system.
 
@@ -364,7 +354,7 @@ def transformRotateAboutCartCS(x, r, o, v1, v2, v3):
     x0 = transformAffine(x, T0)
 
     # rotate about x with theta
-    x1 = transformRigid3DAboutP(x0, [0, 0, 0, r[0], r[1], r[2]], (0, 0, 0))
+    x1 = transformRigid3DAboutP(x0, numpy.array([0, 0, 0, r[0], r[1], r[2]]), numpy.array((0, 0, 0)))
 
     # apply inverse of T0
     x2 = transformAffine(x1, inv(numpy.vstack([T0, [0, 0, 0, 1]])))
@@ -372,20 +362,20 @@ def transformRotateAboutCartCS(x, r, o, v1, v2, v3):
     return x2
 
 
-def calcAffineMatrixSVD(A, B):
+def calcAffineMatrixSVD(a_pts: numpy.ndarray, b_pts: numpy.ndarray) -> numpy.ndarray:
     """Calculate rigid transformation between two list of corresponding
     points using SVD
     """
-    assert len(A) == len(B)
+    assert len(a_pts) == len(b_pts)
 
-    N = A.shape[0]  # total points
+    N = a_pts.shape[0]  # total points
 
-    centroid_A = numpy.mean(A, axis=0)
-    centroid_B = numpy.mean(B, axis=0)
+    centroid_A = numpy.mean(a_pts, axis=0)
+    centroid_B = numpy.mean(b_pts, axis=0)
 
     # centre the points
-    AA = A - numpy.tile(centroid_A, (N, 1))
-    BB = B - numpy.tile(centroid_B, (N, 1))
+    AA = a_pts - numpy.tile(centroid_A, (N, 1))
+    BB = b_pts - numpy.tile(centroid_B, (N, 1))
 
     # dot is matrix multiplication for array
     H = numpy.dot(numpy.transpose(AA), BB)
@@ -409,7 +399,7 @@ def calcAffineMatrixSVD(A, B):
     return T
 
 
-def calcAffineDifference(m1, m2):
+def calcAffineDifference(m1: numpy.ndarray, m2: numpy.ndarray) -> numpy.ndarray:
     """
     Calculate the transformation matrix that is the transformation
     between 2 affine matrices m1 and m2

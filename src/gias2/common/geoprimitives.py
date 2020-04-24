@@ -12,6 +12,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
 import logging
+from typing import Tuple, Union, List, Optional
 
 import numpy as np
 from scipy.linalg import eig, inv
@@ -39,10 +40,16 @@ class InPlaneError(Exception):
 
 
 class Line3D(object):
-    """ X = t*a + b
+    """
+    A line in 3D described by x = t*a + b
     """
 
-    def __init__(self, a, b):
+    def __init__(self, a: np.ndarray, b: np.ndarray):
+        """
+        A line in 3D defined by its origin `b` and direction `a`
+        :param a: length 3 array of line direction vector
+        :param b: length 3 array of origin coordinates
+        """
         self.a = None
         self.b = None
         self._a = None
@@ -51,23 +58,23 @@ class Line3D(object):
         self.t1 = 1.0
         self._l = self
 
-    def setAB(self, a, b):
+    def setAB(self, a: np.ndarray, b: np.ndarray) -> None:
         self.a = norm(np.array(a, dtype=float))
         self._a = self.a[:, np.newaxis]
         self.b = np.array(b, dtype=float)
 
-    def eval(self, t):
+    def eval(self, t: float) -> np.ndarray:
         return (t * self._a).T.squeeze() + self.b
 
-    def findClosest(self, p):
+    def findClosest(self, p: np.ndarray) -> Tuple[np.ndarray, float]:
         """ calc closest point on line to p
         """
         p = np.array(p, dtype=float)
-        closest_t = np.dot((p - self.b), self.a)
+        closest_t = float(np.dot((p - self.b), self.a))
         closest_p = self.eval(closest_t)
         return closest_p, closest_t
 
-    def calcDistanceFromPoint(self, p, retT=False):
+    def calcDistanceFromPoint(self, p: np.ndarray, retT: bool = False) -> Union[Tuple[float, float], float]:
         """ calc closest distance to point p
         """
         p_line, t_line = self.findClosest(p)
@@ -76,7 +83,7 @@ class Line3D(object):
         else:
             return euclidean(p, p_line)
 
-    def project_coordinate(self, x, dim):
+    def project_coordinate(self, x: np.ndarray, dim: int) -> float:
         """
         Calculate the parameter coordinate along the line that gives a point
         with a coordinate of x in dimension dim
@@ -84,7 +91,7 @@ class Line3D(object):
         t = (x - self.b[dim]) / self.a[dim]
         return t
 
-    def checkParallel(self, line):
+    def checkParallel(self, line: 'Line3D') -> bool:
         """
         check if self is parallel to line l
         """
@@ -101,7 +108,7 @@ class Line3D(object):
         else:
             return False
 
-    def checkCoincidence(self, line):
+    def checkCoincidence(self, line: 'Line3D') -> bool:
         """check if self is coincident to another infinite 3D line l.
         Checks by seeing if there are 2 common points
         """
@@ -116,7 +123,7 @@ class Line3D(object):
             log.debug('not coincident')
             return False
 
-    def calcIntercept(self, line):
+    def calcIntercept(self, line: 'Line3D') -> Tuple[np.ndarray, float, float]:
         """
         tries to calculate the intercept with line l
         """
@@ -144,7 +151,7 @@ class Line3D(object):
         else:
             raise NonInterceptError
 
-    def calcClosestDistanceToLine(self, line):
+    def calcClosestDistanceToLine(self, line: 'Line3D') -> Tuple[float, float, float]:
         """ Calculates the closest distance to another infinite 3D line.
 
         returns:
@@ -188,7 +195,7 @@ class Line3D(object):
 
         return d, sc, tc
 
-    def intersectSphere(self, o, r):
+    def intersectSphere(self, o: np.ndarray, r: float) -> Tuple[List[np.ndarray], List[float]]:
         """
         Calculate intersection with a sphere with centre o and
         radius r. Returns a list of intercept points, and a list of 
@@ -220,7 +227,7 @@ class Line3D(object):
                 d2 = const - np.sqrt(root)
                 return [self.eval(d1), self.eval(d2)], [d1, d2]
 
-    def transformAffine(self, t):
+    def transformAffine(self, t: np.ndarray) -> None:
         self.b = np.dot(
             t,
             np.hstack([
@@ -240,7 +247,15 @@ class LineOutOfBoundsError(Exception):
 
 class LineSegment3D(Line3D):
 
-    def __init__(self, a, b, t0, t1):
+    def __init__(self, a: np.ndarray, b: np.ndarray, t0: float, t1: float):
+        """
+        A line with finite length defined by `t0` and `t1` which are the distance
+        of the two end points from `b` in direction `a`
+        :param a: direction of line
+        :param b: origin of line
+        :param t0: end point 1 distance from b
+        :param t1: end point 2 distance from b
+        """
         self.t0 = t0
         self.t1 = t1
         self._l = Line3D(a, b)
@@ -249,7 +264,7 @@ class LineSegment3D(Line3D):
         self.p0 = self.eval(t0)
         self.p1 = self.eval(t1)
 
-    def setAB(self, a, b):
+    def setAB(self, a: np.ndarray, b: np.ndarray) -> None:
         self.a = norm(np.array(a, dtype=float))
         self._a = self.a[:, np.newaxis]
         self.b = np.array(b, dtype=float)
@@ -257,16 +272,22 @@ class LineSegment3D(Line3D):
         self.p1 = self.eval(self.t1)
         self._l.setAB(a, b)
 
-    def _checkBound(self, t):
+    def _checkBound(self, t: float) -> bool:
         return (self.t0 <= t) & (t <= self.t1)
 
-    def checkCoincidence(self, l):
+    def checkCoincidence(self, line_segment: 'LineSegment3D') -> bool:
         """check if self is coincident to another 3D line segment l.
         Checks by seeing if there are 2 common points
         """
-        return self._l.checkCoincidence(l._l)
+        return self._l.checkCoincidence(line_segment._l)
 
-    def eval(self, t, checkBound=True):
+    def eval(self, t: float, checkBound: bool = True) -> np.ndarray:
+        """
+        Evaluate the position on the line at distance `t` from its origin
+        :param t:
+        :param checkBound: if true, raises LineOutOfBoundsError if t is out beyond the line end points
+        :return: length 3 array of position on line
+        """
 
         x = (t * self._a).T.squeeze() + self.b
         if checkBound:
@@ -277,9 +298,9 @@ class LineSegment3D(Line3D):
         else:
             return x
 
-    def findClosest(self, p):
+    def findClosest(self, p: np.ndarray) -> Tuple[np.ndarray, float]:
         p = np.array(p, dtype=float)
-        tc = np.dot((p - self.b), self.a)
+        tc = float(np.dot((p - self.b), self.a))
 
         if isinstance(tc, float):
             if self._checkBound(tc):
@@ -294,31 +315,31 @@ class LineSegment3D(Line3D):
             output_eval = self.eval(tc, checkBound=False)
             output_eval[tc < self.t0] = self.p0
             output_eval[tc > self.t1] = self.p1
-            tc = tc.clip(min=self.t0, max=self.t1)
+            tc = float(np.clip(tc, min=self.t0, max=self.t1))
             return output_eval, tc
 
-    def calcClosestDistanceToLine(self, l):
-        if l.__class__ == Line3D:
-            return self._distanceToLine(l)
-        elif l.__class__ == LineSegment3D:
-            return self._distanceToLineSegment(l)
+    def calcClosestDistanceToLine(self, line: Union[Line3D, 'LineSegment3D']) -> Tuple[float, float, float]:
+        if isinstance(line, Line3D):
+            return self._distanceToLine(line)
+        elif isinstance(line, LineSegment3D):
+            return self._distanceToLineSegment(line)
 
-    def _distanceToLine(self, l):
+    def _distanceToLine(self, line: Line3D) -> Tuple[float, float, float]:
         """ closest distance to an infinite line
         """
-        d, sc, tc = self._l.calcClosestDistanceToLine(l._l)
+        d, sc, tc = self._l.calcClosestDistanceToLine(line._l)
         if self._checkBound(sc):
             pass
         elif sc < self.t0:
-            d, tc = l.calcDistanceFromPoint(self.p0, retT=True)
+            d, tc = line.calcDistanceFromPoint(self.p0, retT=True)
             sc = self.t0
         else:
-            d, tc = l.calcDistanceFromPoint(self.p1, retT=True)
+            d, tc = line.calcDistanceFromPoint(self.p1, retT=True)
             sc = self.t1
 
         return d, sc, tc
 
-    def _distanceToLineSegment(self, line):
+    def _distanceToLineSegment(self, line: 'LineSegment3D') -> Tuple[float, float, float]:
         """ closest distance to another line segment
         """
 
@@ -395,11 +416,11 @@ class LineSegment3D(Line3D):
         return d, sc, tc
 
 
-class LineElement3D(Line3D):
+class LineElement3D:
     """ X = (1-x)A + (x)B
     """
 
-    def __init__(self, p1, p2):
+    def __init__(self, p1: np.ndarray, p2: np.ndarray):
         self.p1 = np.array(p1)
         self.p2 = np.array(p2)
 
@@ -409,7 +430,19 @@ class LineElement3D(Line3D):
 
 class Plane(object):
 
-    def __init__(self, origin, normal, x=None, y=None):
+    def __init__(
+            self,
+            origin: np.ndarray,
+            normal: np.ndarray,
+            x: Optional[np.ndarray] = None,
+            y: Optional[np.ndarray] = None):
+        """
+        A plane in 3D
+        :param origin: length 3 array of the origin point of the plane
+        :param normal: length 3 array of the normal vector of the plane
+        :param x: length 3 array of the X-axis in the plane
+        :param y: length 3 array of the Y-axis of the plane
+        """
 
         self.O = np.array(origin, dtype=float)
         self.N = norm(normal)
@@ -420,8 +453,8 @@ class Plane(object):
         if y is not None:
             self.Y = np.array(y, dtype=float)
 
-    def calcDistanceToPlane(self, plane):
-        d = ((plane - self.O) * self.N).sum(-1)
+    def calcDistanceToPlane(self, pts: np.ndarray) -> float:
+        d = ((pts - self.O) * self.N).sum(-1)
         return d
 
     def near_points(self, pts: np.ndarray, dmax: float) -> np.ndarray:
@@ -429,15 +462,15 @@ class Plane(object):
         mask = abs(dist) <= dmax
         return np.array(pts[mask])
 
-    def project2Plane3D(self, plane):
+    def project2Plane3D(self, points: np.ndarray) -> np.ndarray:
         """
         returns the closest points to P on the plane, in 3D coordinates
         """
-        d = self.calcDistanceToPlane(plane)
-        p = plane - d * self.N
+        d = self.calcDistanceToPlane(points)
+        p = points - d * self.N
         return p
 
-    def project2Plane2D(self, plane):
+    def project2Plane2D(self, points: np.ndarray) -> np.ndarray:
         """
         returns the closest points to P on the plane, in 2D in-plane
         coordinates
@@ -445,29 +478,29 @@ class Plane(object):
         if (self.X is None) or (self.Y is None):
             raise ValueError('plane X and Y vectors not set')
 
-        u = ((plane - self.O) * self.X).sum(-1)
-        v = ((plane - self.O) * self.Y).sum(-1)
+        u = ((points - self.O) * self.X).sum(-1)
+        v = ((points - self.O) * self.Y).sum(-1)
         return np.array([u, v]).T
 
-    def plane2Dto3D(self, plane):
+    def plane2Dto3D(self, points: np.ndarray) -> np.ndarray:
         """
-        return 3D coordinates of from 2D in-plane coordinates
+        return 3D coordinates of 2D in-plane coordinates
         """
         if (self.X is None) or (self.Y is None):
             raise ValueError('plane X and Y vectors not set')
 
-        p = plane[:, 0, np.newaxis] * self.X + plane[:, 1, np.newaxis] * self.Y + self.O
+        p = points[:, 0, np.newaxis] * self.X + points[:, 1, np.newaxis] * self.Y + self.O
         return p
 
-    def angleToPlane(self, plane):
+    def angleToPlane(self, plane: 'Plane') -> float:
         """
         calculates the angle between self normal and the normal
         or another plane p
         """
         return angle(self.N, plane.N)
 
-    def angleToVector(self, vector):
-        """ calcualte the angle between this plane and a vector v
+    def angleToVector(self, vector: np.ndarray) -> float:
+        """ calculate the angle between this plane and a vector v
         """
         # project vector onto plane
         v_proj = self.project2Plane3D(vector)
@@ -475,7 +508,7 @@ class Plane(object):
         # calc angle between v and v_proj
         return angle(v_proj, vector)
 
-    def intersect_line(self, line, ret_t=False):
+    def intersect_line(self, line: Line3D, ret_t: bool = False) -> Union[Tuple[np.ndarray, float], np.ndarray]:
         """
         Find the point of intersection between a line l and this plane
         """
@@ -497,7 +530,7 @@ class Plane(object):
             else:
                 return p
 
-    def transformAffine(self, t):
+    def transformAffine(self, t: np.ndarray) -> None:
         self.O = np.dot(
             t,
             np.hstack([
@@ -576,7 +609,7 @@ class Plane(object):
 
 
 # ===============================================================================#
-def fitAxis3D(data, axis):
+def fitAxis3D(data: np.ndarray, axis: Line3D) -> Tuple[Line3D, np.ndarray, float]:
     xtol = 1e-5
     ftol = 1e-5
     maxfev = 6 * 1000
@@ -597,7 +630,7 @@ def fitAxis3D(data, axis):
     return axis, x_opt, fitted_rmse
 
 
-def fitPlaneLS(points):
+def fitPlaneLS(points: np.ndarray) -> Plane:
     # calc CoM
     com = points.mean(0)
     xc = points - com
@@ -611,7 +644,7 @@ def fitPlaneLS(points):
     A[0, 2] = A[2, 0] = (xc[:, 0] * xc[:, 2]).sum()
     A[1, 2] = A[2, 1] = (xc[:, 1] * xc[:, 2]).sum()
 
-    w, v = eig(A)
+    w, v = eig(A)  # the right matrix v is returned by default
     v = v[:, w.argsort()]
 
     # project points onto plane
@@ -620,7 +653,7 @@ def fitPlaneLS(points):
     return plane
 
 
-def fitSphere(points):
+def fitSphere(points: np.ndarray) -> Tuple[float, np.ndarray]:
     def obj(x):
         d = points - x[0:3]
         e = np.sqrt((d * d).sum(1)) - x[3]
@@ -639,7 +672,7 @@ def fitSphere(points):
         return rms_opt, x_opt
 
 
-def fitSphereAnalytic(X):
+def fitSphereAnalytic(points: np.ndarray) -> Tuple[np.ndarray, float]:
     """
     ADAPTED FROM MATLAB SCRIPT:
     
@@ -662,34 +695,34 @@ def fitSphereAnalytic(X):
     Alan Jennings, University of Dayton
     """
     a_matrix = np.zeros((3, 3), dtype=float)
-    a_matrix[0, 0] = (X[:, 0] * (X[:, 0] - X[:, 0].mean())).mean()
-    a_matrix[0, 1] = 2 * (X[:, 0] * (X[:, 1] - X[:, 1].mean())).mean()
-    a_matrix[0, 2] = 2 * (X[:, 0] * (X[:, 2] - X[:, 2].mean())).mean()
+    a_matrix[0, 0] = (points[:, 0] * (points[:, 0] - points[:, 0].mean())).mean()
+    a_matrix[0, 1] = 2 * (points[:, 0] * (points[:, 1] - points[:, 1].mean())).mean()
+    a_matrix[0, 2] = 2 * (points[:, 0] * (points[:, 2] - points[:, 2].mean())).mean()
     a_matrix[1, 0] = 0
-    a_matrix[1, 1] = (X[:, 1] * (X[:, 1] - X[:, 1].mean())).mean()
-    a_matrix[1, 2] = 2 * (X[:, 1] * (X[:, 2] - X[:, 2].mean())).mean()
+    a_matrix[1, 1] = (points[:, 1] * (points[:, 1] - points[:, 1].mean())).mean()
+    a_matrix[1, 2] = 2 * (points[:, 1] * (points[:, 2] - points[:, 2].mean())).mean()
     a_matrix[2, 0] = 0
     a_matrix[2, 1] = 0
-    a_matrix[2, 2] = (X[:, 2] * (X[:, 2] - X[:, 2].mean())).mean()
+    a_matrix[2, 2] = (points[:, 2] * (points[:, 2] - points[:, 2].mean())).mean()
 
     a_matrix = a_matrix + a_matrix.T
 
     b_matrix = np.zeros(3, dtype=float)
-    b_matrix[0] = ((X[:, 0] ** 2.0 + X[:, 1] ** 2 + X[:, 2] ** 2) * (X[:, 0] - X[:, 0].mean())).mean()
-    b_matrix[1] = ((X[:, 0] ** 2.0 + X[:, 1] ** 2 + X[:, 2] ** 2) * (X[:, 1] - X[:, 1].mean())).mean()
-    b_matrix[2] = ((X[:, 0] ** 2.0 + X[:, 1] ** 2 + X[:, 2] ** 2) * (X[:, 2] - X[:, 2].mean())).mean()
+    b_matrix[0] = ((points[:, 0] ** 2.0 + points[:, 1] ** 2 + points[:, 2] ** 2) * (points[:, 0] - points[:, 0].mean())).mean()
+    b_matrix[1] = ((points[:, 0] ** 2.0 + points[:, 1] ** 2 + points[:, 2] ** 2) * (points[:, 1] - points[:, 1].mean())).mean()
+    b_matrix[2] = ((points[:, 0] ** 2.0 + points[:, 1] ** 2 + points[:, 2] ** 2) * (points[:, 2] - points[:, 2].mean())).mean()
 
     # Center=(A\B).';
     centre = np.dot(inv(a_matrix), b_matrix)
 
-    radius = np.sqrt((np.vstack([X[:, 0] - centre[0],
-                                 X[:, 1] - centre[1],
-                                 X[:, 2] - centre[2]]) ** 2).sum(0).mean())
+    radius = np.sqrt((np.vstack([points[:, 0] - centre[0],
+                                 points[:, 1] - centre[1],
+                                 points[:, 2] - centre[2]]) ** 2).sum(0).mean())
 
     return centre, radius
 
 
-def fitBox(data, centre, axes):
+def fitBox(data: np.ndarray, centre: np.ndarray, axes: List) -> Tuple[np.ndarray, float, np.ndarray, List[Line3D]]:
     max_it = 10000
     # initialise axes
     x_line = Line3D(axes[0], centre)
@@ -729,7 +762,7 @@ def fitBox(data, centre, axes):
     return final_centre, final_volume, final_dim, [x_line, y_line, z_line]
 
 
-def circumcentre3Points(a, b, c):
+def circumcentre3Points(a: np.ndarray, b: np.ndarray, c: np.ndarray) -> Tuple[np.ndarray, float, np.ndarray]:
     """
     calculate the circum centre of 3 points and the circle radius,
     also calculates the normal of the circle plane.
@@ -757,6 +790,6 @@ def circumcentre3Points(a, b, c):
     origin = 0.5 * (ldo.eval(sldo) + leo.eval(sleo))
 
     # calc radius
-    radius = np.mean([mag(a - origin), mag(b - origin), mag(c - origin)])
+    radius = float(np.mean([mag(a - origin), mag(b - origin), mag(c - origin)]))
 
     return origin, radius, normal
