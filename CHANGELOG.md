@@ -1,5 +1,8 @@
 # GIAS2 Change log
 
+## 0.7.2
+- more type hinting
+
 ## 0.7.1
 - logging fixes
 - tests for geometry functions
