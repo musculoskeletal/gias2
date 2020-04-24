@@ -912,7 +912,10 @@ class ensemble_field_function:
         if isinstance(density, int):
             density = [density] * self.dimensions
         elif len(density) != self.dimensions:
-            log.debug('ERROR: evaluate_field_in_element: needed', self.dimensions, 'density values. Got', len(density))
+            log.debug(
+                'ERROR: evaluate_field_in_element: needed %s density values. Got %s',
+                self.dimensions,
+                len(density))
             return 0
 
         try:
