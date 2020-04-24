@@ -12,7 +12,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
 import logging
-from typing import Tuple, Union, List, Optional
+from typing import Tuple, Union, List, Optional, Iterable
 
 import numpy as np
 from scipy.linalg import eig, inv
@@ -44,7 +44,7 @@ class Line3D(object):
     A line in 3D described by x = t*a + b
     """
 
-    def __init__(self, a: np.ndarray, b: np.ndarray):
+    def __init__(self, a: Iterable, b: Iterable):
         """
         A line in 3D defined by its origin `b` and direction `a`
         :param a: length 3 array of line direction vector
@@ -58,23 +58,23 @@ class Line3D(object):
         self.t1 = 1.0
         self._l = self
 
-    def setAB(self, a: np.ndarray, b: np.ndarray) -> None:
+    def setAB(self, a: Iterable, b: Iterable) -> None:
         self.a = norm(np.array(a, dtype=float))
         self._a = self.a[:, np.newaxis]
         self.b = np.array(b, dtype=float)
 
-    def eval(self, t: float) -> np.ndarray:
+    def eval(self, t: Union[float, np.ndarray]) -> np.ndarray:
         return (t * self._a).T.squeeze() + self.b
 
-    def findClosest(self, p: np.ndarray) -> Tuple[np.ndarray, float]:
+    def findClosest(self, p: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """ calc closest point on line to p
         """
         p = np.array(p, dtype=float)
-        closest_t = float(np.dot((p - self.b), self.a))
+        closest_t = np.dot((p - self.b), self.a)
         closest_p = self.eval(closest_t)
         return closest_p, closest_t
 
-    def calcDistanceFromPoint(self, p: np.ndarray, retT: bool = False) -> Union[Tuple[float, float], float]:
+    def calcDistanceFromPoint(self, p: np.ndarray, retT: bool = False) -> Union[Tuple[float, np.ndarray], float]:
         """ calc closest distance to point p
         """
         p_line, t_line = self.findClosest(p)
@@ -247,7 +247,7 @@ class LineOutOfBoundsError(Exception):
 
 class LineSegment3D(Line3D):
 
-    def __init__(self, a: np.ndarray, b: np.ndarray, t0: float, t1: float):
+    def __init__(self, a: Iterable, b: Iterable, t0: float, t1: float):
         """
         A line with finite length defined by `t0` and `t1` which are the distance
         of the two end points from `b` in direction `a`
@@ -264,7 +264,7 @@ class LineSegment3D(Line3D):
         self.p0 = self.eval(t0)
         self.p1 = self.eval(t1)
 
-    def setAB(self, a: np.ndarray, b: np.ndarray) -> None:
+    def setAB(self, a: Iterable, b: Iterable) -> None:
         self.a = norm(np.array(a, dtype=float))
         self._a = self.a[:, np.newaxis]
         self.b = np.array(b, dtype=float)
@@ -733,7 +733,7 @@ def fitBox(data: np.ndarray, centre: np.ndarray, axes: List) -> Tuple[np.ndarray
         # update box axes
         new_b = x[:3]
         old_as = np.array([v.a.copy() for v in [x_line, y_line, z_line]])
-        new_as = transform3D.transformRigid3D(old_as, [0, 0, 0, x[3], x[4], x[5]])
+        new_as = transform3D.transformRigid3D(old_as, np.array([0, 0, 0, x[3], x[4], x[5]]))
 
         x_line.setAB(new_as[0], new_b)
         y_line.setAB(new_as[1], new_b)

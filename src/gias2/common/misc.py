@@ -11,12 +11,13 @@ License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
+from typing import List, Optional, Union
 
 import numpy as np
 import sys
 
 
-def cartesian(arrays, out=None):
+def cartesian(arrays: List[np.ndarray], out: Optional[np.ndarray] = None) -> np.ndarray:
     """
     Generate a cartesian product of input arrays.
 
@@ -79,12 +80,12 @@ class ProgressOutput:
         total number of steps in the task or the maximum value of the task
     """
 
-    def __init__(self, task, total):
+    def __init__(self, task: str, total: int):
         self.task = task
         self.total = total
         self.value = 0
 
-    def progress(self, value, comment=''):
+    def progress(self, value: Union[float, int], comment: str = '') -> None:
         """
         Update the progress one the task.
 
@@ -104,7 +105,7 @@ class ProgressOutput:
         sys.stdout.write("Progress: {} : {:2d}% {}  \r".format(self.task, percent, outcomment))
         sys.stdout.flush()
 
-    def output(self, comment=''):
+    def output(self, comment: str = '') -> None:
         """
         Update the completion of the task.
 
