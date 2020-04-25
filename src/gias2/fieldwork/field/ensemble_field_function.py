@@ -1298,12 +1298,12 @@ def load_eff_shelve(filename, E, meshfn=None, filedir=None, force=False):
             for s in S['subfields']:
                 if s[1][:len(filedir)] == filedir:
                     try:
-                        E.subfields[s[0]] = load_ensemble_shelve(s[1][len(filedir):], path=filedir)
+                        E.subfields[s[0]] = load_eff_shelve(s[1][len(filedir):], path=filedir)
                     except IOError:
                         pass
                 else:
                     try:
-                        E.subfields[s[0]] = load_ensemble_shelve(s[1], path=filedir)
+                        E.subfields[s[0]] = load_eff_shelve(s[1], path=filedir)
                     except IOError:
                         pass
         else:
