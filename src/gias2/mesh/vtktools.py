@@ -17,12 +17,14 @@ import logging
 import pickle
 import warnings
 from os import path
+from typing import Optional, Callable, Tuple, List, Any, Type
 
 import sys
 import vtk
-from numpy import zeros, array, uint8, int16, ones, newaxis, ascontiguousarray
+from numpy import zeros, array, uint8, int16, ones, newaxis, ascontiguousarray, ndarray
 from vtk.util import numpy_support
 
+from gias2.image_analysis.image_tools import Scan
 from gias2.mesh import plywriter
 from gias2.mesh import simplemesh
 
@@ -60,15 +62,15 @@ class Writer(object):
         # self._field_data = kwargs.get('field')
         self._write_ascii = kwargs.get('ascii')
 
-    def setFilename(self, f):
+    def setFilename(self, f: str) -> None:
         self.filename = f
         self._parse_format()
 
-    def _parse_format(self):
+    def _parse_format(self) -> None:
         self.file_prefix, self.file_ext = path.splitext(self.filename)
         self.file_ext = self.file_ext.lower()
 
-    def _make_polydata(self):
+    def _make_polydata(self) -> None:
         self._polydata = polygons2Polydata(
             self._vertices,
             self._faces,
@@ -77,7 +79,7 @@ class Writer(object):
             vnormals=self._vertex_normals,
         )
 
-    def _make_render_window(self):
+    def _make_render_window(self) -> None:
         if self._polydata is None:
             self._make_polydata()
         ply_mapper = vtk.vtkPolyDataMapper()
@@ -93,26 +95,26 @@ class Writer(object):
         self._render_window.AddRenderer(ren1)
         ren1.AddActor(ply_actor)
 
-    def write(self, filename=None, ascenc=True):
+    def write(self, filename: Optional[str] = None, ascenc: bool = True) -> None:
         if filename is not None:
             self.filename = filename
 
-        filePrefix, fileExt = path.splitext(self.filename)
-        fileExt = fileExt.lower()
-        if fileExt == '.obj':
+        file_prefix, file_ext = path.splitext(self.filename)
+        file_ext = file_ext.lower()
+        if file_ext == '.obj':
             self.writeOBJ()
-        elif fileExt == '.wrl':
+        elif file_ext == '.wrl':
             self.writeVRML()
-        elif fileExt == '.stl':
+        elif file_ext == '.stl':
             self.writeSTL(ascenc=ascenc)
-        elif fileExt == '.ply':
+        elif file_ext == '.ply':
             self.writePLY(ascenc=ascenc)
-        elif fileExt == '.vtp':
+        elif file_ext == '.vtp':
             self.writeVTP(ascenc=ascenc)
         else:
             raise ValueError('unknown file extension')
 
-    def writeOBJ(self, filename=None):
+    def writeOBJ(self, filename: Optional[str] = None) -> None:
         if filename is not None:
             self.filename = filename
         if self._render_window is None:
@@ -123,7 +125,7 @@ class Writer(object):
         w.SetFilePrefix(path.splitext(self.filename)[0])
         w.Write()
 
-    def writePLY(self, filename=None, ascenc=True):
+    def writePLY(self, filename: Optional[str] = None, ascenc: bool = True) -> None:
         if filename is not None:
             self.filename = filename
 
@@ -164,7 +166,7 @@ class Writer(object):
 
         w.Write()
 
-    def writeSTL(self, filename=None, ascenc=True):
+    def writeSTL(self, filename: Optional[str] = None, ascenc: bool = True) -> None:
         if filename is not None:
             self.filename = filename
         if self._polydata is None:
@@ -182,7 +184,7 @@ class Writer(object):
             w.SetFileTypeToBinary()
         w.Write()
 
-    def writeVRML(self, filename=None):
+    def writeVRML(self, filename: Optional[str] = None) -> None:
         if filename is not None:
             self.filename = filename
         if self._render_window is None:
@@ -193,7 +195,7 @@ class Writer(object):
         w.SetFileName(self.filename)
         w.Write()
 
-    def writeVTP(self, filename=None, ascenc=True, xmlenc=True):
+    def writeVTP(self, filename: Optional[str] = None, ascenc: bool = True, xmlenc: bool = True) -> None:
         if filename is not None:
             self.filename = filename
         if self._polydata is None:
@@ -225,8 +227,8 @@ class Reader(object):
     """
 
     def __init__(self, **kwargs):
-        self.filename = kwargs.get('filename')
-        self.verbose = kwargs.get('verbose', True)
+        self.filename: str = kwargs.get('filename')
+        self.verbose: bool = kwargs.get('verbose', True)
         self._points = None
         self._triangles = None
         self._vertexNormals = None
@@ -236,29 +238,29 @@ class Reader(object):
         self._dimensions = None
         self.polydata = None
 
-    def setFilename(self, filename):
+    def setFilename(self, filename: str) -> None:
         self.filename = filename
 
-    def read(self, filename=None):
+    def read(self, filename: Optional[str] = None) -> None:
         if filename is not None:
             self.filename = filename
 
-        filePrefix, fileExt = path.splitext(self.filename)
-        fileExt = fileExt.lower()
-        if fileExt == '.obj':
+        file_prefix, file_ext = path.splitext(self.filename)
+        file_ext = file_ext.lower()
+        if file_ext == '.obj':
             self.readOBJ()
-        elif fileExt == '.wrl':
+        elif file_ext == '.wrl':
             self.readVRML()
-        elif fileExt == '.stl':
+        elif file_ext == '.stl':
             self.readSTL()
-        elif fileExt == '.ply':
+        elif file_ext == '.ply':
             self.readPLY()
-        elif fileExt == '.vtp':
+        elif file_ext == '.vtp':
             self.readVTP()
         else:
             raise ValueError('unknown file extension in {}'.format(self.filename))
 
-    def readVRML(self, filename=None, actor=0):
+    def readVRML(self, filename: Optional[str] = None, actor: int = 0) -> None:
         if filename is not None:
             self.filename = filename
         r = vtk.vtkVRMLImporter()
@@ -278,7 +280,7 @@ class Reader(object):
         else:
             self._load()
 
-    def readOBJ(self, filename=None):
+    def readOBJ(self, filename: Optional[str] = None) -> None:
         if filename is not None:
             self.filename = filename
 
@@ -292,7 +294,7 @@ class Reader(object):
         else:
             self._load()
 
-    def readPLY(self, filename=None):
+    def readPLY(self, filename: Optional[str] = None) -> None:
         if filename is not None:
             self.filename = filename
 
@@ -306,7 +308,7 @@ class Reader(object):
         else:
             self._load()
 
-    def readSTL(self, filename=None):
+    def readSTL(self, filename: Optional[str] = None) -> None:
         if filename is not None:
             self.filename = filename
 
@@ -320,7 +322,7 @@ class Reader(object):
         else:
             self._load()
 
-    def readVTP(self, filename=None):
+    def readVTP(self, filename: Optional[str] = None) -> None:
         if filename is not None:
             self.filename = filename
 
@@ -337,7 +339,7 @@ class Reader(object):
         else:
             self._load()
 
-    def _isXML(self, f):
+    def _isXML(self, f: str) -> bool:
         """Check if file is an xml file
         """
         with open(f, 'r') as fp:
@@ -348,20 +350,20 @@ class Reader(object):
         else:
             return False
 
-    def _load(self):
+    def _load(self) -> None:
         self._loadPoints()
         self._loadTriangles()
         self._loadVertexNormals()
 
-    def _loadPoints(self):
-        P = self.polydata.GetPoints().GetData()
-        self._dimensions = P.GetNumberOfComponents()
-        self._nPoints = P.GetNumberOfTuples()
+    def _loadPoints(self) -> None:
+        points = self.polydata.GetPoints().GetData()
+        self._dimensions = points.GetNumberOfComponents()
+        self._nPoints = points.GetNumberOfTuples()
 
         if self.verbose:
             log.debug('loading %(np)i points in %(d)i dimensions' % {'np': self._nPoints, 'd': self._dimensions})
 
-        self._points = numpy_support.vtk_to_numpy(P)
+        self._points = numpy_support.vtk_to_numpy(points)
 
         # if self._dimensions==1:
         #     self._points = array([P.GetTuple1(i) for i in range(self._nPoints)])
@@ -374,246 +376,52 @@ class Reader(object):
         # elif self._dimensions==9:
         #     self._points = array([P.GetTuple9(i) for i in range(self._nPoints)])
 
-    def _loadTriangles(self):
-        polyData = self.polydata.GetPolys().GetData()
-        # X = [int(polyData.GetTuple1(i)) for i in range(polyData.GetNumberOfTuples())]
-        X = numpy_support.vtk_to_numpy(polyData)
+    def _loadTriangles(self) -> None:
+        poly_data = self.polydata.GetPolys().GetData()
+        face_indices = numpy_support.vtk_to_numpy(poly_data)
 
         # assumes that faces are triangular
-        X = array(X).reshape((-1, 4))
-        self._nFaces = X.shape[0]
-        self._triangles = X[:, 1:].copy()
+        face_indices = array(face_indices).reshape((-1, 4))
+        self._nFaces = face_indices.shape[0]
+        self._triangles = face_indices[:, 1:].copy()
 
         if self.verbose:
-            log.debug('loaded %(f)i faces' % {'f': self._nFaces})
+            log.debug('loaded %s faces', self._nFaces)
 
-    def _loadVertexNormals(self):
-        ptsNormals = self.polydata.GetPointData().GetNormals()
-        if ptsNormals is not None:
-            self._vertexNormals = numpy_support.vtk_to_numpy(ptsNormals)
+    def _loadVertexNormals(self) -> None:
+        pts_normals = self.polydata.GetPointData().GetNormals()
+        if pts_normals is not None:
+            self._vertexNormals = numpy_support.vtk_to_numpy(pts_normals)
             self._nVertexNormals = self._vertexNormals.shape[0]
         else:
             self._nVertexNormals = 0
             self._vertexNormals = None
 
         if self.verbose:
-            log.debug('loaded %(f)i vertex normals' % {'f': self._nVertexNormals})
+            log.debug('loaded %s vertex normals', self._nVertexNormals)
 
-    def getSimplemesh(self):
-        S = simplemesh.SimpleMesh(self._points, self._triangles)
-        # S.calcFaceProperties()
+    def getSimplemesh(self) -> simplemesh.SimpleMesh:
+        mesh = simplemesh.SimpleMesh(self._points, self._triangles)
 
         if self._vertexNormals is not None:
-            S.vertexNormals = array(self._vertexNormals)
-            S.hasVertexNormals = True
+            mesh.vertexNormals = array(self._vertexNormals)
+            mesh.hasVertexNormals = True
 
-        return S
+        return mesh
 
 
-def savepoly(sm, filename, ascenc=True):
+def savepoly(sm: simplemesh.SimpleMesh, filename: str, ascenc: bool = True) -> None:
     w = Writer(v=sm.v, f=sm.f, vn=sm.vertexNormals)
     w.write(filename, ascenc=ascenc)
 
 
-def loadpoly(filename, verbose=False):
+def loadpoly(filename: str, verbose: bool = False) -> simplemesh.SimpleMesh:
     r = Reader(verbose=verbose)
     r.read(filename)
     return r.getSimplemesh()
 
 
-class PolydataReader:
-    def __init__(self, filename):
-        self.fileName = filename
-
-    def loadData(self):
-        log.debug("opening", self.fileName)
-        self.file = open(self.fileName, "r")
-        self.file.seek(0, 2)
-        self.fileEnd = self.file.tell()
-
-        # determine number of points in the data
-        self.file.seek(0)
-        foundNumPoints = False
-        while (foundNumPoints == False) and (self.file.tell() < self.fileEnd):
-            line = self.file.readline()
-            if line.find("POINTS") > -1:
-                foundNumPoints = True
-                line = line.split()
-                self.numPoints = int(line[1])
-                log.debug(str(self.numPoints) + " points in file")
-
-        if foundNumPoints == False:
-            log.debug("Unable to find number of points!")
-
-            # determine number of faces in the data
-        self.file.seek(0)
-        foundNumFaces = False
-        while (foundNumFaces == False) and (self.file.tell() < self.fileEnd):
-            line = self.file.readline()
-            if line.find("POLYGONS") > -1:
-                foundNumFaces = True
-                line = line.split()
-                self.numFaces = int(line[1])
-                log.debug(str(self.numFaces) + " faces in file")
-
-        if foundNumFaces == False:
-            log.debug("Unable to find number of Faces!")
-
-    def getPoints(self):
-
-        try:
-            self.numPoints
-        except AttributeError:
-            log.debug("number of points unknown. Run .loadData() first")
-        else:
-            self.file.seek(0)
-            foundPoints = False
-            while (foundPoints == False) and (self.file.tell() < self.fileEnd):
-
-                # find points section header
-                line = self.file.readline()
-                if line.find("POINTS") > -1:
-                    foundPoints = True
-                    log.debug("getting points...")
-                    self.points = zeros([self.numPoints, 3], dtype=float)
-                    pointCounter = 0
-
-                    while pointCounter < self.numPoints:
-                        pointLine = array(self.file.readline().split(), dtype=float)
-
-                        for a in range(0, len(pointLine) / 3):
-                            self.points[pointCounter, :] = pointLine[0 + 3 * a:3 + 3 * a]
-                            pointCounter += 1
-
-                    log.debug("Got " + str(self.points.shape[0]) + " points")
-                    return self.points
-
-            if foundPoints == False:
-                log.debug("No points found!")
-
-    def getPointNormals(self):
-
-        try:
-            self.numPoints
-        except AttributeError:
-            log.debug("number of points unknown. Run .loadData() first")
-        else:
-            self.file.seek(0)
-            foundNormals = False
-            while (foundNormals == False) and (self.file.tell() < self.fileEnd):
-
-                # find points section header
-                line = self.file.readline()
-                if line.find("NORMALS") > -1:
-                    foundNormals = True
-                    log.debug("getting point normals...")
-                    self.pointNormals = zeros([self.numPoints, 3], dtype=float)
-                    normalCounter = 0
-
-                    while normalCounter < self.numPoints:
-                        normalLine = array(self.file.readline().split(), dtype=float)
-
-                        for a in range(0, len(normalLine) / 3):
-                            self.pointNormals[normalCounter, :] = normalLine[0 + 3 * a:3 + 3 * a]
-                            normalCounter += 1
-
-                    log.debug("Got " + str(self.pointNormals.shape[0]) + " point normals")
-                    return self.pointNormals
-
-            if foundNormals == False:
-                log.debug("No point Normals found!")
-
-    def getFaces(self):
-        try:
-            self.numFaces
-        except AttributeError:
-            log.debug("number of faces unknown. Run .loadData() first")
-        else:
-            self.file.seek(0)
-            foundFaces = False
-            while (foundFaces == False) and (self.file.tell() < self.fileEnd):
-
-                # find points section header
-                line = self.file.readline()
-                if line.find("POLYGONS") > -1:
-                    foundFaces = True
-                    log.debug("getting faces...")
-                    self.faces = zeros([self.numFaces, 3], dtype=int)
-                    faceCounter = 0
-
-                    while faceCounter < self.numFaces:
-                        faceLine = array(self.file.readline().split(), dtype=int)
-
-                        self.faces[faceCounter, :] = faceLine[1:4]
-                        faceCounter += 1
-
-                    log.debug("Got " + str(self.faces.shape[0]) + " faces")
-                    return self.faces
-
-            if foundFaces == False:
-                log.debug("No faces found!")
-
-    def getCurvature(self):
-
-        try:
-            self.numPoints
-        except AttributeError:
-            log.debug("number of points unknown. Run .loadData() first")
-        else:
-            self.file.seek(0)
-            foundCurv = False
-            while (foundCurv == False) and (self.file.tell() < self.fileEnd):
-
-                # find curvature section header
-                line = self.file.readline()
-                if line.find("Curvature") > -1:
-                    foundCurv = True
-                    log.debug("Getting curvature values...")
-
-                    self.curv = zeros([self.numPoints], dtype=float)
-                    curvCounter = 0
-                    self.file.readline()
-
-                    while curvCounter < self.numPoints:
-                        curvLine = array(self.file.readline().split(), dtype=float)
-                        for i in curvLine:
-                            self.curv[curvCounter] = i
-                            curvCounter += 1
-
-                    self.curvMean = self.curv.mean()
-                    self.curvSD = self.curv.std()
-                    log.debug("Got " + str(self.curv.shape[0]) + " curvature values")
-                    return self.curvMean, self.curvSD
-
-            if foundCurv == False:
-                log.debug("No curvature values found!")
-
-    def getEdgePoints(self, sd):
-
-        # gets datapoints with local curvature greater than sd standard
-        # deviations away from the mean
-
-        try:
-            self.points
-        except AttributeError:
-            self.getPoints()
-            self.getCurvature()
-            self.getEdgePoints(sd)
-        else:
-            self.edgePoints = []
-            limit = sd * self.curvSD
-            counter = 0
-
-            for i in range(0, self.numPoints):
-                if abs(self.curv[i] - self.curvMean) > limit:
-                    self.edgePoints.append(self.points[i])
-                    counter += 1
-
-            log.debug(str(counter) + " edge points found at " + str(sd) + " SD")
-            return self.edgePoints
-
-
-def renderPolyData(data):
+def renderPolyData(data: vtk.vtkPolyData):
     mapper = vtk.vtkPolyDataMapper()
     if vtk.VTK_MAJOR_VERSION < 6:
         mapper.SetInput(data)
@@ -645,87 +453,95 @@ def renderPolyData(data):
     iren.Start()
 
 
-def array2vtkImage(arrayImage, dtype, flipDim=False, retImporter=False, extent=None, pipeline=False):
+def array2vtkImage(
+        array_image: ndarray,
+        dtype: Type,
+        flipDim: bool = False,
+        retImporter: bool = False,
+        extent: Optional[List[int]] = None,
+        pipeline: bool = False) -> vtk.vtkImageData:
     # import array image into vtk
-    imageImporter = vtk.vtkImageImport()
+    image_importer = vtk.vtkImageImport()
 
     # just to be sure
-    # arr = array(arrayImage, dtype=dtype)
-    arr = array(arrayImage, dtype=dtype, order='C')
+    arr = array(array_image, dtype=dtype, order='C')
 
     if dtype == int16:
         # log.debug('setting data scalar to int16')
-        imageImporter.SetDataScalarTypeToShort()
+        image_importer.SetDataScalarTypeToShort()
     elif dtype == uint8:
         # log.debug('setting data scalar to uint8')
-        imageImporter.SetDataScalarTypeToUnsignedChar()
+        image_importer.SetDataScalarTypeToUnsignedChar()
     else:
         raise ValueError('Unsupported datatype {}'.format(dtype))
 
-    imageImporter.SetNumberOfScalarComponents(1)
+    image_importer.SetNumberOfScalarComponents(1)
     # set imported image size
-    s = arrayImage.shape
+    s = array_image.shape
     if extent is None:
         if flipDim:
             extent = [0, s[2] - 1, 0, s[1] - 1, 0, s[0] - 1]
         else:
             extent = [0, s[0] - 1, 0, s[1] - 1, 0, s[2] - 1]
 
-    imageImporter.SetDataExtent(extent)
-    imageImporter.SetWholeExtent(extent)
+    image_importer.SetDataExtent(*extent)
+    image_importer.SetWholeExtent(*extent)
 
     if vtk.VTK_MAJOR_VERSION >= 6:
-        imageImporter.CopyImportVoidPointer(arr, arr.nbytes)
-        # imageImporter.SetImportVoidPointer(arr, 1)
+        image_importer.CopyImportVoidPointer(arr, arr.nbytes)
     else:
-        imageString = arr.tostring()
-        imageImporter.CopyImportVoidPointer(imageString, len(imageString))
+        image_string = arr.tostring()
+        image_importer.CopyImportVoidPointer(image_string, len(image_string))
 
-    imageImporter.Update()
+    image_importer.Update()
 
     # in VTK 6+, not returning the importer results in erroneous image array values
     # in the vtkImage
     if retImporter or pipeline:
-        return imageImporter
+        return image_importer
     else:
         if vtk.VTK_MAJOR_VERSION >= 6:
             warnings.warn(
                 'You should return the importer (retImporter=True) in VTK6 and above. Otherwise, values in the vtkimage will likely be garbage.',
                 UserWarning
             )
-        return imageImporter.GetOutput()
+        return image_importer.GetOutput()
 
 
-def vtkImage2Array(vtkImage, dtype, flipDim=False):
+def vtkImage2Array(vtk_image: vtk.vtkImageData, dtype: Type, flipDim: bool = False) -> ndarray:
     exporter = vtk.vtkImageExport()
     if vtk.VTK_MAJOR_VERSION < 6:
-        exporter.SetInput(vtkImage)
+        exporter.SetInput(vtk_image)
     else:
-        exporter.SetInputDataObject(vtkImage)
+        exporter.SetInputDataObject(vtk_image)
     s = array(exporter.GetDataDimensions())
     if flipDim:
         s = s[::-1]
-        I = zeros(s, dtype=dtype)
-        exporter.Export(I)
-        return I.transpose((2, 1, 0))
+        img_arr = zeros(s, dtype=dtype)
+        exporter.Export(img_arr)
+        return img_arr.transpose((2, 1, 0))
     else:
-        I = zeros(s, dtype=dtype)
-        exporter.Export(I)
-        return I
+        img_arr = zeros(s, dtype=dtype)
+        exporter.Export(img_arr)
+        return img_arr
 
 
-def tri2Polydata(V, T, normals=True, featureangle=60.0):
+def tri2Polydata(
+        vertices: ndarray,
+        tris: ndarray,
+        normals: bool = True,
+        featureangle: Optional[float] = 60.0) -> vtk.vtkPolyData:
     points = vtk.vtkPoints()
     triangles = vtk.vtkCellArray()
 
-    for v in V:
+    for v in vertices:
         points.InsertNextPoint(v)
 
-    for t in T:
+    for t in tris:
         triangle = vtk.vtkTriangle()
-        triangle.GetPointIds().SetId(0, t[0]);
-        triangle.GetPointIds().SetId(1, t[1]);
-        triangle.GetPointIds().SetId(2, t[2]);
+        triangle.GetPointIds().SetId(0, t[0])
+        triangle.GetPointIds().SetId(1, t[1])
+        triangle.GetPointIds().SetId(2, t[2])
         triangles.InsertNextCell(triangle)
 
     polydata = vtk.vtkPolyData()
@@ -756,43 +572,47 @@ class NoPolyDataError(Exception):
     pass
 
 
-def polyData2Tri(p, pipeline=False):
+def polyData2Tri(p: vtk.vtkPolyData, pipeline: bool = False) -> Tuple[ndarray, ndarray, ndarray]:
     if pipeline:
         p = p.GetOutput()
 
     if p.GetNumberOfPoints() == 0:
-        # raise ValueError('no points in polydata')
         raise NoPolyDataError('no points in polydata')
 
     # get vertices
-    V = array([p.GetPoint(i) for i in range(p.GetNumberOfPoints())])
+    verts = array([p.GetPoint(i) for i in range(p.GetNumberOfPoints())])
 
     # get triangles
-    T = []
+    tris = []
     for i in range(p.GetNumberOfCells()):
         ids = p.GetCell(i).GetPointIds()
-        T.append((ids.GetId(0), ids.GetId(1), ids.GetId(2)))
+        tris.append((ids.GetId(0), ids.GetId(1), ids.GetId(2)))
 
-    T = array(T, dtype=int)
+    tris = array(tris, dtype=int)
 
     # curvature
 
     # normals
-    polydataNormals = p.GetPointData().GetNormals()
-    if polydataNormals != None:
-        s = polydataNormals.GetDataSize()
-        N = zeros(s, dtype=float)
+    polydata_normals = p.GetPointData().GetNormals()
+    if polydata_normals is not None:
+        s = polydata_normals.GetDataSize()
+        normals = zeros(s, dtype=float)
         for i in range(s):
-            N[i] = polydataNormals.GetValue(i)
+            normals[i] = polydata_normals.GetValue(i)
 
-        N = N.reshape((int(s / 3), 3))
+        normals = normals.reshape((int(s / 3), 3))
     else:
-        N = None
+        normals = None
 
-    return V, T, N
+    return verts, tris, normals
 
 
-def polygons2Polydata(vertices, faces, vcolours=None, fcolours=None, vnormals=None):
+def polygons2Polydata(
+        vertices: ndarray,
+        faces: List[List[int]],
+        vcolours: Optional[ndarray] = None,
+        fcolours: Optional[ndarray] = None,
+        vnormals: Optional[ndarray] = None) -> vtk.vtkPolyData:
     """
     Create a vtkPolyData instance from a set of vertices and
     faces.
@@ -817,7 +637,7 @@ def polygons2Polydata(vertices, faces, vcolours=None, fcolours=None, vnormals=No
         ))
     else:
         for x, y, z in vertices:
-            points.InsertNextPoint(x, y, z)
+            points.InsertNextPoint((x, y, z))
 
     # create polygons
     polygons = vtk.vtkCellArray()
@@ -829,9 +649,9 @@ def polygons2Polydata(vertices, faces, vcolours=None, fcolours=None, vnormals=No
         polygons.InsertNextCell(polygon)
 
     # create polydata
-    P = vtk.vtkPolyData()
-    P.SetPoints(points)
-    P.SetPolys(polygons)
+    polydata = vtk.vtkPolyData()
+    polydata.SetPoints(points)
+    polydata.SetPolys(polygons)
 
     # assign vertex colours
     if vcolours is not None:
@@ -844,8 +664,8 @@ def polygons2Polydata(vertices, faces, vcolours=None, fcolours=None, vnormals=No
             else:
                 colors.InsertNextTuple3(*c)
 
-        P.GetPointData().SetScalars(colors)
-        P.Modified()
+        polydata.GetPointData().SetScalars(colors)
+        polydata.Modified()
 
     # assign normals to points
     if vnormals is not None:
@@ -855,14 +675,18 @@ def polygons2Polydata(vertices, faces, vcolours=None, fcolours=None, vnormals=No
         vtk_vnormals = numpy_support.numpy_to_vtk(
             ascontiguousarray(array(vnormals))
         )
-        P.GetPointData().SetNormals(vtk_vnormals)
-        P.Modified()
+        polydata.GetPointData().SetNormals(vtk_vnormals)
+        polydata.Modified()
         log.debug('normals set')
 
-    return P
+    return polydata
 
 
-def polygons2Tri(vertices, faces, clean=False, normals=False):
+def polygons2Tri(
+        vertices: ndarray,
+        faces: List[List[int]],
+        clean: bool = False,
+        normals: bool = False) -> Tuple[ndarray, ndarray, ndarray]:
     """
     Uses vtkTriangleFilter to convert a set of polygons
     to triangles. 
@@ -923,7 +747,7 @@ def polygons2Tri(vertices, faces, clean=False, normals=False):
     return polyData2Tri(getPreviousOutput())
 
 
-class polydataFromImageParams(object):
+class PolydataFromImageParams(object):
     def __init__(self):
         self.smoothImage = 1
         self.imgSmthSD = 2.0
@@ -939,7 +763,7 @@ class polydataFromImageParams(object):
         self.filterNormal = 1
         self.calcCurvature = 1
 
-    def save(self, filename):
+    def save(self, filename: str) -> None:
         f = open(filename + '.polyparams', 'w')
         pickle.dump(self, f)
         f.close()
@@ -947,74 +771,78 @@ class polydataFromImageParams(object):
 
 class DummyFilter(object):
 
-    def __init__(self, output_data_object):
+    def __init__(self, output_data_object: Any):
         self.data_object = output_data_object
 
-    def getOutputDataObject(self):
+    def getOutputDataObject(self) -> Any:
         return self.data_object
 
-    def getOutput(self):
+    def getOutput(self) -> Any:
         return self.data_object
 
 
-def polydataFromImage(vtkImage, params, disp=0, pipeline=False):
+def polydataFromImage(
+        vtk_image: vtk.vtkImageData,
+        params: PolydataFromImageParams,
+        disp: int = 0,
+        pipeline: bool = False) -> vtk.vtkPolyData:
     if pipeline:
-        previousFilter = vtkImage
+        previous_filter = vtk_image
     else:
-        previousFilter = DummyFilter(vtkImage)
+        previous_filter = DummyFilter(vtk_image)
 
     # testing - gaussian smoothing to binary image
     if params.smoothImage:
         log.debug('smoothing image...')
-        imageSmoother = vtk.vtkImageGaussianSmooth()
-        imageSmoother.SetStandardDeviation(params.imgSmthSD)
-        imageSmoother.SetRadiusFactor(params.imgSmthRadius)
+        image_smoother = vtk.vtkImageGaussianSmooth()
+        image_smoother.SetStandardDeviation(params.imgSmthSD)
+        image_smoother.SetRadiusFactor(params.imgSmthRadius)
 
         if vtk.VTK_MAJOR_VERSION < 6:
-            imageSmoother.SetInput(previousFilter.getOutput())
+            image_smoother.SetInput(previous_filter.getOutput())
         else:
             if pipeline:
-                imageSmoother.SetInputConnection(previousFilter.GetOutputPort())
+                image_smoother.SetInputConnection(previous_filter.GetOutputPort())
             else:
-                imageSmoother.SetInputDataObject(previousFilter.getOutputDataObject())
+                image_smoother.SetInputDataObject(previous_filter.getOutputDataObject())
 
-        previousFilter = imageSmoother
+        previous_filter = image_smoother
 
     # triangulate image to create mesh  
     log.debug("extracting contour...")
-    # contourExtractor = vtk.vtkContourFilter()
-    # contourExtractor.GenerateTrianglesOn()
-    contourExtractor = vtk.vtkMarchingCubes()  # causes artefact faces in the corner of the volume
-    # contourExtractor = vtk.vtkImageMarchingCubes()  # causes artefact faces in the corner of the volume
-    contourExtractor.ComputeNormalsOn()
-    contourExtractor.ComputeScalarsOn()
-    contourExtractor.SetValue(0, params.isoValue)
+    # contour_extractor = vtk.vtkContourFilter()
+    # contour_extractor.GenerateTrianglesOn()
+    contour_extractor = vtk.vtkMarchingCubes()  # causes artefact faces in the corner of the volume
+    # contour_extractor = vtk.vtkImageMarchingCubes()  # causes artefact faces in the corner of the volume
+    contour_extractor.ComputeNormalsOn()
+    contour_extractor.ComputeScalarsOn()
+    contour_extractor.SetValue(0, params.isoValue)
 
     if vtk.VTK_MAJOR_VERSION < 6:
-        contourExtractor.SetInput(previousFilter.getOutput())
+        contour_extractor.SetInput(previous_filter.getOutput())
     else:
         if pipeline:
-            contourExtractor.SetInputConnection(previousFilter.GetOutputPort())
+            contour_extractor.SetInputConnection(previous_filter.GetOutputPort())
         else:
-            contourExtractor.SetInputDataObject(previousFilter.getOutputDataObject())
-            contourExtractor.Update()
+            contour_extractor.SetInputDataObject(previous_filter.getOutputDataObject())
+            contour_extractor.Update()
 
-    previousFilter = contourExtractor
+    previous_filter = contour_extractor
 
     # triangle filter
     log.debug("filtering triangles...")
-    triFilter = vtk.vtkTriangleFilter()
+    tri_filter = vtk.vtkTriangleFilter()
 
     if vtk.VTK_MAJOR_VERSION < 6:
-        triFilter.SetInput(previousFilter.getOutput())
+        tri_filter.SetInput(previous_filter.getOutput())
     else:
         if pipeline:
-            triFilter.SetInputConnection(previousFilter.GetOutputPort())
+            tri_filter.SetInputConnection(previous_filter.GetOutputPort())
         else:
-            triFilter.SetInputDataObject(previousFilter.getOutputDataObject())
-            triFilter.Update()
+            tri_filter.SetInputDataObject(previous_filter.getOutputDataObject())
+            tri_filter.Update()
 
-    previousFilter = triFilter
+    previous_filter = tri_filter
 
     # smooth polydata
     if params.smoothIt:
@@ -1024,43 +852,32 @@ def polydataFromImage(vtkImage, params, disp=0, pipeline=False):
         smoother.SetFeatureEdgeSmoothing(params.smoothFeatureEdge)
 
         if vtk.VTK_MAJOR_VERSION < 6:
-            smoother.SetInput(previousFilter.getOutput())
+            smoother.SetInput(previous_filter.getOutput())
         else:
             if pipeline:
-                smoother.SetInputConnection(previousFilter.GetOutputPort())
+                smoother.SetInputConnection(previous_filter.GetOutputPort())
             else:
-                smoother.SetInputDataObject(previousFilter.getOutputDataObject())
+                smoother.SetInputDataObject(previous_filter.getOutputDataObject())
                 smoother.Update()
 
-        previousFilter = smoother
+        previous_filter = smoother
 
     # decimate polydata
     if params.deciRatio:
-        # print "decimating..."
-        # decimator = vtk.vtkDecimatePro()
-        # decimator.SetInput( getPreviousOutput() )
-        # decimator.SetTargetReduction( params.deciRatio )
-        # decimator.SetPreserveTopology( params.deciPerserveTopology )
-        # decimator.SplittingOn()
-        # decimator.Update()
-        # getPreviousOutput = decimator.GetOutput
-        # if disp:
-        #   RenderPolyData( decimator.GetOutput() )
-
         log.debug("decimating using quadric...")
         decimator = vtk.vtkQuadricDecimation()
         decimator.SetTargetReduction(params.deciRatio)
 
         if vtk.VTK_MAJOR_VERSION < 6:
-            decimator.SetInput(previousFilter.getOutput())
+            decimator.SetInput(previous_filter.getOutput())
         else:
             if pipeline:
-                decimator.SetInputConnection(previousFilter.GetOutputPort())
+                decimator.SetInputConnection(previous_filter.GetOutputPort())
             else:
-                decimator.SetInputDataObject(previousFilter.getOutputDataObject())
+                decimator.SetInputDataObject(previous_filter.getOutputDataObject())
                 decimator.Update()
 
-        previousFilter = decimator
+        previous_filter = decimator
 
     # clean mesh
     if params.clean:
@@ -1073,15 +890,15 @@ def polydataFromImage(vtkImage, params, disp=0, pipeline=False):
         cleaner.SetTolerance(params.cleanTolerance)
 
         if vtk.VTK_MAJOR_VERSION < 6:
-            cleaner.SetInput(previousFilter.getOutput())
+            cleaner.SetInput(previous_filter.getOutput())
         else:
             if pipeline:
-                cleaner.SetInputConnection(previousFilter.GetOutputPort())
+                cleaner.SetInputConnection(previous_filter.GetOutputPort())
             else:
-                cleaner.SetInputDataObject(previousFilter.getOutputDataObject())
+                cleaner.SetInputDataObject(previous_filter.getOutputDataObject())
                 cleaner.Update()
 
-        previousFilter = cleaner
+        previous_filter = cleaner
 
     # filter normals
     if params.filterNormal:
@@ -1092,15 +909,15 @@ def polydataFromImage(vtkImage, params, disp=0, pipeline=False):
         normal.SetConsistency(1)
 
         if vtk.VTK_MAJOR_VERSION < 6:
-            normal.SetInput(previousFilter.getOutput())
+            normal.SetInput(previous_filter.getOutput())
         else:
             if pipeline:
-                normal.SetInputConnection(previousFilter.GetOutputPort())
+                normal.SetInputConnection(previous_filter.GetOutputPort())
             else:
-                normal.SetInputDataObject(previousFilter.getOutputDataObject())
+                normal.SetInputDataObject(previous_filter.getOutputDataObject())
                 normal.Update()
 
-        previousFilter = normal
+        previous_filter = normal
 
     if params.calcCurvature:
         log.debug("calculating curvature...")
@@ -1108,26 +925,33 @@ def polydataFromImage(vtkImage, params, disp=0, pipeline=False):
         curvature.SetCurvatureTypeToMean()
 
         if vtk.VTK_MAJOR_VERSION < 6:
-            curvature.SetInput(previousFilter.getOutput())
+            curvature.SetInput(previous_filter.getOutput())
         else:
             if pipeline:
-                curvature.SetInputConnection(previousFilter.GetOutputPort())
+                curvature.SetInputConnection(previous_filter.GetOutputPort())
             else:
-                curvature.SetInputDataObject(previousFilter.getOutputDataObject())
+                curvature.SetInputDataObject(previous_filter.getOutputDataObject())
                 curvature.Update()
 
-        previousFilter = curvature
+        previous_filter = curvature
 
-    previousFilter.Update()
+    previous_filter.Update()
 
     if pipeline:
-        return previousFilter
+        return previous_filter
     else:
-        return previousFilter.getOutputDataObject()
+        return previous_filter.getOutputDataObject()
 
 
-def triSurface2BinaryMask(v, t, imageShape, outputOrigin=None, outputSpacing=None, extent=None):
-    """Create a binary image mask from a triangulated surface.
+def triSurface2BinaryMask(
+        v: ndarray,
+        t: ndarray,
+        image_shape: Tuple[int, int, int],
+        outputOrigin: List[float] = None,
+        outputSpacing: List[float] = None,
+        extent: List[int] = None):
+    """
+    Create a binary image mask from a triangulated surface.
 
     Inputs
     ------
@@ -1139,8 +963,8 @@ def triSurface2BinaryMask(v, t, imageShape, outputOrigin=None, outputSpacing=Non
 
     Returns
     -------
-    maskImageArray : binary image array
-    gfPoly : vtkPolyData instance of the triangulated surface
+    mask_image_array : binary image array
+    surf_poly : vtkPolyData instance of the triangulated surface
     """
 
     if outputOrigin is None:
@@ -1148,60 +972,69 @@ def triSurface2BinaryMask(v, t, imageShape, outputOrigin=None, outputSpacing=Non
     if outputSpacing is None:
         outputSpacing = [1.0, 1.0, 1.0]
 
-    imgDtype = uint8
+    img_dtype = uint8
 
     # make into vtkPolydata
-    gfPoly = tri2Polydata(v, t)
+    surf_poly = tri2Polydata(v, t)
 
     # create mask vtkImage
-    maskImageArray = ones(imageShape, dtype=imgDtype)
-    maskVTKImageImporter = array2vtkImage(
-        maskImageArray, imgDtype, flipDim=False, extent=extent,
+    mask_image_array = ones(image_shape, dtype=img_dtype)
+    mask_vtk_image_importer = array2vtkImage(
+        mask_image_array, img_dtype, flipDim=False, extent=extent,
         retImporter=True
     )
-    maskVTKImage = maskVTKImageImporter.GetOutput()
+    mask_vtk_image = mask_vtk_image_importer.GetOutput()
 
     # create stencil from polydata
-    stencilMaker = vtk.vtkPolyDataToImageStencil()
+    stencil_maker = vtk.vtkPolyDataToImageStencil()
     if vtk.VTK_MAJOR_VERSION < 6:
-        stencilMaker.SetInput(gfPoly)
+        stencil_maker.SetInput(surf_poly)
     else:
-        stencilMaker.SetInputDataObject(gfPoly)
-    stencilMaker.SetOutputOrigin(outputOrigin)
-    stencilMaker.SetOutputSpacing(outputSpacing)
-    stencilMaker.SetOutputWholeExtent(maskVTKImage.GetExtent())
-    stencilMaker.Update()  # needed in VTK 6
+        stencil_maker.SetInputDataObject(surf_poly)
+    stencil_maker.SetOutputOrigin(outputOrigin)
+    stencil_maker.SetOutputSpacing(outputSpacing)
+    stencil_maker.SetOutputWholeExtent(mask_vtk_image.GetExtent())
+    stencil_maker.Update()  # needed in VTK 6
 
     stencil = vtk.vtkImageStencil()
     if vtk.VTK_MAJOR_VERSION < 6:
-        stencil.SetInput(maskVTKImage)
-        stencil.SetStencil(stencilMaker.GetOutput())
+        stencil.SetInput(mask_vtk_image)
+        stencil.SetStencil(stencil_maker.GetOutput())
     else:
-        stencil.SetInputDataObject(maskVTKImage)
-        stencil.SetStencilData(stencilMaker.GetOutput())
+        stencil.SetInputDataObject(mask_vtk_image)
+        stencil.SetStencilData(stencil_maker.GetOutput())
     stencil.SetBackgroundValue(0)
     stencil.ReverseStencilOff()
     stencil.Update()
 
-    maskImageArray2 = vtkImage2Array(stencil.GetOutput(), imgDtype, flipDim=True)
-    return maskImageArray2, gfPoly
-    # return maskImageArray2, gfPoly, maskVTKImage
+    mask_image_array2 = vtkImage2Array(stencil.GetOutput(), img_dtype, flipDim=True)
+    return mask_image_array2, surf_poly
 
 
-def _makeImageSpaceGF(scan, GF, negSpacing=False, zShift=True):
+def _makeImageSpaceGF(
+        scan: Scan,
+        GF,
+        negSpacing=False,
+        zShift=True):
     """
     Transform a fieldwork geometric field from physical coords to image voxel indices
     """
-    newGF = copy.deepcopy(GF)
+    new_gf = copy.deepcopy(GF)
     p = GF.get_all_point_positions()
-    pImg = scan.coord2Index(p, negSpacing=negSpacing, zShift=zShift, roundInt=False)
-    newGF.set_field_parameters(pImg.T[:, :, newaxis])
+    p_img = scan.coord2Index(p, negSpacing=negSpacing, zShift=zShift, roundInt=False)
+    new_gf.set_field_parameters(p_img.T[:, :, newaxis])
 
-    return newGF
+    return new_gf
 
 
-def gf2BinaryMask(gf, scan, xiD=None, negSpacing=False, zShift=True,
-                  outputOrigin=(0, 0, 0), outputSpacing=(1, 1, 1)):
+def gf2BinaryMask(
+        gf,
+        scan: Scan,
+        xiD: List[int] = None,
+        negSpacing: bool = False,
+        zShift: bool = True,
+        outputOrigin: Tuple[float, float, float] = (0, 0, 0),
+        outputSpacing: Tuple[float, float, float] = (1, 1, 1)) -> ndarray:
     """Create a binary image mask from a GeometricField instance.
 
     Inputs
@@ -1221,14 +1054,18 @@ def gf2BinaryMask(gf, scan, xiD=None, negSpacing=False, zShift=True,
     """
     if xiD is None:
         xiD = [10, 10]
-    imgDtype = int16
-    gfImage = _makeImageSpaceGF(scan, gf, negSpacing, zShift)
-    vertices, triangles = gfImage.triangulate(xiD, merge=True)
+    gf_image = _makeImageSpaceGF(scan, gf, negSpacing, zShift)
+    vertices, triangles = gf_image.triangulate(xiD, merge=True)
     return triSurface2BinaryMask(vertices, triangles, scan.I.shape, outputOrigin, outputSpacing)
 
 
-def simplemesh2BinaryMask(sm, scan, zShift=True, negSpacing=False,
-                          outputOrigin=(0, 0, 0), outputSpacing=(1, 1, 1)):
+def simplemesh2BinaryMask(
+        sm: simplemesh.SimpleMesh,
+        scan: Scan,
+        zShift: bool = True,
+        negSpacing: bool = False,
+        outputOrigin: Tuple[float, float, float] = (0, 0, 0),
+        outputSpacing: Tuple[float, float, float] = (1, 1, 1)) -> ndarray:
     """Create a binary image mask from a SimpleMesh instance.
 
     Inputs
@@ -1245,11 +1082,17 @@ def simplemesh2BinaryMask(sm, scan, zShift=True, negSpacing=False,
     maskImageArray : binary image array
     gfPoly : vtkPolyData instance of the triangulated surface
     """
-    vImage = scan.coord2Index(sm.v, zShift=zShift, negSpacing=negSpacing, roundInt=False)
-    return triSurface2BinaryMask(vImage, sm.f, scan.I.shape, outputOrigin, outputSpacing)
+    v_image = scan.coord2Index(sm.v, zShift=zShift, negSpacing=negSpacing, roundInt=False)
+    return triSurface2BinaryMask(v_image, sm.f, scan.I.shape, outputOrigin, outputSpacing)
 
 
-def image2Simplemesh(imageArray, index2Coord, isoValue, deciRatio=None, smoothIt=200, zShift=True):
+def image2Simplemesh(
+        image_array: ndarray,
+        index_2_coord: Callable,
+        iso_value: int,
+        deciRatio: Optional[float] = None,
+        smoothIt: int = 200,
+        zShift: bool = True) -> Tuple[simplemesh.SimpleMesh, simplemesh.SimpleMesh, vtk.vtkPolyData]:
     """Convert an image array into a SimpleMesh surface.
 
     imageArray must be uint8.
@@ -1266,20 +1109,19 @@ def image2Simplemesh(imageArray, index2Coord, isoValue, deciRatio=None, smoothIt
     """
 
     IMGDTYPE = uint8
-    if imageArray.dtype != IMGDTYPE:
+    if image_array.dtype != IMGDTYPE:
         raise ValueError('imageArray must be {}.'.format(IMGDTYPE))
 
     if vtk.VTK_MAJOR_VERSION < 6:
-        vtkImage = array2vtkImage(imageArray, IMGDTYPE, flipDim=True, retImporter=False)
+        vtk_image = array2vtkImage(image_array, IMGDTYPE, flipDim=True, retImporter=False)
     else:
-        vtkImage = array2vtkImage(imageArray, IMGDTYPE, flipDim=True, retImporter=True, pipeline=True)
-        # vtkImage = array2vtkImage(imageArray, IMGDTYPE, flipDim=True, retImporter=True).GetOutput()
+        vtk_image = array2vtkImage(image_array, IMGDTYPE, flipDim=True, retImporter=True, pipeline=True)
 
-    params = polydataFromImageParams()
+    params = PolydataFromImageParams()
     params.smoothImage = False
     params.imgSmthRadius = 1.0
     params.imgSmthSD = 1.0
-    params.isoValue = isoValue
+    params.isoValue = iso_value
     params.smoothIt = smoothIt
     params.smoothFeatureEdge = 0
     params.deciRatio = deciRatio
@@ -1290,23 +1132,29 @@ def image2Simplemesh(imageArray, index2Coord, isoValue, deciRatio=None, smoothIt
     params.filterNormal = 1
     params.calcCurvature = 0
     if vtk.VTK_MAJOR_VERSION < 6:
-        polydata = polydataFromImage(vtkImage, params, pipeline=False)
-        V, T, N = polyData2Tri(polydata, pipeline=False)
+        polydata = polydataFromImage(vtk_image, params, pipeline=False)
+        verts, tris, normals = polyData2Tri(polydata, pipeline=False)
     else:
-        polydata = polydataFromImage(vtkImage, params, pipeline=True)
-        V, T, N = polyData2Tri(polydata, pipeline=True)
+        polydata = polydataFromImage(vtk_image, params, pipeline=True)
+        verts, tris, normals = polyData2Tri(polydata, pipeline=True)
 
-    V = V[:, ::-1] + [0.0, 0.0, 1.0]
-    SMImg = simplemesh.SimpleMesh(v=V, f=T)
-    SM = simplemesh.SimpleMesh(v=index2Coord(V, zShift=zShift), f=T)
-    SM.data = {'vertexnormal': N}
+    verts = verts[:, ::-1] + [0.0, 0.0, 1.0]
+    sm_img = simplemesh.SimpleMesh(v=verts, f=tris)
+    sm = simplemesh.SimpleMesh(v=index_2_coord(verts, zShift=zShift), f=tris)
+    sm.data = {'vertexnormal': normals}
     log.debug('image-to-mesh done')
-    log.debug('vertices: {}'.format(SM.v.shape[0]))
-    log.debug('faces: {}'.format(SM.f.shape[0]))
-    return SM, SMImg, polydata
+    log.debug('vertices: %s', sm.v.shape[0])
+    log.debug('faces: %s', sm.f.shape[0])
+    return sm, sm_img, polydata
 
 
-def smoothMeshVTK(mesh, it, smoothboundary=False, smoothfeatures=False, relaxfactor=1.0, usewsinc=True):
+def smoothMeshVTK(
+        mesh: simplemesh.SimpleMesh,
+        it: int,
+        smoothboundary: bool = False,
+        smoothfeatures: bool = False,
+        relaxfactor: float = 1.0,
+        usewsinc: bool = True) -> simplemesh.SimpleMesh:
     """
     Apply smoothing to a SimpleMesh instance using VTK's SmoothPolyDataFilter
     or WindowedSincPolyDataFilter.
@@ -1371,7 +1219,7 @@ def smoothMeshVTK(mesh, it, smoothboundary=False, smoothfeatures=False, relaxfac
     return mesh_smooth
 
 
-def optimiseMesh(sm, deciratio, clean=False):
+def optimiseMesh(sm: simplemesh.SimpleMesh, deciratio: float, clean: bool = False) -> simplemesh.SimpleMesh:
     """
     Optimise a triangle mesh by removing degenerate elements
     and decimation.
@@ -1409,7 +1257,7 @@ def optimiseMesh(sm, deciratio, clean=False):
         cleaner.SetPointMerging(True)
         cleaner.SetTolerance(1e-9)
         cleaner.Update()
-        getPreviousOutput = cleaner.GetOutput
+        get_previous_output = cleaner.GetOutput
 
     # decimate polydata
     log.debug("decimating using quadric...")
@@ -1418,22 +1266,22 @@ def optimiseMesh(sm, deciratio, clean=False):
         if not clean:
             decimator.SetInput(poly)
         else:
-            decimator.SetInput(getPreviousOutput())
+            decimator.SetInput(get_previous_output())
     else:
         if not clean:
             decimator.SetInputDataObject(poly)
         else:
-            decimator.SetInputDataObject(getPreviousOutput())
+            decimator.SetInputDataObject(get_previous_output())
     decimator.SetTargetReduction(deciratio)
     # decimator.SetPreserveTopology(True)
     # decimator.SplittingOn()
     decimator.Update()
-    getPreviousOutput = decimator.GetOutput
+    get_previous_output = decimator.GetOutput
 
     # convert back to sm
-    v, f, N = polyData2Tri(getPreviousOutput())
-    newSM = simplemesh.SimpleMesh(v=v, f=f)
-    return newSM
+    v, f, normals = polyData2Tri(get_previous_output())
+    new_sm = simplemesh.SimpleMesh(v=v, f=f)
+    return new_sm
 
 
 # ====================================================#
@@ -1442,34 +1290,34 @@ class Colours:
         self.colours = dict()
 
         red = vtk.vtkProperty()
-        red.SetColor(1.0, 0.0, 0.0);
+        red.SetColor(1.0, 0.0, 0.0)
         self.colours['red'] = red
 
         green = vtk.vtkProperty()
-        green.SetColor(0.0, 1.0, 0.0);
+        green.SetColor(0.0, 1.0, 0.0)
         self.colours['green'] = green
 
         blue = vtk.vtkProperty()
-        blue.SetColor(0.0, 0.0, 1.0);
+        blue.SetColor(0.0, 0.0, 1.0)
         self.colours['blue'] = blue
 
         magenta = vtk.vtkProperty()
-        magenta.SetColor(1.0, 0.0, 1.0);
+        magenta.SetColor(1.0, 0.0, 1.0)
         self.colours['magenta'] = magenta
 
         yellow = vtk.vtkProperty()
-        yellow.SetColor(1.0, 1.0, 0.0);
+        yellow.SetColor(1.0, 1.0, 0.0)
         self.colours['yellow'] = yellow
 
         cyan = vtk.vtkProperty()
-        cyan.SetColor(0.0, 1.0, 1.0);
+        cyan.SetColor(0.0, 1.0, 1.0)
         self.colours['cyan'] = cyan
 
     def getColour(self, colourStr):
         return self.colours[colourStr]
 
 
-def renderVtkImageVolume(vtkImage, cRange=[0, 255], oRange=[0, 255]):
+def renderVtkImageVolume(vtkImage, cRange=(0, 255), oRange=(0, 255)):
     bgColour = [0.0, 0.0, 0.0]
     renderWindowSize = 800
 

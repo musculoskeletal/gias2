@@ -11,6 +11,7 @@ License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
+from typing import List, Optional
 
 HEADER = """ply
 format ascii 1.0
@@ -56,7 +57,14 @@ def _write_bin(f, s):
 
 class PLYWriter(object):
 
-    def __init__(self, v, f, filename=None, vn=None, vcolours=None, ascenc=True):
+    def __init__(
+            self,
+            v: List[List[float]],
+            f: List[List[int]],
+            filename: Optional[str] = None,
+            vn: Optional[List[List[float]]] = None,
+            vcolours: Optional[List[List[float]]] = None,
+            ascenc: bool = True):
         self.v = v
         self.f = f
         self.vnormals = vn
@@ -64,7 +72,7 @@ class PLYWriter(object):
         self.filename = filename
         self.ascenc = ascenc
 
-    def _header_block(self):
+    def _header_block(self) -> str:
         # write header block
         if self.vnormals is not None:
             header_normal_block = HEADER_NORMAL
@@ -84,7 +92,7 @@ class PLYWriter(object):
         )
         return header_block
 
-    def write(self, filename=None):
+    def write(self, filename: Optional[str] = None) -> None:
         if filename is None:
             filename = self.filename
 

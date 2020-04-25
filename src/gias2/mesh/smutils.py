@@ -12,6 +12,8 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
 import copy
+from typing import List, Tuple, Dict
+
 import itertools
 import logging
 
@@ -20,11 +22,12 @@ from scipy.spatial.ckdtree import cKDTree
 from scipy.stats import mode
 
 from gias2.mesh import simplemesh
+from gias2.mesh.simplemesh import SimpleMesh
 
 log = logging.getLogger(__name__)
 
 
-def make_sub_mesh(sm, faceinds):
+def make_sub_mesh(sm: SimpleMesh, faceinds: List[int]) -> SimpleMesh:
     """
     Create a mesh from face indices faceinds in the mesh sm
     """
@@ -33,7 +36,6 @@ def make_sub_mesh(sm, faceinds):
     unique_new_v_inds = np.arange(len(unique_old_v_inds), dtype=int)
     v_ind_map = dict(zip(unique_old_v_inds, unique_new_v_inds))
 
-    # new_v = np.array([sm.v[i,:] for i in unique_old_v_inds])
     new_v = np.array(sm.v[unique_old_v_inds, :])
     new_f = np.zeros((len(faceinds), 3), dtype=int)
 
@@ -43,7 +45,7 @@ def make_sub_mesh(sm, faceinds):
     return simplemesh.SimpleMesh(new_v, new_f)
 
 
-def set_1ring_faces(sm):
+def set_1ring_faces(sm: SimpleMesh) -> None:
     """
     Create a dict of the adjacent faces of every face in sm
     """
@@ -61,7 +63,7 @@ def set_1ring_faces(sm):
     sm.faces1RingFaces = faces_1ring_faces
 
 
-def partition_regions(sm, maxfaces):
+def partition_regions(sm: SimpleMesh, maxfaces: int) -> Tuple[Dict[int, List[int]], np.ndarray]:
     """
     Partition the mesh into regions of up to maxfaces connected faces.
     If maxfaces is inf, partitions the mesh into connected regions.
@@ -111,7 +113,7 @@ def partition_regions(sm, maxfaces):
     return label_faces, face_labels
 
 
-def make_region_meshes(sm, region_faces):
+def make_region_meshes(sm: SimpleMesh, region_faces: Dict[int, List[int]]) -> List[SimpleMesh]:
     """
     Given a mesh a list of face lists, create a mesh for each face list
     """
@@ -122,7 +124,7 @@ def make_region_meshes(sm, region_faces):
     return meshes
 
 
-def remove_small_regions(sm):
+def remove_small_regions(sm: SimpleMesh) -> SimpleMesh:
     """
     Return a mesh of the largest connected region in sm
     """
@@ -149,7 +151,7 @@ def remove_small_regions(sm):
     return largest_region_mesh
 
 
-def remove_small_regions_2(sm, k):
+def remove_small_regions_2(sm: SimpleMesh, k: int) -> SimpleMesh:
     """
     Removes regions with less than k faces
     """
@@ -174,7 +176,7 @@ def remove_small_regions_2(sm, k):
     return new_mesh
 
 
-def partition_mesh(sm, maxfaces, minfaces):
+def partition_mesh(sm: SimpleMesh, maxfaces: int, minfaces: int) -> List[SimpleMesh]:
     """
     Partitions sm into regions with upper and lower faces bounds
     """
@@ -187,7 +189,7 @@ def partition_mesh(sm, maxfaces, minfaces):
     return region_sms
 
 
-def merge_regions(sm, region_faces, face_labels, min_faces):
+def merge_regions(sm: SimpleMesh, region_faces: Dict[int, List[int]], face_labels: np.ndarray, min_faces: int) -> None:
     """
     Given a mesh and a partitioning of its faces, merge regions with fewer
     than minfaces faces into the neighbouring region with the longest shared
@@ -251,7 +253,12 @@ def merge_regions(sm, region_faces, face_labels, min_faces):
             is_done = True
 
 
-def merge_sms(sms):
+def merge_sms(sms: List[SimpleMesh]) -> SimpleMesh:
+    """
+    Create a new mesh by merging a list of meshes
+    :param sms: a list of SimpleMesh meshes
+    :return: the merged mesh
+    """
     new_sm = copy.deepcopy(sms[0])
     for sm in sms[1:]:
         v_offset = new_sm.v.shape[0]
