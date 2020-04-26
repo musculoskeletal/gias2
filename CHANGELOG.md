@@ -1,5 +1,16 @@
 # GIAS2 Change log
 
+## 0.7.3
+- type hinting across the following modules
+  - image_tools
+  - csgtools
+  - inp
+  - plywriter
+  - simplemesh
+  - smutils
+  - vtktools
+  - shapemodel
+
 ## 0.7.2
 - more type hinting
 
