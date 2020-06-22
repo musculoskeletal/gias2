@@ -363,40 +363,39 @@ def transformRotateAboutCartCS(
 
 
 def calcAffineMatrixSVD(a_pts: numpy.ndarray, b_pts: numpy.ndarray) -> numpy.ndarray:
-    """Calculate rigid transformation between two list of corresponding
+    """Calculate the rigid transformation between two list of corresponding
     points using SVD
     """
     assert len(a_pts) == len(b_pts)
 
-    N = a_pts.shape[0]  # total points
+    n_points = a_pts.shape[0]  # total points
 
-    centroid_A = numpy.mean(a_pts, axis=0)
-    centroid_B = numpy.mean(b_pts, axis=0)
+    centroid_a = numpy.mean(a_pts, axis=0)
+    centroid_b = numpy.mean(b_pts, axis=0)
 
     # centre the points
-    AA = a_pts - numpy.tile(centroid_A, (N, 1))
-    BB = b_pts - numpy.tile(centroid_B, (N, 1))
+    aa = a_pts - numpy.tile(centroid_a, (n_points, 1))
+    bb = b_pts - numpy.tile(centroid_b, (n_points, 1))
 
     # dot is matrix multiplication for array
-    H = numpy.dot(numpy.transpose(AA), BB)
+    h_mat = numpy.dot(numpy.transpose(aa), bb)
 
-    U, S, Vt = svd(H)
+    u_mat, s, vt_mat = svd(h_mat)
 
-    R = Vt.T * U.T
+    r_mat = numpy.dot(vt_mat.T, u_mat.T)
 
     # special reflection case
-    if det(R) < 0:
-        # print "Reflection detected"
-        Vt[2, :] *= -1
-        R = Vt.T * U.T
+    if det(r_mat) < 0:
+        vt_mat[2, :] *= -1
+        r_mat = numpy.dot(vt_mat.T, u_mat.T)
 
-    t = numpy.dot(-R, centroid_A.T) + centroid_B.T
+    t = numpy.dot(-r_mat, centroid_a.T) + centroid_b.T
 
-    T = numpy.eye(4)
-    T[:3, :3] = R
-    T[:3, 3] = t.squeeze()
+    t_mat = numpy.eye(4)
+    t_mat[:3, :3] = r_mat
+    t_mat[:3, 3] = t.squeeze()
 
-    return T
+    return t_mat
 
 
 def calcAffineDifference(m1: numpy.ndarray, m2: numpy.ndarray) -> numpy.ndarray:
