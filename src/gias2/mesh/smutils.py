@@ -12,37 +12,41 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
 import copy
-from typing import List, Tuple, Dict
-
 import itertools
 import logging
+from typing import List, Tuple, Dict
 
 import numpy as np
 from scipy.spatial.ckdtree import cKDTree
 from scipy.stats import mode
 
-from gias2.mesh import simplemesh
 from gias2.mesh.simplemesh import SimpleMesh
 
 log = logging.getLogger(__name__)
 
 
-def make_sub_mesh(sm: SimpleMesh, faceinds: List[int]) -> SimpleMesh:
+def make_sub_mesh(sm: SimpleMesh, face_indices: List[int]) -> SimpleMesh:
     """
-    Create a mesh from face indices faceinds in the mesh sm
+    Create a mesh from face indices face_indices in the mesh sm
+
+    :param sm: our original simplemesh
+    :param face_indices: the face indices of the original input simplemesh for the desired output sub mesh
+    :return: the new sub mesh
     """
-    old_faces = sm.f[faceinds, :]
-    unique_old_v_inds = np.unique(old_faces.ravel())
-    unique_new_v_inds = np.arange(len(unique_old_v_inds), dtype=int)
-    v_ind_map = dict(zip(unique_old_v_inds, unique_new_v_inds))
+    if len(face_indices) == 0:
+        raise ValueError('length of face_indices is zero')
+    old_faces = sm.f[face_indices, :]
+    unique_old_vertices_indices = np.unique(old_faces.ravel())
+    unique_new_vertices_indices = np.arange(len(unique_old_vertices_indices), dtype=int)
 
-    new_v = np.array(sm.v[unique_old_v_inds, :])
-    new_f = np.zeros((len(faceinds), 3), dtype=int)
+    new_vertices = np.array(sm.v[unique_old_vertices_indices, :])
 
-    for vi in unique_old_v_inds:
-        new_f[old_faces == vi] = v_ind_map[vi]
+    my_map = np.zeros(unique_old_vertices_indices[-1] + 1, dtype=int)
+    my_map[unique_old_vertices_indices] = unique_new_vertices_indices
 
-    return simplemesh.SimpleMesh(new_v, new_f)
+    new_faces = my_map[old_faces]
+
+    return SimpleMesh(new_vertices, new_faces)
 
 
 def set_1ring_faces(sm: SimpleMesh) -> None:
