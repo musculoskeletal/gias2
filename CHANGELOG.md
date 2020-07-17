@@ -1,5 +1,9 @@
 # GIAS2 Change log
 
+## 0.7.4
+- vectorise make_sub_mesh to increase performance of creating a mesh from the faces of another mesh
+- fix matrix multiplication in SVD calculation of rigid transform matrix
+
 ## 0.7.3
 - type hinting across the following modules
   - image_tools
