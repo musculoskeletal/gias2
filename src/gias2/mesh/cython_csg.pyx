@@ -89,9 +89,6 @@ cdef class Vector(object):
         self.y = y
         self.z = z
 
-    def __repr__(self):
-        return '({0}, {1}, {2})'.format(self.x, self.y, self.z)
-
     cpdef Vector clone(self):
         """ Clone. """
         return Vector(<double> self.x, <double> self.y, <double> self.z)
@@ -140,7 +137,7 @@ cdef class Vector(object):
 
     cpdef Vector lerp(self, Vector a, double t):
         """ Lerp. Linear interpolation from self to a"""
-        return self.plus(a.minus(self).times(t));
+        return self.plus(a.minus(self).times(t))
 
     cpdef double length(self):
         """ Length. """
@@ -173,7 +170,7 @@ cdef class Vector(object):
         return iter((self.x, self.y, self.z))
 
     def __repr__(self):
-        return 'Vector(%.2f, %.2f, %0.2f)' % (self.x, self.y, self.z)
+        return 'Vector(%.2f, %.2f, %.2f)' % (self.x, self.y, self.z)
 
 cdef class Vertex(object):
     """
