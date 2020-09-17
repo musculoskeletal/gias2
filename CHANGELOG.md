@@ -1,5 +1,8 @@
 # GIAS2 Change log
 
+## 0.7.5
+- fix cython build warnings from duplicate implementation in cython_csg.pyx
+
 ## 0.7.4
 - vectorise make_sub_mesh to increase performance of creating a mesh from the faces of another mesh
 - fix matrix multiplication in SVD calculation of rigid transform matrix
