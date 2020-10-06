@@ -126,6 +126,13 @@ class Line3D(object):
     def calcIntercept(self, line: 'Line3D') -> Tuple[np.ndarray, float, float]:
         """
         tries to calculate the intercept with line l
+
+        If there is an intercept, returns
+            - 3D coordinates of the point of intersection
+            - parameter on self at the point of intersection
+            - parameter on the input line at the point of intersection
+
+        If there is no intercept, raises NonInterceptError
         """
 
         # c = self.a[0]/self.a[1]
