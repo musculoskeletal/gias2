@@ -8,6 +8,8 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
 
+import re
+import codecs
 from os import path
 
 # !/usr/bin/env python
@@ -15,25 +17,37 @@ import sys
 from setuptools import setup, find_packages
 from setuptools.extension import Extension
 
-SELF_DIR = path.split(__file__)[0]
-sys.path.append(path.join(SELF_DIR, 'src'))
-from gias2.version import __version__
+here = path.abspath(path.dirname(__file__))
+
+
+def read(*parts):
+    with codecs.open(path.join(here, *parts), 'r') as fp:
+        return fp.read()
+
+
+def find_version(*file_paths):
+    version_file = read(*file_paths)
+    version_match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]",
+                              version_file, re.M)
+    if version_match:
+        return version_match.group(1)
+    raise RuntimeError("Unable to find version string.")
 
 
 def readme():
-    with open('README.rst', 'r') as f:
+    with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
         return f.read()
 
 
 def requirements():
-    requirement_path = path.join(SELF_DIR + 'requirements.txt')
+    requirement_path = path.join(here, 'requirements.txt')
     with open(requirement_path, 'r') as f:
         return list(f.read().splitlines())
 
 
 # =============================================================================#
 name = 'gias2'
-version = __version__
+version = find_version('src', 'gias2', 'version.py')
 setup_requires = [
     'setuptools>=40.0',
     'cython>=0.29.7',
@@ -117,6 +131,7 @@ if __name__ == '__main__':
         version=version,
         description=description,
         long_description=readme(),
+        long_description_content_type='text/x-rst',
         packages=find_packages(where="src"),
         package_data=package_data,
         include_package_data=include_package_data,
