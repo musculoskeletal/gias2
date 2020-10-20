@@ -1,5 +1,8 @@
 # GIAS2 Change log
 
+## 0.7.6
+- disable reload_support from cython modules. This has been reported to cause a crash on windows. See https://github.com/cython/cython/issues/3837
+
 ## 0.7.5
 - fix cython build warnings from duplicate implementation in cython_csg.pyx
 
