@@ -14,7 +14,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 import copy
 import itertools
 import logging
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Optional
 
 import numpy as np
 from scipy.spatial.ckdtree import cKDTree
@@ -128,9 +128,11 @@ def make_region_meshes(sm: SimpleMesh, region_faces: Dict[int, List[int]]) -> Li
     return meshes
 
 
-def remove_small_regions(sm: SimpleMesh) -> SimpleMesh:
+def remove_small_regions(sm: SimpleMesh) -> Optional[SimpleMesh]:
     """
-    Return a mesh of the largest connected region in sm
+    Return a mesh of the largest connected region in `sm`
+
+    Returns None if no faces can be kept
     """
 
     # calculate adjacent faces for each face
@@ -138,26 +140,32 @@ def remove_small_regions(sm: SimpleMesh) -> SimpleMesh:
 
     # partition mesh by connected regions
     region_faces, face_labels = partition_regions(sm, np.inf)
-    log.debug('found {} regions'.format(len(region_faces)))
+    log.debug('found %s regions', len(region_faces))
 
     # get largest region
-    largest_reg = None
-    largest_reg_nfaces = 0
+    largest_region_face_indices = None
+    largest_region_n_faces = 0
     for rn, rf in region_faces.items():
-        if len(rf) > largest_reg_nfaces:
-            largest_reg = rn
-            largest_reg_nfaces = len(rf)
+        if len(rf) > largest_region_n_faces:
+            largest_region_face_indices = rn
+            largest_region_n_faces = len(rf)
 
-    log.debug('keeping largest region with {} faces'.format(largest_reg_nfaces))
+    log.debug('keeping largest region with %s', largest_region_n_faces)
 
     # create new mesh with just the largest region
-    largest_region_mesh = make_sub_mesh(sm, region_faces[largest_reg])
-    return largest_region_mesh
+    keep_faces = region_faces[largest_region_face_indices]
+    log.debug('keeping %s faces', len(keep_faces))
+    if len(keep_faces) > 0:
+        return make_sub_mesh(sm, keep_faces)
+    else:
+        return None
 
 
-def remove_small_regions_2(sm: SimpleMesh, k: int) -> SimpleMesh:
+def remove_small_regions_2(sm: SimpleMesh, k: int) -> Optional[SimpleMesh]:
     """
     Removes regions with less than k faces
+
+    Returns None if no faces can be kept, i.e. all connected regions have less than `k` faces
     """
 
     # calculate adjacent faces for each face
@@ -165,7 +173,7 @@ def remove_small_regions_2(sm: SimpleMesh, k: int) -> SimpleMesh:
 
     # partition mesh by connected regions
     region_faces, face_labels = partition_regions(sm, np.inf)
-    log.debug('found {} regions'.format(len(region_faces)))
+    log.debug('found %s regions', len(region_faces))
 
     # find regions to keep
     keep_faces = []
@@ -174,10 +182,11 @@ def remove_small_regions_2(sm: SimpleMesh, k: int) -> SimpleMesh:
             keep_faces += rf
 
     # create mesh with kept regions
-    new_mesh = make_sub_mesh(sm, keep_faces)
-    log.debug('keeping {} faces'.format(len(keep_faces)))
-
-    return new_mesh
+    log.debug('keeping %s faces', len(keep_faces))
+    if len(keep_faces) > 0:
+        return make_sub_mesh(sm, keep_faces)
+    else:
+        return None
 
 
 def partition_mesh(sm: SimpleMesh, maxfaces: int, minfaces: int) -> List[SimpleMesh]:
