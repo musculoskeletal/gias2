@@ -153,12 +153,14 @@ def remove_small_regions(sm: SimpleMesh) -> Optional[SimpleMesh]:
     log.debug('keeping largest region with %s', largest_region_n_faces)
 
     # create new mesh with just the largest region
-    keep_faces = region_faces[largest_region_face_indices]
-    log.debug('keeping %s faces', len(keep_faces))
-    if len(keep_faces) > 0:
-        return make_sub_mesh(sm, keep_faces)
-    else:
+    if largest_region_face_indices is None:
         return None
+    else:
+        keep_faces = region_faces[largest_region_face_indices]
+        if len(keep_faces) > 0:
+            return make_sub_mesh(sm, keep_faces)
+        else:
+            return None
 
 
 def remove_small_regions_2(sm: SimpleMesh, k: int) -> Optional[SimpleMesh]:
