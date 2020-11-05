@@ -1,5 +1,9 @@
 # GIAS2 Change log
 
+## 0.7.7
+- `remove_small_regions` and `remove_small_regions_2` return None instead of exception when operation
+  would result in an empty mesh.
+
 ## 0.7.6
 - disable reload_support from cython modules. This has been reported to cause a crash on windows. See https://github.com/cython/cython/issues/3837
 
