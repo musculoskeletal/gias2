@@ -101,8 +101,12 @@ if any_argv('bdist_wheel'):
     np_include_dirs = [numpy.get_include()]
     cython_modules = cythonize(
         [
-            Extension('gias2.image_analysis.asm_search_c', ['src/gias2/image_analysis/asm_search_c.pyx']),
-            Extension('gias2.image_analysis.integralimagec', ['src/gias2/image_analysis/integralimagec.pyx']),
+            Extension(
+                'gias2.image_analysis.asm_search_c',
+                ['src/gias2/image_analysis/asm_search_c.pyx']),
+            Extension(
+                'gias2.image_analysis.integralimagec',
+                ['src/gias2/image_analysis/integralimagec.pyx'])
         ])
     print(np_include_dirs)
 else:
