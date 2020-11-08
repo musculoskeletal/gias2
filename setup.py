@@ -106,8 +106,13 @@ if any_argv('bdist_wheel'):
                 ['src/gias2/image_analysis/asm_search_c.pyx']),
             Extension(
                 'gias2.image_analysis.integralimagec',
-                ['src/gias2/image_analysis/integralimagec.pyx'])
-        ])
+                ['src/gias2/image_analysis/integralimagec.pyx']),
+            Extension(
+                'gias2.mesh.cython_csg',
+                ['src/gias2/mesh/cython_csg.pyx']),
+        ],
+        compiler_directives={'language_level': '3'}
+    )
     print(np_include_dirs)
 else:
     print('Not performing a build with numpy')
