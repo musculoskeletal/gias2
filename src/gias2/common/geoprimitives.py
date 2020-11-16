@@ -461,6 +461,10 @@ class Plane(object):
             self.Y = np.array(y, dtype=float)
 
     def calcDistanceToPlane(self, pts: np.ndarray) -> float:
+        """
+            Signed perpendicular distance from a point `pts` to this plane.
+            Distance is positive if `pts` is on the side of the point the normal points to
+        """
         d = ((pts - self.O) * self.N).sum(-1)
         return d
 
