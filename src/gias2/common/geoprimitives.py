@@ -460,6 +460,22 @@ class Plane(object):
         if y is not None:
             self.Y = np.array(y, dtype=float)
 
+    @property
+    def origin(self) -> np.ndarray:
+        return self.O
+
+    @property
+    def normal(self) -> np.ndarray:
+        return self.N
+
+    @property
+    def x_axis(self) -> Optional[np.ndarray]:
+        return self.X
+
+    @property
+    def y_axis(self) -> Optional[np.ndarray]:
+        return self.Y
+
     def calcDistanceToPlane(self, pts: np.ndarray) -> float:
         """
             Signed perpendicular distance from a point `pts` to this plane.

@@ -1,5 +1,8 @@
 # GIAS2 Change log
 
+## 0.7.9
+- provide name properties (c.f. letter members) that are PEP8 compliant
+
 ## 0.7.8
 - remove unused cython functions
 - pre-compile cython_csg in wheel binary
