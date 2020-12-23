@@ -1,5 +1,8 @@
 # GIAS2 Change log
 
+## 0.7.10
+- provide setters as well (object are being mutated)
+
 ## 0.7.9
 - provide name properties (c.f. letter members) that are PEP8 compliant
 

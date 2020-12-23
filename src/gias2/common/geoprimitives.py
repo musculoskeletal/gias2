@@ -464,17 +464,33 @@ class Plane(object):
     def origin(self) -> np.ndarray:
         return self.O
 
+    @origin.setter
+    def origin(self, origin: np.ndarray) -> None:
+        self.O = origin
+
     @property
     def normal(self) -> np.ndarray:
         return self.N
+
+    @normal.setter
+    def normal(self, normal: np.ndarray) -> None:
+        self.N = normal
 
     @property
     def x_axis(self) -> Optional[np.ndarray]:
         return self.X
 
+    @x_axis.setter
+    def x_axis(self, x_axis: Optional[np.ndarray]) -> None:
+        self.X = x_axis
+
     @property
     def y_axis(self) -> Optional[np.ndarray]:
         return self.Y
+
+    @y_axis.setter
+    def y_axis(self, y_axis: Optional[np.ndarray]) -> None:
+        self.Y = y_axis
 
     def calcDistanceToPlane(self, pts: np.ndarray) -> float:
         """
