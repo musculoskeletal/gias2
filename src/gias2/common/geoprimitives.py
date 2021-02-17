@@ -679,15 +679,15 @@ def fitPlaneLS(points: np.ndarray) -> Plane:
     xc = points - com
 
     # eigen system
-    A = np.zeros([3, 3])
-    A[0, 0] = (xc[:, 0] ** 2.0).sum()
-    A[1, 1] = (xc[:, 1] ** 2.0).sum()
-    A[2, 2] = (xc[:, 2] ** 2.0).sum()
-    A[0, 1] = A[1, 0] = (xc[:, 0] * xc[:, 1]).sum()
-    A[0, 2] = A[2, 0] = (xc[:, 0] * xc[:, 2]).sum()
-    A[1, 2] = A[2, 1] = (xc[:, 1] * xc[:, 2]).sum()
+    a_matrix = np.zeros([3, 3])
+    a_matrix[0, 0] = (xc[:, 0] ** 2.0).sum()
+    a_matrix[1, 1] = (xc[:, 1] ** 2.0).sum()
+    a_matrix[2, 2] = (xc[:, 2] ** 2.0).sum()
+    a_matrix[0, 1] = a_matrix[1, 0] = (xc[:, 0] * xc[:, 1]).sum()
+    a_matrix[0, 2] = a_matrix[2, 0] = (xc[:, 0] * xc[:, 2]).sum()
+    a_matrix[1, 2] = a_matrix[2, 1] = (xc[:, 1] * xc[:, 2]).sum()
 
-    w, v = eig(A)  # the right matrix v is returned by default
+    w, v = eig(a_matrix)  # the right matrix v is returned by default
     v = v[:, w.argsort()]
 
     # project points onto plane
