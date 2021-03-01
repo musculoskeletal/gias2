@@ -127,34 +127,6 @@ class Line3D(object):
             log.debug('not coincident')
             return False
 
-    def calcInterceptOld(self, line: 'Line3D') -> Tuple[np.ndarray, float, float]:
-        """
-        tries to calculate the intercept with line l
-
-        If there is an intercept, returns
-            - 3D coordinates of the point of intersection
-            - parameter on self at the point of intersection
-            - parameter on the input line at the point of intersection
-
-        If there is no intercept, raises NonInterceptError
-        """
-
-        e1 = line.b[1] - self.b[1]
-        e2 = -line.b[0] + self.b[0]
-        f = self.a[0] / self.a[1]
-
-        t2 = ((f * e1 + e2) / line.a[0]) / (1 - (f * line.a[1] / line.a[0]))
-        t1 = (line.a[0] * t2 + line.b[0] - self.b[0]) / self.a[0]
-
-        # check if parameter actually give an intercept
-        p1 = self.eval(t1)
-        p2 = line.eval(t2)
-
-        if np.sqrt(((p1 - p2) ** 2.0).sum()) < PRECISION:
-            return (p1 + p2) / 2.0, t1, t2
-        else:
-            raise NonInterceptError
-
     def calcIntercept(self, line: 'Line3D') -> Tuple[np.ndarray, float, float]:
         """
             Calculate the intercept with line `l`.
@@ -171,7 +143,7 @@ class Line3D(object):
 
             If the lines are collinear, raises CollinearError
         """
-        if self.is_collinear(line):
+        if self.checkCoincidence(line):
             raise CollinearError
         else:
             d, t1, t2 = self.calcClosestDistanceToLine(line)
@@ -184,36 +156,6 @@ class Line3D(object):
                 return (p1 + p2) / 2.0, t1, t2
             else:
                 raise NonInterceptError
-
-    def is_collinear(self, line: 'Line3D') -> bool:
-        """
-            Returns true if the input line is collinear with self.
-
-            We check for two conditions being true
-              - line directions are within +/- PRECISION degrees or Pi +/- PRECISION of each other
-              - origin of line is within PRECISION of self
-        """
-
-        def same_direction(v1: np.ndarray, v2: np.ndarray) -> bool:
-            theta = abs(angle(v1, v2))
-
-            if theta > 0.5 * np.pi:
-                theta_bidirectional = np.pi - theta
-            else:
-                theta_bidirectional = theta
-
-            if theta_bidirectional < PRECISION:
-                return True
-            else:
-                return False
-
-        def close_origin(_line: 'Line3D', origin: np.ndarray) -> bool:
-            if _line.calcDistanceFromPoint(origin) < PRECISION:
-                return True
-            else:
-                return False
-
-        return same_direction(self.a, line.a) and close_origin(self, line.b)
 
     def calcClosestDistanceToLine(self, line: 'Line3D') -> Tuple[float, float, float]:
         """ Calculates the closest distance to another infinite 3D line.
