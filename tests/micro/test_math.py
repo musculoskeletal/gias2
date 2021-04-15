@@ -1,5 +1,4 @@
 import unittest
-import warnings
 from typing import Sequence
 
 import numpy as np
@@ -15,15 +14,6 @@ class TestMath(unittest.TestCase):
     """
         Test the 'math' module
     """
-
-    def setUp(self) -> None:
-        super().setUp()
-
-        warnings.filterwarnings(
-            'ignore',
-            category=RuntimeWarning,
-            module=r'gias2\.common\.mxath',
-            message="invalid value encountered in true_divide")
 
     @generate(
         ((1, 1, 1), (0.5773503, 0.5773503, 0.5773503)),
