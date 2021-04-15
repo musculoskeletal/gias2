@@ -1,0 +1,9 @@
+#
+# If using PyCharm, change the settings so that this file is used. It will include everything
+# that is required to develop the library.
+#
+#  see:
+#      Setting 'Python Integrated Tools' -> 'Package requirements file'
+#
+-r requirements.txt
+-r requirements-dev.txt

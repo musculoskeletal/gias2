@@ -1,0 +1,13 @@
+
+# Generator is a helper for generating test methods for nose while still using unittest
+#
+# License: ISC License (ISCL)
+#
+# see
+#  - https://pypi.org/project/test-generator/
+#  - https://generator.readthedocs.io/en/latest/
+#
+# Known Issues:
+#   - None
+test-generator==0.1.2
+
