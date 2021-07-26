@@ -226,6 +226,10 @@ class SimpleMesh(object):
     def setVerticesNeighbourhoods(self, r: int) -> None:
         """ gets the neighbourhood vertices and faces up to radius r for
         each vertex V. r is the number of vertices away from V.
+
+        Populates the attributes self.neighbourFaces and self.neighbourVertices that are lists that hold the sets of
+        faces and vertices in the neighbourhood of each face or vertex, respectively, excluding the face or vertex
+        itself.
         """
 
         log.debug('finding neighbourhoods of size {}'.format(r))
@@ -302,23 +306,25 @@ class SimpleMesh(object):
         """ recursive gets the adjacent faces and vertices to vertex V.
         uses sets instead of lists
         """
+        if self.faces1Ring.get(vi) is None:
+            # vertex vi is unconnected or does not exist
+            log.info('vertex %d is unconnected or does not exist in mesh', vi)
+        else:
+            new_vertices = set()
+            # add adjacent faces of current vertex to faceList
+            for fid in self.faces1Ring[vi]:
+                face_list.add(fid)
+                # add adjacent vertices to vertexList
+                for vid in self.f[fid]:
+                    if vid not in vertex_list:
+                        new_vertices.add(vid)
 
-        new_vertices = set()
-        # add adjacent faces of current vertex to faceList
-        for fid in self.faces1Ring[vi]:
-            face_list.add(fid)
-            # add adjacent vertices to vertexList
-            for vid in self.f[fid]:
-                if vid not in vertex_list:
-                    new_vertices.add(vid)
+            vertex_list = vertex_list.union(new_vertices)
 
-        vertex_list = vertex_list.union(new_vertices)
-
-        # recurse for new vertices
-        if depth > 1:
-            # ~ print 'recurse, depth =', depth-1
-            for vid in new_vertices:
-                vertex_list, face_list = self._getAdjacent(vid, depth - 1, vertex_list, face_list)
+            # recurse for new vertices
+            if depth > 1:
+                for vid in new_vertices:
+                    vertex_list, face_list = self._getAdjacent(vid, depth - 1, vertex_list, face_list)
 
         return vertex_list, face_list
 
