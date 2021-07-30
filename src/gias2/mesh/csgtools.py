@@ -11,28 +11,34 @@ License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
+from typing import List, Optional, Tuple, Iterable
 
 import numpy as np
 import pyximport
 
 from gias2.mesh import vtktools, simplemesh
+from gias2.mesh.simplemesh import SimpleMesh
 
 pyximport.install(
     setup_args={"include_dirs": np.get_include()},
     language_level=3
 )
 from gias2.mesh import cython_csg as CSG
+
 vtk = vtktools.vtk
 
 
-def _unit(v):
+def _unit(v: np.ndarray) -> np.ndarray:
     """
     return the unit vector of vector v
     """
     return v / np.sqrt((v ** 2.0).sum(-1))
 
 
-def poly_2_csgeom(vertices, faces, normals=None):
+def poly_2_csgeom(
+        vertices: List[List[float]],
+        faces: List[List[int]],
+        normals: Optional[List[List[float]]] = None) -> CSG.CSG:
     """
     Create a CSG geometry from a list of vertices and faces.
 
@@ -48,7 +54,7 @@ def poly_2_csgeom(vertices, faces, normals=None):
     return CSG.poly_2_csg(vertices, faces, normals)
 
 
-def get_csg_polys(csgeom):
+def get_csg_polys(csgeom: CSG.CSG) -> Tuple[List[List[float]], List[List[int]]]:
     """
     return the vertex coordinates and polygon vertex indices
     of a csg geometry
@@ -57,7 +63,10 @@ def get_csg_polys(csgeom):
     return CSG.csg_2_polys(csgeom)
 
 
-def get_csg_triangles(csgeom, clean=False, normals=False):
+def get_csg_triangles(
+        csgeom: CSG.CSG,
+        clean: bool = False,
+        normals: bool = False) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Return the vertex coordinates, triangle vertex indices, and point normals
     (if defined) of a triangulated csg geometry.
@@ -86,12 +95,12 @@ def get_csg_triangles(csgeom, clean=False, normals=False):
     return vtktools.polygons2Tri(vertices, faces, clean, normals)
 
 
-def csg2simplemesh(csgeom, clean=True):
+def csg2simplemesh(csgeom: CSG.CSG, clean: bool = True) -> SimpleMesh:
     v, f, n = get_csg_triangles(csgeom, clean=clean, normals=False)
     return simplemesh.SimpleMesh(v=v, f=f)
 
 
-def simplemesh2csg(sm):
+def simplemesh2csg(sm: SimpleMesh) -> CSG.CSG:
     if sm.vertexNormals is not None:
         normals = sm.vertexNormals.tolist()
     else:
@@ -99,15 +108,23 @@ def simplemesh2csg(sm):
     return poly_2_csgeom(sm.v.tolist(), sm.f.tolist(), normals)
 
 
-def cube(center=(0, 0, 0), radius=(1, 1, 1)):
+def cube(
+        center: Tuple[float, float, float] = (0, 0, 0),
+        radius: Tuple[float, float, float] = (1, 1, 1)) -> CSG.CSG:
     return CSG.cube(center=list(center), radius=list(radius))
 
 
-def cup(centre, normal, ri, ro, slices=12, stacks=12):
+def cup(
+        centre: Iterable[float],
+        normal: Iterable[float],
+        ri: float,
+        ro: float,
+        slices: int = 12,
+        stacks: int = 12) -> CSG.CSG:
     return CSG.cup(list(centre), list(normal), ri, ro, slices, stacks)
 
 
-def cylinder_var_radius(**kwargs):
+def cylinder_var_radius(**kwargs) -> CSG.CSG:
     """ Returns a cylinder with linearly changing radius between the two ends.
         
         Kwargs:
@@ -124,4 +141,3 @@ def cylinder_var_radius(**kwargs):
             stacks (int): Number of axial slices, default=2.
     """
     return CSG.cylinder_var_radius(**kwargs)
-
