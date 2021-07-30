@@ -17,13 +17,6 @@ import inspect
 import numpy as np
 import opensim
 
-# import pdb
-
-try:
-    opensim_version = getattr(opensim, '__version__')
-except AttributeError:
-    opensim_version = None
-
 
 class Body(object):
 
@@ -668,63 +661,49 @@ class Scale(object):
 
 class Marker(object):
     """
-    Pythonic wrap of opensim's Marker class
+    Pythonic wrap of OpenSim's Marker class (4.2).
     """
 
-    def __init__(self, m=None, name=None, bodyname=None, offset=None):
-        if m is None:
-            self._osimMarker = opensim.Marker()
-            self.bodyName = bodyname
-            self.offset = offset
-            self.name = name
+    def __init__(self, marker=None, name=None, frame_name=None, location=None):
+        """
+        This constructor can be used in multiple ways. Either the user can supply an OpenSim::Marker object, in which
+        case the constructor simply wraps the Marker object; or the user can use the constructor to create a new Marker
+        object by specifying the name, frame_name and location explicitly. name and frame_name should both be strings,
+        location should be 3-dimensional tuple of integers (similarly, setting the marker's location should be done with
+        a tuple).
+        """
+        if marker is None:
+            self._osim_marker = opensim.Marker()
+            self._osim_marker.setName(name)
+            self._osim_marker.setParentFrameName(frame_name)
+            self._osim_marker.set_location(opensim.Vec3(location))
         else:
-            self._osimMarker = m
+            self._osim_marker = marker
 
     @property
     def name(self):
-        return self._osimMarker.getName()
+        return self._osim_marker.getName()
 
     @name.setter
     def name(self, name):
-        self._osimMarker.setName(str(name))
+        self._osim_marker.setName(name)
 
     @property
-    def bodyName(self):
-        return self._osimMarker.getBodyName()
+    def frame_name(self):
+        return self._osim_marker.getParentFrameName()
 
-    @bodyName.setter
-    def bodyName(self, bodyName):
-        self._osimMarker.setBodyName(bodyName)
+    @frame_name.setter
+    def frame_name(self, frame_name):
+        self._osim_marker.setParentFrameName(frame_name)
 
     @property
-    def offset(self):
-        if opensim_version == 4.0:
-            v = self._osimMarker.get_location(v)
-        else:
-            v = opensim.Vec3()
-            self._osimMarker.getOffset(v)
-        return np.array([v.get(i) for i in range(3)])
+    def location(self):
+        vector = self._osim_marker.get_location()
+        return vector[0], vector[1], vector[2]
 
-    @offset.setter
-    def offset(self, x):
-        v = opensim.Vec3(x[0], x[1], x[2])
-        if opensim_version == 4.0:
-            self._osimMarker.set_location(v)
-        else:
-            self._osimMarker.setOffset(v)
-
-    # Same as location
-    @property
-    def offset(self):
-        v = opensim.Vec3()
-        self._osimMarker.getOffset(v)
-        return np.array([v.get(i) for i in range(3)])
-
-    # Same as location
-    @offset.setter
-    def offset(self, x):
-        v = opensim.Vec3(x[0], x[1], x[2])
-        self._osimMarker.setOffset(v)
+    @location.setter
+    def location(self, location):
+        self._osim_marker.set_location(opensim.Vec3(location))
 
 
 class Model(object):
