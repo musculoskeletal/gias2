@@ -38,13 +38,10 @@ def preprocess_lower_limb(marker_radius, skin_pad, LASIS, RASIS, sacral, LEC,
 def preprocess_pelvis(marker_radius, skin_pad, LASIS, RASIS, LPSIS, RPSIS, sacral):
     if sacral is None:
         if (LPSIS is None) or (RPSIS is None):
-            raise (
-                InsufficientLandmarksError,
-                'Either Sacral or the PSISs must be defined'
-            )
+            raise InsufficientLandmarksError('Either Sacral or the PSISs must be defined')
 
     if (LASIS is None) or (RASIS is None):
-        raise (InsufficientLandmarksError, 'LASIS and RASIS must be defined')
+        raise InsufficientLandmarksError('LASIS and RASIS must be defined')
 
     # calculate AP axis
     oa = (LASIS + RASIS) / 2.0
@@ -78,10 +75,10 @@ def preprocess_pelvis(marker_radius, skin_pad, LASIS, RASIS, LPSIS, RPSIS, sacra
 
 def preprocess_femur(marker_radius, skin_pad, LEC, MEC):
     if LEC is None:
-        raise (InsufficientLandmarksError, 'LEC must be defined')
+        raise InsufficientLandmarksError('LEC must be defined')
 
     if MEC is None:
-        raise (InsufficientLandmarksError, 'MEC must be defined')
+        raise InsufficientLandmarksError('MEC must be defined')
 
     # calculate epicondylar axis
     ML = math.norm(LEC - MEC)
@@ -97,10 +94,10 @@ def preprocess_femur(marker_radius, skin_pad, LEC, MEC):
 
 def preprocess_tibiafibula(marker_radius, skin_pad, LM, MM):
     if LM is None:
-        raise (InsufficientLandmarksError, 'LM must be defined')
+        raise InsufficientLandmarksError('LM must be defined')
 
     if MM is None:
-        raise (InsufficientLandmarksError, 'MM must be defined')
+        raise InsufficientLandmarksError('MM must be defined')
 
     # calculate epimalleolus axis
     ML = math.norm(LM - MM)

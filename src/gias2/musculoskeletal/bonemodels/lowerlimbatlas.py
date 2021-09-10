@@ -169,7 +169,7 @@ class LowerLimbAtlas(object):
     @shape_mode_weights.setter
     def shape_mode_weights(self, value):
         if len(value) != len(self.shape_modes):
-            raise ValueError('Length of value does not match length of self.shape_modes ({})'.format(self.shape_modes))
+            raise ValueError(f'Length of value does not match length of self.shape_modes ({self.shape_modes})')
 
         self._shape_mode_weights[self.shape_modes] = value
         self._update_models_by_pcweights_sd(value, self.shape_modes)
@@ -293,6 +293,9 @@ class LowerLimbAtlas(object):
     #     self.hipRot = value[2]
     #     self.kneeRot = value[3]
     #     self.lastTransformSet = self.perBoneScalingX
+
+    def update_model_dict(self):
+        return self._update_model_dict()
 
     def _update_model_dict(self):
         for model_name, model in self.ll_l.models.items():

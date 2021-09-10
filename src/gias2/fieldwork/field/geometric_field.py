@@ -2501,7 +2501,7 @@ def load_gf_shelve(filename, G, ensfn=None, meshfn=None, filedir=None, force=Fal
 
     try:
         try:
-            S = shelve.open(filename, 'r')
+            S = shelve.open(filename, 'rb')
         except ImportError:
             import bsddb3
             _db = bsddb3.hashopen(filename)
@@ -2711,7 +2711,7 @@ def load_geometric_field(filename, ensFilename=None, meshFilename=None, path=Non
         above should not include the path to the file.
     """
     gf = geometric_field('none', 1)
-    with open(filename, 'r') as f:
+    with open(filename, encoding='cp437') as f:
         head = f.read(1)
         if head == '{':
             load_gf_json(

@@ -12,7 +12,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ===============================================================================
 """
 
-from gias2.mappluginutils.mayaviviewer import MayaviViewerSceneObject, MayaviViewerObject, colours
+from gias2.mappluginutils.mayaviviewer.mayaviviewerobjects import MayaviViewerSceneObject, MayaviViewerObject, colours
 
 
 class MayaviViewerDataPointsSceneObject(MayaviViewerSceneObject):

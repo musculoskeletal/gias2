@@ -15,7 +15,7 @@ import logging
 
 from mayavi import mlab
 
-from gias2.mappluginutils.mayaviviewer import MayaviViewerSceneObject, MayaviViewerObject
+from gias2.mappluginutils.mayaviviewer.mayaviviewerobjects import MayaviViewerSceneObject, MayaviViewerObject
 
 log = logging.getLogger(__name__)
 

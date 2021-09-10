@@ -16,7 +16,7 @@ import logging
 import numpy as np
 
 from gias2.fieldwork.field import geometric_field
-from gias2.mappluginutils.mayaviviewer import MayaviViewerSceneObject, MayaviViewerObject, colours
+from gias2.mappluginutils.mayaviviewer.mayaviviewerobjects import MayaviViewerSceneObject, MayaviViewerObject, colours
 
 log = logging.getLogger(__name__)
 

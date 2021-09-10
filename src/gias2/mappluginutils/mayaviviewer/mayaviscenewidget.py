@@ -14,10 +14,9 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import os
 
-os.environ['ETS_TOOLKIT'] = 'qt4'
+os.environ['ETS_TOOLKIT'] = 'qt5'
 
-# from pyface.qt import QtGui, QtCore
-from PySide import QtGui
+from PySide2 import QtWidgets
 
 from traits.api import HasTraits, Instance
 from traitsui.api import View, Item
@@ -48,11 +47,11 @@ class Visualisation(HasTraits):
 
 ################################################################################
 # The QWidget containing the visualization, this is pure PyQt4 code.
-class MayaviSceneWidget(QtGui.QWidget):
+class MayaviSceneWidget(QtWidgets.QWidget):
 
     def __init__(self, parent=None):
-        QtGui.QWidget.__init__(self, parent)
-        layout = QtGui.QVBoxLayout(self)
+        QtWidgets.QWidget.__init__(self, parent)
+        layout = QtWidgets.QVBoxLayout(self)
         # layout.setMargin(0)
         # layout.setSpacing(0)
         self.visualisation = Visualisation()

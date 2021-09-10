@@ -14,7 +14,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import numpy as np
 
-from gias2.mappluginutils.mayaviviewer import MayaviViewerSceneObject, MayaviViewerObject
+from gias2.mappluginutils.mayaviviewer.mayaviviewerobjects import MayaviViewerSceneObject, MayaviViewerObject
 
 
 class MayaviViewerLandmarkSceneObject(MayaviViewerSceneObject):

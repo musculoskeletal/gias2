@@ -14,7 +14,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 from mayavi import mlab
 
-from gias2.mappluginutils.mayaviviewer import MayaviViewerSceneObject, MayaviViewerObject
+from gias2.mappluginutils.mayaviviewer.mayaviviewerobjects import MayaviViewerSceneObject, MayaviViewerObject
 
 
 class MayaviViewerImagePlaneSceneObject(MayaviViewerSceneObject):
