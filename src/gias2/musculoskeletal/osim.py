@@ -1,6 +1,6 @@
 """
 FILE: osim.py
-LAST MODIFIED: 01-07-2016
+LAST MODIFIED: 10-09-2021
 DESCRIPTION: Module of wrappers and helper functions and classes for opensim
 models
 
@@ -19,6 +19,9 @@ import opensim
 
 
 class Body(object):
+    """
+    Pythonic wrap of OpenSim's Body class (4.2).
+    """
 
     def __init__(self, b):
         self._osimBody = b
@@ -43,8 +46,7 @@ class Body(object):
 
     @property
     def massCenter(self):
-        v = opensim.Vec3()
-        self._osimBody.getMassCenter(v)
+        v = self._osimBody.getMassCenter()
         return np.array([v.get(i) for i in range(3)])
 
     @massCenter.setter
@@ -54,12 +56,16 @@ class Body(object):
 
     @property
     def inertia(self):
-        m = opensim.Mat33()
         ma = np.zeros((3, 3))
-        self._osimBody.getInertia(m)
+        m = self._osimBody.getInertia()
+
+        # SimTK Inertia objects now seem to only output the diagonal of the
+        # Inertia matrix rather than the whole matrix. Are the following values
+        # sufficient?
+        moments = m.getMoments()
         for i in range(3):
-            for j in range(3):
-                ma[i, j] = m.get(i, j)
+            ma[i, i] = moments[i]
+
         return ma
 
     @inertia.setter
@@ -76,8 +82,7 @@ class Body(object):
 
     @property
     def scaleFactors(self):
-        v = opensim.Vec3()
-        self._osimBody.getScaleFactors(v)
+        v = self._osimBody.getScaleFactors()
         return np.array([v.get(i) for i in range(3)])
 
     @scaleFactors.setter
@@ -97,46 +102,31 @@ class Body(object):
         self._osimBody.scaleMass(scaleFactor)
 
     def setDisplayGeometryFileName(self, filenames):
-        geoset = self._osimBody.getDisplayer().getGeometrySet()
-        nGeoms = geoset.getSize()
-
-        # # remove existing geoms
-        # for gi in xrange(nGeoms):
-        #     geoset.remove(0)
-
-        # # add new geoms
-        # for fi, fn in enumerate(filenames):
-        #     dgnew = opensim.DisplayGeometry()
-        #     dgnew.setGeometryFile(fn)
-        #     geoset.insert(fi, dgnew)
-
-        # remove existing geoms
-        if len(filenames) != nGeoms:
-            raise ValueError(
-                'Expected {} filenames, got {}'.format(
-                    nGeoms, len(filenames)
-                )
-            )
-
-        # add new geoms
-        for fi, fn in enumerate(filenames):
-            disp_geo = geoset.get(fi)
-            disp_geo.setGeometryFile(fn)
-
-        # if oldfilename is None:
-        #     visibles.setGeometryFileName(0, filename)
-        # else:
-        #     for i in xrange(visibles.getNumGeometryFiles()):
-        #         if oldfilename==visibles.getGeometryFileName(i):
-        #             visibles.setGeometryFileName(i, filename)
+        """
+        This method will currently only work if the parameters are given in the
+        same order that they are listed in the model. It will break if the list
+        of filenames is larger than the current attached_geometry list.
+        """
+        for index, file_name in enumerate(filenames):
+            geometry = self._osimBody.upd_attached_geometry(index)
+            opensim.Mesh.safeDownCast(geometry).set_mesh_file(file_name)
 
 
 class PathPoint(object):
+    """
+    This class wraps PathPoint and MovingPathPoint objects.
+
+    MovingPathPoint no longer inherits from PathPoint, we should re-name this
+    to AbstractPathPoint to be consistent with the OpenSim 4.2 API.
+    """
 
     def __init__(self, p):
         self._isConditionalPathPoint = False
         self._isMovingPathPoint = False
-        if p.getConcreteClassName() == 'MovingPathPoint':
+
+        if p.getConcreteClassName() == "PathPoint":
+            self._osimPathPoint = opensim.PathPoint_safeDownCast(p)
+        elif p.getConcreteClassName() == 'MovingPathPoint':
             self._osimPathPoint = opensim.MovingPathPoint_safeDownCast(p)
             self._isMovingPathPoint = True
         elif p.getConcreteClassName() == 'ConditionalPathPoint':
@@ -155,17 +145,22 @@ class PathPoint(object):
 
     @property
     def location(self):
-        return np.array([self._osimPathPoint.getLocationCoord(i) for i in range(3)])
+        if isinstance(self._osimPathPoint, opensim.simulation.PathPoint):
+            v = self._osimPathPoint.get_location()
+            return np.array([v[0], v[1], v[2]])
+        else:
+            return np.array([0.0, 0.0, 0.0])
 
     @location.setter
     def location(self, x):
-        self._osimPathPoint.setLocationCoord(0, x[0])
-        self._osimPathPoint.setLocationCoord(1, x[1])
-        self._osimPathPoint.setLocationCoord(2, x[2])
+        # MovingPathPoints no longer has this attribute, so should be skipped.
+        if isinstance(self._osimPathPoint, opensim.simulation.PathPoint):
+            v = opensim.Vec3(x[0], x[1], x[2])
+            self._osimPathPoint.set_location(v)
 
     @property
     def body(self):
-        return Body(self._osimPathPoint.getBody())
+        return Body(self._osimPathPoint.getParentFrame())
 
     def scale(self, sf):
         raise (NotImplementedError, 'Consider using Muscle.scale.')
@@ -181,6 +176,9 @@ class PathPoint(object):
     @property
     def isConditionalPathPoint(self):
         return self._isConditionalPathPoint
+
+    def get_concrete_class_name(self):
+        return self._osimPathPoint.getConcreteClassName()
 
     def _getSimmSpline(self, axis):
         """
@@ -351,9 +349,8 @@ class Muscle(object):
 
     def preScale(self, state, *scales):
         """
-        Scale a pathActuator for a given state by one or
-        more Scale instances that define the scale factors
-        on the inserted segments
+        Scale a pathActuator for a given state by one or more Scale instances
+        that define the scale factors on the inserted segments.
         """
         scaleset = opensim.ScaleSet()
         for sc in scales:
@@ -363,9 +360,8 @@ class Muscle(object):
 
     def scale(self, state, *scales):
         """
-        Scale a pathActuator for a given state by one or
-        more Scale instances that define the scale factors
-        on the inserted segments
+        Scale a pathActuator for a given state by one or more Scale instances
+        that define the scale factors on the inserted segments.
         """
         scaleset = opensim.ScaleSet()
         for sc in scales:
@@ -375,9 +371,8 @@ class Muscle(object):
 
     def postScale(self, state, *scales):
         """
-        Scale a pathActuator for a given state by one or
-        more Scale instances that define the scale factors
-        on the inserted segments
+        Scale a pathActuator for a given state by one or more Scale instances
+        that define the scale factors on the inserted segments.
         """
         scaleset = opensim.ScaleSet()
         for sc in scales:
@@ -414,6 +409,14 @@ class wrapObject(object):
     def name(self, name):
         self._wrapObject.setName(name)
 
+    def get_translation(self):
+        return self._wrapObject.get_translation()
+
+    @name.setter
+    def translation(self, translation):
+        v = opensim.Vec3(translation)
+        self._wrapObject.set_translation(v)
+
     def getDimensions(self):
         return self._wrapObject.getDimensionsString()
 
@@ -423,26 +426,31 @@ class wrapObject(object):
 
 
 class Joint(object):
+    """
+    Pythonic wrap of OpenSim's Joint class (4.2).
+    """
 
     def __init__(self, j):
         if j.getConcreteClassName() == 'CustomJoint':
             self._osimJoint = opensim.CustomJoint_safeDownCast(j)
             self._isCustomJoint = True
+
         else:
             self._osimJoint = j
             self._isCustomJoint = False
 
         self._initCoordSets()
-        if self.isCustomJoint:
+
+        if self._isCustomJoint:
             self._initSpatialTransform()
         else:
             self.spatialTransform = None
 
     def _initCoordSets(self):
         self.coordSets = {}
-        cs = self._osimJoint.getCoordinateSet()
-        for csi in range(cs.getSize()):
-            _cs = cs.get(csi)
+
+        for i in range(self._osimJoint.numCoordinates()):
+            _cs = self._osimJoint.get_coordinates(i)
             self.coordSets[_cs.getName()] = CoordinateSet(_cs)
 
     def _initSpatialTransform(self):
@@ -478,7 +486,7 @@ class Joint(object):
         _bound_methods = dict(
             inspect.getmembers(
                 self.spatialTransform,
-                lambda m: inspect.ismethod(m) and m.__func__ in m.im_class.__dict__.values()
+                lambda m: inspect.ismethod(m) and hasattr(m, '__self__')
             )
         )
         if _method_name not in _bound_methods:
@@ -488,6 +496,7 @@ class Joint(object):
         ss = opensim.SimmSpline_safeDownCast(tfunc)
         ss_x = np.array([ss.getX(i) for i in range(ss.getSize())])
         ss_y = np.array([ss.getY(i) for i in range(ss.getSize())])
+        # Why aren't we doing the z-axis?
         # ss_z = np.array([ss.getZ(i) for i in range(ss.getSize())])
         return np.array([ss_x, ss_y])
 
@@ -514,7 +523,7 @@ class Joint(object):
         _bound_methods = dict(
             inspect.getmembers(
                 self.spatialTransform,
-                lambda m: inspect.ismethod(m) and m.__func__ in m.im_class.__dict__.values()
+                lambda m: inspect.ismethod(m) and hasattr(m, '__self__')
             )
         )
         if _method_name not in _bound_methods:
@@ -540,30 +549,27 @@ class Joint(object):
 
     @property
     def locationInParent(self):
-        v = opensim.Vec3()
-        self._osimJoint.getLocationInParent(v)
+        v = self._osimJoint.get_frames(0).get_translation()
         return np.array([v.get(i) for i in range(3)])
 
     @locationInParent.setter
     def locationInParent(self, x):
         v = opensim.Vec3(x[0], x[1], x[2])
-        self._osimJoint.setLocationInParent(v)
+        self._osimJoint.upd_frames(0).set_translation(v)
 
     @property
     def location(self):
-        v = opensim.Vec3()
-        self._osimJoint.getLocation(v)
+        v = self._osimJoint.get_frames(1).get_translation()
         return np.array([v.get(i) for i in range(3)])
 
     @location.setter
     def location(self, x):
         v = opensim.Vec3(x[0], x[1], x[2])
-        self._osimJoint.setLocation(v)
+        self._osimJoint.upd_frames(1).set_translation(v)
 
     @property
     def orientationInParent(self):
-        v = opensim.Vec3()
-        self._osimJoint.getOrientationInParent(v)
+        v = self._osimJoint.getOrientationInParent()
         return np.array([v.get(i) for i in range(3)])
 
     @orientationInParent.setter
@@ -590,7 +596,7 @@ class Joint(object):
     def parentName(self, name):
         self._osimJoint.setParentName(name)
 
-    def scale(self, *scales):
+    def scale(self, state, *scales):
         """
         Scales joint parameters given one or more Scale instances
         which should define scale factors for joined segments.
@@ -601,7 +607,7 @@ class Joint(object):
         for sc in scales:
             scaleset.cloneAndAppend(sc._osimScale)
 
-        self._osimJoint.scale(scaleset)
+        self._osimJoint.scale(state, scaleset)
 
 
 class Scale(object):
@@ -666,11 +672,13 @@ class Marker(object):
 
     def __init__(self, marker=None, name=None, frame_name=None, location=None):
         """
-        This constructor can be used in multiple ways. Either the user can supply an OpenSim::Marker object, in which
-        case the constructor simply wraps the Marker object; or the user can use the constructor to create a new Marker
-        object by specifying the name, frame_name and location explicitly. name and frame_name should both be strings,
-        location should be 3-dimensional tuple of integers (similarly, setting the marker's location should be done with
-        a tuple).
+        This constructor can be used in multiple ways. Either the user can
+        supply an OpenSim::Marker object, in which case the constructor simply
+        wraps the Marker object; or the user can use the constructor to create
+        a new Marker object by specifying the name, frame_name and location
+        explicitly. name and frame_name should both be strings, location should
+        be 3-dimensional tuple of integers (similarly, setting the marker's
+        location should be done with a tuple).
         """
         if marker is None:
             self._osim_marker = opensim.Marker()
@@ -679,6 +687,16 @@ class Marker(object):
             self._osim_marker.set_location(opensim.Vec3(location))
         else:
             self._osim_marker = marker
+            self._check_frame_name()
+
+    def get_osim_marker(self):
+        return self._osim_marker
+
+    def _check_frame_name(self):
+        if self._osim_marker.getParentFrameName()[:9] == "/bodyset/":
+            self._osim_marker.setParentFrameName(
+                self._osim_marker.getParentFrameName()[9:]
+            )
 
     @property
     def name(self):
@@ -699,7 +717,7 @@ class Marker(object):
     @property
     def location(self):
         vector = self._osim_marker.get_location()
-        return vector[0], vector[1], vector[2]
+        return np.array([vector[0], vector[1], vector[2]])
 
     @location.setter
     def location(self, location):
@@ -728,6 +746,7 @@ class Model(object):
 
     def save(self, filename):
         self._model.printToXML(filename)
+        print("Successfully Saved.")
 
     def _init_model(self):
         self._init_joints()
@@ -775,7 +794,16 @@ class Model(object):
                     w = wObjects.get(wi)
                     self.wrapObjects[w.getName()] = wrapObject(w)
 
-    def scale(self, state, *scales):
+    def init_system(self):
+        return self._model.initSystem()
+
+    def set_marker_set(self, marker_set):
+        self._model.set_MarkerSet(marker_set)
+
+    def update_marker_set(self, marker_set):
+        self._model.updateMarkerSet(marker_set)
+
+    def scale(self, state, *scales, preserve_mass_distribution, mass):
         """
         Scale the entire model for a given state and one or more
         Scale instances that define the scale factors for different
@@ -786,7 +814,13 @@ class Model(object):
         for sc in scales:
             scaleset.cloneAndAppend(sc._osimScale)
 
-        self._model.scale(state, scaleset)
+        self._model.scale(state, scaleset, preserve_mass_distribution, mass)
+
+    def get_working_state(self):
+        return self._model.getWorkingState()
+
+    def get_muscles(self):
+        return self._model.getMuscles()
 
     def view_init_state(self):
         self._model.setUseVisualizer(True)
